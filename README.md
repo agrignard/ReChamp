@@ -1,6 +1,8 @@
 # ReChamp
 Project for the Champs Elysées project
 
+![](ReChamp.png)
+
 **MIT Team**
 
 Arnaud Grignard, Nicolas Ayoub, Kent Larson
