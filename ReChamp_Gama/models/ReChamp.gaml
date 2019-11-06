@@ -10,6 +10,7 @@ model ReChamp
 global {
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	file green_spaces_shapefile <- file("../includes/GIS/green_space.shp");
+	file ilots_shapefile <- file("../includes/GIS/ilots.shp");
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	geometry shape <- envelope(shape_file_bounds);
@@ -19,6 +20,7 @@ global {
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile ;
+		create ilots from: ilots_shapefile ;
 		create road from: roads_shapefile ;
 		the_graph <- as_edge_graph(road);
 		create people number:1000{
@@ -30,6 +32,15 @@ global {
 species building {
 	string type; 
 	rgb color <- #gray  ;
+	
+	aspect base {
+		draw shape color: color ;
+	}
+}
+
+species ilots {
+	string type; 
+	rgb color <- #cyan  ;
 	
 	aspect base {
 		draw shape color: color ;
@@ -69,6 +80,7 @@ experiment ReChamp type: gui {
 		display city_display type:opengl background:#black draw_env:false{
 			species greenSpace aspect: base ;
 			species building aspect: base ;
+			species ilots aspect: base ;
 			species road aspect: base ;
 			species people aspect:base;
 		}
