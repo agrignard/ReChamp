@@ -8,6 +8,7 @@
 model ReChamp
 
 global {
+	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	file roads_shapefile <- file("../includes/GIS/gksection.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	geometry shape <- envelope(roads_shapefile);
@@ -16,6 +17,7 @@ global {
 	
 	init {
 		create road from: roads_shapefile with: [capacity:float(read ("assig_lveh"))];
+		create building from: buildings_shapefile ;
 		the_graph <- as_edge_graph(road);
 		float maxCap<- max(road collect each.capacity);
 		float minCap<- min((road where (each.capacity >0) )collect each.capacity);
@@ -30,7 +32,14 @@ global {
 	}
 }
 
-
+species building {
+	string type; 
+	rgb color <- #gray  ;
+	
+	aspect base {
+		draw shape color: color ;
+	}
+}
 
 species road  {
 	rgb color;
@@ -55,6 +64,7 @@ experiment ReChamp type: gui {
 		
 	output {
 		display city_display type:opengl background:#white draw_env:false{
+			species building aspect:base;
 			species road aspect: base ;
 			species people aspect:base;
 		}
