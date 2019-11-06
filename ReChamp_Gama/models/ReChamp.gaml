@@ -107,13 +107,20 @@ species people skills:[moving]{
 experiment ReChamp type: gui {
 		
 	output {
-		display city_display type:opengl background:#gray draw_env:false{
+		display city_display type:opengl background:#black draw_env:false rotate:26.5 fullscreen:true toolbar:false{
 			species ilots aspect: base refresh:false;
 			species building aspect: base refresh:false;
 			species greenSpace aspect: base refresh:false;
 			species water aspect: base refresh:false;
 			species road aspect: base refresh:false;
 			species people aspect:base;
+			graphics 'modelbackground'{
+				draw shape_file_bounds color:#gray;
+			}
+			
+			graphics 'tablebackground'{
+				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
+			}
 		}
 	}
 }
