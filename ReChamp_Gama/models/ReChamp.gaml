@@ -37,10 +37,11 @@ global {
 			}
 		}else{
 		  create road from: roads_shapefile {
-		  	color<-#gray;
+		  	color<-#white;
 		  }	
 		  create people number:1000{
 			color<-flip (0.33) ? #blue : (flip(0.33) ? #white : #red);
+			location<-any_location_in(one_of(road));
 		}	
 		}
 		
@@ -50,10 +51,10 @@ global {
 
 species building {
 	string type; 
-	rgb color <- #gray  ;
+	rgb color <- #white  ;
 	
 	aspect base {
-		draw shape color: color ;
+		draw shape color: color border:rgb(125,125,125);
 	}
 }
 
@@ -88,7 +89,7 @@ species road  {
 	rgb color;
 	float capacity;
 	aspect base {
-		draw shape color: color width:2;
+		draw shape color: color;
 	}
 }
 
@@ -106,7 +107,7 @@ species people skills:[moving]{
 experiment ReChamp type: gui {
 		
 	output {
-		display city_display type:opengl background:#white draw_env:false{
+		display city_display type:opengl background:#gray draw_env:false{
 			species ilots aspect: base refresh:false;
 			species building aspect: base refresh:false;
 			species greenSpace aspect: base refresh:false;
