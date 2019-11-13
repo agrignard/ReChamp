@@ -19,9 +19,22 @@ global {
 	graph the_graph;
 	bool realData<-true;
 	
+	bool showRoad parameter: 'Show Road' category: "Parameters" <-false;
+	bool showBuilding parameter: 'Show Building' category: "Parameters" <-true;
+	bool showTrace parameter: 'Show Trace' category: "Parameters" <-false;
+	bool simOn<-false;
+	
+	float angle<-26.5;
+	
+	//FRENCH FLAG
+	list<geometry> flag <-[rectangle(shape.width/3,shape.height) at_location {shape.width/6,shape.height/2} rotated_by angle,
+		rectangle(shape.width/3,shape.height) at_location {shape.width/3+shape.width/6,shape.height/2} rotated_by angle,
+		rectangle(shape.width/3,shape.height) at_location {2*shape.width/3+shape.width/6,shape.height/2} rotated_by angle	
+	];
+	
 	init {
 		create greenSpace from: green_spaces_shapefile ;
-		create building from: buildings_shapefile ;
+		create building from: buildings_shapefile with: [depth:float(read ("H_MOY")),date_of_creation:int(read ("AN_CONST"))];
 		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
 		if(realData){
@@ -30,18 +43,20 @@ global {
 			float minCap<- min((road where (each.capacity >0) )collect each.capacity);
 			ask road {
 				color<-blend(#red, #yellow,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/250{
+				create people number:self.capacity/200{
 					location<-any_location_in(myself);
-					color<-blend(#red, #yellow,(minCap+myself.capacity)/(maxCap-minCap));	
+					color<-blend(#red, #yellow,(minCap+myself.capacity)/(maxCap-minCap));
+					nationality <- flip(0.3) ? "french" :"foreigner"; 	
 				}
 			}
 		}else{
 		  create road from: roads_shapefile {
 		  	color<-#white;
 		  }	
-		  create people number:1000{
+		  create people number:2000{
 			color<-flip (0.33) ? #blue : (flip(0.33) ? #white : #red);
 			location<-any_location_in(one_of(road));
+			nationality <- flip(0.3) ? "french" :"foreigner"; 	
 		}	
 		}
 		
@@ -51,10 +66,25 @@ global {
 
 species building {
 	string type; 
+	int date_of_creation;
+	float depth;
 	rgb color <- #white  ;
 	
 	aspect base {
-		draw shape color: color border:rgb(125,125,125);
+		if(showBuilding){
+		  draw shape color: color border:rgb(125,125,125);	
+		}
+	}
+	
+	aspect depth {
+		draw shape color: color border:rgb(125,125,125) depth:depth;
+	}
+	
+	
+	aspect timelaspe{
+		if(cycle>date_of_creation and date_of_creation!=0){
+		  draw shape color: color border:rgb(125,125,125) depth:depth;	
+		}	
 	}
 }
 
@@ -69,10 +99,13 @@ species ilots {
 
 species greenSpace {
 	string type; 
-	rgb color <- #gray  ;
+	rgb color <- #darkgreen  ;
 	
 	aspect base {
 		draw shape color: rgb(75,75,75) ;
+	}
+	aspect green {
+		draw shape color: #darkgreen ;
 	}
 }
 
@@ -89,38 +122,58 @@ species road  {
 	rgb color;
 	float capacity;
 	aspect base {
-		draw shape color: color;
+		if(showRoad){
+		  draw shape color: color width:3;	
+		}
+		
 	}
 }
 
-species people skills:[moving]{
-	
+species people skills:[moving]{	
 	rgb color;
-	reflex move{
-		do wander on:the_graph;
+	point target;
+	string nationality;
+	string profile;
+	
+	reflex move when:simOn{
+		do wander on:the_graph speed:10.0;
 	}
 	aspect base {
-		draw circle(10#m) color:color  border: color-50;
+		draw circle(4#m) color:#blue  ;
+	}
+	aspect congestion {
+		draw circle(4#m) color:color  ;
+	}
+	aspect nationality{
+		draw circle(4#m) color:(nationality=("french")) ? #blue : #orange  ;
+	}	
+	aspect french{
+		draw circle(4#m) color:self intersects flag[0] ?  #blue : (self intersects flag[1] ? #white : #red) ;
 	}
 }
 
-experiment ReChamp type: gui {
-		
+experiment ReChamp type: gui autorun:false{
+	float minimum_cycle_duration<-0.025;	
 	output {
-		display city_display type:opengl background:#black draw_env:false rotate:26.5 fullscreen:true toolbar:false{
-			species ilots aspect: base refresh:false;
-			species building aspect: base refresh:false;
-			species greenSpace aspect: base refresh:false;
-			species water aspect: base refresh:false;
-			species road aspect: base refresh:false;
-			species people aspect:base;
+		display city_display type:opengl background:#black draw_env:false rotate:angle fullscreen:true toolbar:false {	
+			//species ilots aspect: base ;
+			species building aspect: base transparency:0.5;
+			species greenSpace aspect: base ;
+			species water aspect: base;
+			species road aspect: base;
+			species people aspect:base trace:showTrace ? 200 :0 fading:true;
+			
 			graphics 'modelbackground'{
-				draw shape_file_bounds color:#gray;
+				//draw shape_file_bounds color:#gray;
 			}
 			
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
 			}
+			event["t"] action: {showTrace<-!showTrace;};
+			event[" "] action: {simOn<-!simOn;};
+			event["b"] action: {showBuilding<-!showBuilding;};
+			event["r"] action: {showRoad<-!showRoad;};
 		}
 	}
 }
