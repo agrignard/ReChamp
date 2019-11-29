@@ -23,19 +23,23 @@ global {
 	
 	geometry shape <- envelope(shape_file_bounds);
 	graph the_graph;
+	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
-	bool showPeople parameter: 'Show People' category: "Parameters" <-true;
-	bool showRoad parameter: 'Show Road' category: "Parameters" <-true;
-	bool showBuilding parameter: 'Show Building' category: "Parameters" <-true;
-	bool showGreen parameter: 'Show Green' category: "Parameters" <-true;
-	bool showWater parameter: 'Show Water' category: "Parameters" <-true;
-	bool showBus parameter: 'Show Bus' category: "Parameters" <-false;
-	bool showMetro parameter: 'Show Metro' category: "Parameters" <-false;
-	bool showAgent parameter: 'Show Agent' category: "Parameters" <-true;
-	bool showTrace parameter: 'Show Trace' category: "Parameters" <-false;
-	bool showStation parameter: 'Show Station' category: "Parameters" <-false;
-	bool showAmenities parameter: 'Show Amenities' category: "Parameters" <-true;
+	bool showPeople parameter: 'People' category: "Parameters" <-true;
+	bool showRoad parameter: 'Road' category: "Parameters" <-false;
+	bool showBuilding parameter: 'Building' category: "Parameters" <-true;
+	bool showGreen parameter: 'Green' category: "Parameters" <-true;
+	bool showWater parameter: 'Water' category: "Parameters" <-true;
+	bool showBus parameter: 'Bus' category: "Parameters" <-false;
+	bool showMetro parameter: 'Metro' category: "Parameters" <-false;
+	bool showTrace parameter: 'Trace' category: "Parameters" <-false;
+	bool showStation parameter: 'Station' category: "Parameters" <-false;
+	bool showAmenities parameter: 'Amenities' category: "Parameters" <-false;
+	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
+	bool black <- false parameter: "Black:" category: "Vizu";
+	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
+	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	
@@ -71,7 +75,7 @@ global {
 			float minCap<- min((road where (each.capacity >0) )collect each.capacity);
 			ask road {
 				color<-blend(#red, #yellow,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/500{
+				create people number:self.capacity/1000{
 					location<-any_location_in(myself);
 					color<-blend(#red, #yellow,(minCap+myself.capacity)/(maxCap-minCap));
 					nationality <- flip(0.3) ? "french" :"foreigner"; 
@@ -93,6 +97,9 @@ global {
 		
 		the_graph <- as_edge_graph(road);
 	}
+	reflex updateGraph when: (showInteraction = true) {
+		interaction_graph <- graph<people, people>(people as_distance_graph (distance));
+	}
 }
 
 species building {
@@ -103,7 +110,7 @@ species building {
 	
 	aspect base {
 		if(showBuilding){
-		  draw shape color: color border:rgb(125,125,125);	
+		  draw shape color: randomColor ? rnd_color(255): (black ? #white : #black) border:rgb(125,125,125);	
 		}
 	}
 	
@@ -172,8 +179,7 @@ species road  {
 	aspect base {
 		if(showRoad){
 		  draw shape color: color width:1;	
-		}
-		
+		}	
 	}
 }
 
@@ -185,7 +191,6 @@ species bus_line{
 		if(showBus){
 		  draw shape color: color width:3;	
 		}
-		
 	}
 }
 
@@ -195,9 +200,8 @@ species station{
 	float capacity_pca;
 	aspect base {
 		if(showStation){
-		  draw circle(10) color: #blue width:3;	
-		}
-		
+		  draw circle(10) color:#gray;	
+		}	
 	}
 }
 
@@ -224,7 +228,7 @@ species people skills:[moving]{
 	string aspect;
 	
 	reflex move{
-      do wander on:the_graph speed:10.0;
+      do wander on:the_graph speed:5.0;
       //do wander  speed:10.0;
 	}
 	aspect base {
@@ -246,13 +250,13 @@ species people skills:[moving]{
 	}
 }
 
-experiment ReChamp type: gui autorun:false{
-	float minimum_cycle_duration<-0.025;	
+experiment ReChamp type: gui autorun:true{
+	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:#black draw_env:false rotate:angle fullscreen:true toolbar:false autosave:false synchronized:true
-		camera_pos: {1812.4353,1518.768,3050.5367} camera_look_pos: {1812.4353,1518.7147,0.0} camera_up_vector: {0.0,1.0,0.0}{	
+		display champ type:opengl background:black ? #black: #white draw_env:false rotate:angle fullscreen:true toolbar:false autosave:false synchronized:true
+		camera_pos: {1812.4353,1518.7677,3036.6477} camera_look_pos: {1812.4353,1518.7147,0.0} camera_up_vector: {0.0,1.0,0.0}{	
 			//species ilots aspect: base ;
-			species building aspect: base transparency:0.5;
+			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
@@ -260,14 +264,24 @@ experiment ReChamp type: gui autorun:false{
 			species station aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
-			species people aspect:base;// trace:showTrace ? 200 :0 fading:true;
+			species people aspect:base trace:showTrace ? 200 :0 fading:true;
 			
-			graphics 'modelbackground'{
-				//draw shape_file_bounds color:#gray;
-			}
 			
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
+			}
+			
+			graphics "interaction_graph" {
+				if (interaction_graph != nil and (showInteraction = true)) {
+					loop eg over: interaction_graph.edges {
+						people src <- interaction_graph source_of eg;
+						people target <- interaction_graph target_of eg;
+						geometry edge_geom <- geometry(eg);
+						draw line(edge_geom.points) color: #gray;
+					}
+
+				}
+
 			}
 			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrace<-!showTrace;};
@@ -279,19 +293,22 @@ experiment ReChamp type: gui autorun:false{
 			event["a"] action: {showAmenities<-!showAmenities;};
 			event["g"] action: {showGreen<-!showGreen;};
 			event["w"] action: {showWater<-!showWater;};
+			event["i"] action: {showInteraction<-!showInteraction;};
+			event[" "] action: {black<-!black;};
+			event["f"] action: {randomColor<-!randomColor;};
 			
 			
 			
-			
-			
-			
+			graphics 'frame'{
+				//draw geometry(shape_file_bounds)*1.25 - geometry(shape_file_bounds) color:#black;
+			}			
 		}
 	}
 }
 
 experiment Ep1 type: gui autorun:false parent:ReChamp{
 	output {
-		display city_display type:java2D background:#black draw_env:false rotate:angle fullscreen:true toolbar:false parent:champ{
+		display city_display type:java2D background:#white draw_env:false rotate:angle fullscreen:true toolbar:false parent:champ{
 			species people aspect:base;	
 		}
 	}
