@@ -18,18 +18,24 @@ global {
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
+	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
+	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	
 	geometry shape <- envelope(shape_file_bounds);
 	graph the_graph;
 	bool realData<-true;
 	
-	bool showRoad parameter: 'Show Road' category: "Parameters" <-false;
+	bool showPeople parameter: 'Show People' category: "Parameters" <-true;
+	bool showRoad parameter: 'Show Road' category: "Parameters" <-true;
 	bool showBuilding parameter: 'Show Building' category: "Parameters" <-true;
+	bool showGreen parameter: 'Show Green' category: "Parameters" <-true;
+	bool showWater parameter: 'Show Water' category: "Parameters" <-true;
 	bool showBus parameter: 'Show Bus' category: "Parameters" <-false;
-	bool showMetro parameter: 'Show Metro' category: "Parameters" <-true;
+	bool showMetro parameter: 'Show Metro' category: "Parameters" <-false;
 	bool showAgent parameter: 'Show Agent' category: "Parameters" <-true;
 	bool showTrace parameter: 'Show Trace' category: "Parameters" <-false;
 	bool showStation parameter: 'Show Station' category: "Parameters" <-false;
+	bool showAmenities parameter: 'Show Amenities' category: "Parameters" <-true;
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	
@@ -51,6 +57,14 @@ global {
 		create bus_line from: bus_shapefile ;
 		create station from: station_shapefile ;
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
+		create amenities from: amenities_shapefile {
+			type<-"restaurant";
+			color<-#yellow;
+		}
+		create amenities from: amenities_shop_shapefile {
+			type<-"shop";
+			color<-#blue;
+		}
 		if(realData){
 			create road from: roads_count_shapefile with: [capacity:float(read ("assig_lveh"))];
 			float maxCap<- max(road collect each.capacity);
@@ -119,10 +133,24 @@ species greenSpace {
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
-		draw shape color: rgb(75,75,75) ;
+		if(showGreen){
+		  draw shape color: rgb(75,75,75) ;	
+		}	
 	}
 	aspect green {
 		draw shape color: #darkgreen ;
+	}
+}
+
+species amenities{
+	string type; 
+	rgb color <- #darkgray  ;
+	
+	aspect base {
+		if(showAmenities){
+		  draw square(5) color: color ;	
+		}
+		
 	}
 }
 
@@ -131,7 +159,9 @@ species water {
 	rgb color <- rgb(25,25,25)  ;
 	
 	aspect base {
-		draw shape color:color ;
+		if(showWater){
+		  draw shape color:color ;	
+		}	
 	}
 }
 
@@ -141,7 +171,7 @@ species road  {
 	float capacity_pca;
 	aspect base {
 		if(showRoad){
-		  draw shape color: color width:3;	
+		  draw shape color: color width:1;	
 		}
 		
 	}
@@ -198,7 +228,9 @@ species people skills:[moving]{
       //do wander  speed:10.0;
 	}
 	aspect base {
-	  draw circle(4#m) color:#red  ;
+	  if(showPeople){
+	     draw circle(4#m) color:#red  ;	
+	  }
 	}
 	aspect congestion {
 	  draw circle(4#m) color:color  ;
@@ -227,7 +259,8 @@ experiment ReChamp type: gui autorun:false{
 			species bus_line aspect: base;
 			species station aspect: base;
 			species metro_line aspect: base;
-			//species people aspect:congestion;// trace:showTrace ? 200 :0 fading:true;
+			species amenities aspect:base;
+			species people aspect:base;// trace:showTrace ? 200 :0 fading:true;
 			
 			graphics 'modelbackground'{
 				//draw shape_file_bounds color:#gray;
@@ -236,19 +269,29 @@ experiment ReChamp type: gui autorun:false{
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
 			}
+			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrace<-!showTrace;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["m"] action: {showMetro<-!showMetro;};
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
+			event["a"] action: {showAmenities<-!showAmenities;};
+			event["g"] action: {showGreen<-!showGreen;};
+			event["w"] action: {showWater<-!showWater;};
+			
+			
+			
+			
+			
+			
 		}
 	}
 }
 
 experiment Ep1 type: gui autorun:false parent:ReChamp{
 	output {
-		display city_display type:opengl background:#black draw_env:false rotate:angle fullscreen:true toolbar:false parent:champ{
+		display city_display type:java2D background:#black draw_env:false rotate:angle fullscreen:true toolbar:false parent:champ{
 			species people aspect:base;	
 		}
 	}
