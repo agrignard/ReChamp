@@ -20,6 +20,7 @@ global {
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
+	file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 	
 	geometry shape <- envelope(shape_file_bounds);
 	graph the_graph;
@@ -27,7 +28,9 @@ global {
 	bool realData<-true;
 	
 	bool showPeople parameter: 'People' category: "Parameters" <-true;
+	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
+	bool showPCA parameter: 'PCA' category: "Parameters" <-false;
 	bool showBuilding parameter: 'Building' category: "Parameters" <-true;
 	bool showGreen parameter: 'Green' category: "Parameters" <-true;
 	bool showWater parameter: 'Water' category: "Parameters" <-true;
@@ -70,12 +73,13 @@ global {
 			color<-#blue;
 		}
 		if(realData){
-			create road from: roads_count_shapefile with: [capacity:float(read ("assig_lveh"))];
+			//create road from: roads_count_shapefile with: [capacity::float(read ("vol_base")),cap24_no_intervention::float(read ("vol_ref")),cap24_pca_intervention::float(read ("vol_proj"))];
+			create road from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
 			float maxCap<- max(road collect each.capacity);
 			float minCap<- min((road where (each.capacity >0) )collect each.capacity);
 			ask road {
 				color<-blend(#red, #yellow,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/1000{
+				create people number:self.capacity/2000{
 					location<-any_location_in(myself);
 					color<-blend(#red, #yellow,(minCap+myself.capacity)/(maxCap-minCap));
 					nationality <- flip(0.3) ? "french" :"foreigner"; 
@@ -96,6 +100,22 @@ global {
 		}
 		
 		the_graph <- as_edge_graph(road);
+		
+		/*matrix data <- matrix(pedestrian_count_file);
+		//loop on the matrix rows (skip the first header line)
+		loop i from: 1 to: data.rows -1{
+			//loop on the matrix columns
+			loop j from: 0 to: data.columns -1{
+				write "data rows:"+ i +" colums:" + j + " = " + data[j,i];
+			}	
+		}*/
+		/*create pedestrianZone from:pedestrian_count_file with:[nbPeople::int(get("count")) , lat::float(get("latitude")), long::float(get("longitude"))]{
+			write "nbPeople" + nbPeople;
+			location<-{lat,long};
+			if!(self intersects world.shape){
+				do die;
+			}
+		}*/	
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		interaction_graph <- graph<people, people>(people as_distance_graph (distance));
@@ -175,7 +195,10 @@ species water {
 species road  {
 	rgb color;
 	float capacity;
-	float capacity_pca;
+	float cap24_no_intervention;
+	float cap24_pca_intervention;
+	
+	
 	aspect base {
 		if(showRoad){
 		  draw shape color: color width:1;	
@@ -250,6 +273,17 @@ species people skills:[moving]{
 	}
 }
 
+species pedestrianZone{
+		int nbPeople;
+		float lat;
+		float long;
+		aspect base {
+		if(showPedestrianCount){
+		  draw circle(10) color: rgb(nbPeople,0,0);	
+		}
+	}
+}
+
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
@@ -265,10 +299,12 @@ experiment ReChamp type: gui autorun:true{
 			species metro_line aspect: base;
 			species amenities aspect:base;
 			species people aspect:base trace:showTrace ? 200 :0 fading:true;
+			species pedestrianZone aspect:base;
 			
 			
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
+				draw string("Share of low income")  at: { 0#px, world.shape.height*0.95 } color: #white font: font("Helvetica", 32);
 			}
 			
 			graphics "interaction_graph" {
