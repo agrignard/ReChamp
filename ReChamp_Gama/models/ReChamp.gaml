@@ -13,6 +13,8 @@ global {
 	file ilots_shapefile <- file("../includes/GIS/ilots.shp");
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
+	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
+	
 	file roads_count_shapefile <- file("../includes/GIS/gksection.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
@@ -20,18 +22,29 @@ global {
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
-	file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
+	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
+	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
+	
+	
+	
+	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
+
 	
 	geometry shape <- envelope(shape_file_bounds);
-	graph the_graph;
+	graph car_graph;
+	graph people_graph;
+	graph bike_graph;
+	graph bus_graph;
 	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
 	bool showPeople parameter: 'People' category: "Parameters" <-true;
 	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
+	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
 	bool showPCA parameter: 'PCA' category: "Parameters" <-false;
-	bool showBuilding parameter: 'Building' category: "Parameters" <-true;
+	bool showBuilding parameter: 'Building' category: "Parameters" <-false;
+	bool showVoierie parameter: 'Voierie' category: "Parameters" <-false;
 	bool showGreen parameter: 'Green' category: "Parameters" <-true;
 	bool showWater parameter: 'Water' category: "Parameters" <-true;
 	bool showBus parameter: 'Bus' category: "Parameters" <-false;
@@ -40,12 +53,17 @@ global {
 	bool showStation parameter: 'Station' category: "Parameters" <-false;
 	bool showAmenities parameter: 'Amenities' category: "Parameters" <-false;
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
-	bool black <- false parameter: "Black:" category: "Vizu";
+	bool black <- true parameter: "Black:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
+	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
+	
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::#red,"bike"::#blue, "bus"::#yellow];
+	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
+		
 
 	
 	float angle<-26.5;
@@ -62,8 +80,12 @@ global {
 		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile ;
-		create station from: station_shapefile ;
+		create station from: station_shapefile with: [type:string(read ("type"))];
+		//create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
+		create bikelane from:bikelane_shapefile{
+			color<-#blue;
+		}
 		create amenities from: amenities_shapefile {
 			type<-"restaurant";
 			color<-#yellow;
@@ -74,19 +96,36 @@ global {
 		}
 		if(realData){
 			//create road from: roads_count_shapefile with: [capacity::float(read ("vol_base")),cap24_no_intervention::float(read ("vol_ref")),cap24_pca_intervention::float(read ("vol_proj"))];
-			create road from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
-			float maxCap<- max(road collect each.capacity);
-			float minCap<- min((road where (each.capacity >0) )collect each.capacity);
-			ask road {
-				color<-blend(#red, #yellow,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/2000{
-					location<-any_location_in(myself);
-					color<-blend(#red, #yellow,(minCap+myself.capacity)/(maxCap-minCap));
+			create gksection from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
+			float maxCap<- max(gksection collect each.capacity);
+			float minCap<- min((gksection where (each.capacity >0) )collect each.capacity);
+			ask gksection {
+				color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
+				create people number:self.capacity/1000{
+					//location<-any_location_in(myself);
+					color<-blend(#red, #green,(minCap+myself.capacity)/(maxCap-minCap));
+					type <- flip (0.5) ? "people" : (flip(0.33) ? "car" : (flip(0.33) ? "bus": "bike"));
 					nationality <- flip(0.3) ? "french" :"foreigner"; 
-					if flip(0.1){
-						location<-any_location_in(one_of(greenSpace));
-					}	
+					if(type="car" or type="people"){
+						location<-any_location_in(myself);
+					}
+					if (type="people"){
+						location<-any_location_in(one_of(voirie));
+					}
+					if(type="bus"){
+					    location<-any_location_in(one_of(bus_line));	
+					}
+					if flip(0.5){
+						do die;
+					}
+					
 				}
+			}
+			ask voirie{
+				/*create people number:1{
+					type <- "people";
+					location<-any_location_in(myself);
+				}*/
 			}
 		}else{
 		  create road from: roads_shapefile {
@@ -94,31 +133,48 @@ global {
 		  }	
 		  create people number:2000{
 			color<-flip (0.33) ? #blue : (flip(0.33) ? #white : #red);
+			type <- flip (0.5) ? "people" : (flip(0.33) ? "car" : (flip(0.33) ? "bus": "bike"));
 			location<-any_location_in(one_of(road));
 			nationality <- flip(0.3) ? "french" :"foreigner"; 	
 		}	
 		}
 		
-		the_graph <- as_edge_graph(road);
 		
-		/*matrix data <- matrix(pedestrian_count_file);
-		//loop on the matrix rows (skip the first header line)
-		loop i from: 1 to: data.rows -1{
-			//loop on the matrix columns
-			loop j from: 0 to: data.columns -1{
-				write "data rows:"+ i +" colums:" + j + " = " + data[j,i];
-			}	
-		}*/
-		/*create pedestrianZone from:pedestrian_count_file with:[nbPeople::int(get("count")) , lat::float(get("latitude")), long::float(get("longitude"))]{
-			write "nbPeople" + nbPeople;
-			location<-{lat,long};
-			if!(self intersects world.shape){
+		
+		car_graph <- as_edge_graph(gksection);
+		people_graph <- as_edge_graph(voirie);
+		bike_graph <- as_edge_graph(bikelane);
+		bus_graph <- as_edge_graph(bus_line);
+		
+		
+		
+
+		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude"))]{
+			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
+			if flip(0.95){
 				do die;
 			}
 		}*/	
+		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
+		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
 	}
 	reflex updateGraph when: (showInteraction = true) {
-		interaction_graph <- graph<people, people>(people as_distance_graph (distance));
+		if(currentMode="default"){
+		  interaction_graph <- graph<people, people>(people as_distance_graph (distance));	
+		}
+		if(currentMode="car"){
+		  interaction_graph <- graph<people, people>(people where (each.type="car") as_distance_graph (distance));	
+		}
+		if(currentMode="people"){
+		  interaction_graph <- graph<people, people>(people where (each.type="people") as_distance_graph (distance));	
+		}
+		if(currentMode="bike"){
+		  interaction_graph <- graph<people, people>(people where (each.type="bike") as_distance_graph (distance));	
+		}
+		if(currentMode="bus"){
+		  interaction_graph <- graph<people, people>(people where (each.type="bus") as_distance_graph (distance));	
+		}
+		
 	}
 }
 
@@ -126,23 +182,11 @@ species building {
 	string type; 
 	int date_of_creation;
 	float depth;
-	rgb color <- #white  ;
-	
+	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color: randomColor ? rnd_color(255): (black ? #white : #black) border:rgb(125,125,125);	
+		  draw shape color: randomColor ? rnd_color(255): color;	
 		}
-	}
-	
-	aspect depth {
-		draw shape color: color border:rgb(125,125,125) depth:depth;
-	}
-	
-	
-	aspect timelaspe{
-		if(cycle>date_of_creation and date_of_creation!=0){
-		  draw shape color: color border:rgb(125,125,125) depth:depth;	
-		}	
 	}
 }
 
@@ -155,13 +199,24 @@ species ilots {
 	}
 }
 
+species voirie schedules:[]{
+	string type; 
+	rgb color <- rgb(175,175,175);
+	
+	aspect base {
+		if(showVoierie){
+		  draw shape color:rgb(50,50,50) ;	
+		}	
+	}
+}
+
 species greenSpace {
 	string type; 
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
 		if(showGreen){
-		  draw shape color: rgb(75,75,75) ;	
+		  draw shape color: rgb(50,50,50) ;	
 		}	
 	}
 	aspect green {
@@ -176,8 +231,7 @@ species amenities{
 	aspect base {
 		if(showAmenities){
 		  draw square(5) color: color ;	
-		}
-		
+		}	
 	}
 }
 
@@ -194,11 +248,7 @@ species water {
 
 species road  {
 	rgb color;
-	float capacity;
-	float cap24_no_intervention;
-	float cap24_pca_intervention;
-	
-	
+	float capacity;		
 	aspect base {
 		if(showRoad){
 		  draw shape color: color width:1;	
@@ -206,24 +256,49 @@ species road  {
 	}
 }
 
+species bikelane{
+	aspect base {
+		if(showBike){
+		  draw shape color: color width:1;	
+		}	
+	}
+}
+
+
+species gksection  parent:road{
+	float cap24_no_intervention;
+	float cap24_pca_intervention;
+}
 species bus_line{
 	rgb color;
 	float capacity;
 	float capacity_pca;
 	aspect base {
 		if(showBus){
-		  draw shape color: color width:3;	
+		  draw shape color: color;	
 		}
 	}
 }
 
 species station{
 	rgb color;
+	string type;
 	float capacity;
 	float capacity_pca;
 	aspect base {
 		if(showStation){
-		  draw circle(10) color:#gray;	
+		  if(showMetro){
+		  	if(type="metro"){
+		  	  draw circle(20) - circle(16) color:#blue;	
+		  	  draw circle(16) color:#white;	
+		  	}
+		  }
+		  if(showBus){
+		  	if(type="bus"){
+		  	  draw circle(20) - circle(16) color:#yellow;	
+		  	  draw circle(16) color:#white;		
+		  	}
+		  }
 		}	
 	}
 }
@@ -249,14 +324,30 @@ species people skills:[moving]{
 	string nationality;
 	string profile;
 	string aspect;
+	string type;
 	
 	reflex move{
-      do wander on:the_graph speed:5.0;
-      //do wander  speed:10.0;
+	  if(type="bike"){
+	  	do wander on:bike_graph speed:8.0#km/#h;
+	  }
+	  if(type="bus"){
+	    do wander on:bus_graph speed:6.0#km/#h;	
+	  }	
+	  if(type="car"){
+	    do wander on:car_graph speed:25.0#km/#h;	
+	  }
+	  if(type="people"){
+	    do wander on:car_graph speed:5.0#km/#h;	
+	  }	 	 
 	}
 	aspect base {
 	  if(showPeople){
-	     draw circle(4#m) color:#red  ;	
+	     	
+	     if (type="car"){
+	     	 draw circle(6#m)  color:type_colors[type];	
+	     }else{
+	     	draw circle(3#m) color:type_colors[type];
+	     }
 	  }
 	}
 	aspect congestion {
@@ -287,19 +378,21 @@ species pedestrianZone{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:black ? #black: #white draw_env:false rotate:angle fullscreen:true toolbar:false autosave:false synchronized:true
-		camera_pos: {1812.4353,1518.7677,3036.6477} camera_look_pos: {1812.4353,1518.7147,0.0} camera_up_vector: {0.0,1.0,0.0}{	
-			//species ilots aspect: base ;
+		display champ type:opengl background:black ? #black: #white draw_env:false rotate:angle fullscreen:1 toolbar:false autosave:false synchronized:true
+	    camera_pos: {2031.0419,1495.3268,2558.6074} camera_look_pos: {2031.0419,1495.2822,4.0E-4} camera_up_vector: {0.0,1.0,0.0}{
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
+			species gksection aspect: base;
 			species bus_line aspect: base;
-			species station aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
 			species people aspect:base trace:showTrace ? 200 :0 fading:true;
 			species pedestrianZone aspect:base;
+			species station aspect: base;
+			species bikelane aspect:base;
+			species voirie aspect:base;
 			
 			
 			graphics 'tablebackground'{
@@ -313,16 +406,18 @@ experiment ReChamp type: gui autorun:true{
 						people src <- interaction_graph source_of eg;
 						people target <- interaction_graph target_of eg;
 						geometry edge_geom <- geometry(eg);
-						draw line(edge_geom.points) color: #gray;
+						draw line(edge_geom.points) color: type_colors[currentMode];
 					}
 
 				}
 
 			}
 			event["p"] action: {showPeople<-!showPeople;};
-			event["t"] action: {showTrace<-!showTrace;};
+			//event["t"] action: {showTrace<-!showTrace;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
+			event["v"] action: {showBike<-!showBike;};
+			event["t"] action: {showVoierie<-!showVoierie;};
 			event["m"] action: {showMetro<-!showMetro;};
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
@@ -330,8 +425,16 @@ experiment ReChamp type: gui autorun:true{
 			event["g"] action: {showGreen<-!showGreen;};
 			event["w"] action: {showWater<-!showWater;};
 			event["i"] action: {showInteraction<-!showInteraction;};
+			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
 			event[" "] action: {black<-!black;};
 			event["f"] action: {randomColor<-!randomColor;};
+			
+			event["0"] action: {currentMode<-"default";};
+			event["1"] action: {currentMode<-"car";};
+			event["2"] action: {currentMode<-"people";};
+			event["3"] action: {currentMode<-"bike";};
+			event["4"] action: {currentMode<-"bus";};
+			
 			
 			
 			
