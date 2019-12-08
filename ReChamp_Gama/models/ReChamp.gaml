@@ -29,7 +29,6 @@ global {
 
 	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 
-	
 	geometry shape <- envelope(shape_file_bounds);
 	graph car_graph;
 	graph people_graph;
@@ -38,7 +37,7 @@ global {
 	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
-	bool showPeople parameter: 'People' category: "Parameters" <-false;
+	bool showPeople parameter: 'People' category: "Parameters" <-true;
 	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
 	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -54,28 +53,18 @@ global {
 	bool showAmenities parameter: 'Amenities' category: "Parameters" <-false;
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
 	bool black <- true parameter: "Black:" category: "Vizu";
+	bool showBackground <- false parameter: "Background:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/4K still_white.png'),file('../includes/PNG/4k still_proposal.png'),file('../includes/PNG/4k still_existing.png'),file('../includes/PNG/4K still_black.png'),file('../includes/PNG/4k still_B_proposal.png'),file('../includes/PNG/4k still_B_existing.png')];
 
-	
-	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::#red,"bike"::#blue, "bus"::#yellow];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
-		
-
-	
 	float angle<-26.5;
-	
-	//FRENCH FLAG
-	list<geometry> flag <-[rectangle(shape.width/3,shape.height) at_location {shape.width/6,shape.height/2} rotated_by angle,
-		rectangle(shape.width/3,shape.height) at_location {shape.width/3+shape.width/6,shape.height/2} rotated_by angle,
-		rectangle(shape.width/3,shape.height) at_location {2*shape.width/3+shape.width/6,shape.height/2} rotated_by angle	
-	];
 	
 	init {
 		create greenSpace from: green_spaces_shapefile ;
@@ -86,9 +75,7 @@ global {
 		create station from: station_shapefile with: [type:string(read ("type"))];
 		create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		create bikelane from:bikelane_shapefile{
-			color<-#blue;
-		}
+		create bikelane from:bikelane_shapefile{color<-#blue;}
 		create amenities from: amenities_shapefile {
 			type<-"restaurant";
 			color<-#yellow;
@@ -361,9 +348,6 @@ species people skills:[moving]{
 	    draw circle(8#m) - circle(6#m) color:#green;
 	  }
 	}	
-	aspect french{
-	  draw circle(4#m) color:self intersects flag[0] ?  #blue : (self intersects flag[1] ? #white : #red) ;
-	}
 }
 
 species pedestrianZone{
@@ -379,8 +363,9 @@ species pedestrianZone{
 
 species graphicWorld{
 	aspect base{
-		//draw shape color:#yellow;
-		draw shape texture:backGrounds[currentBackGround].path;
+		if(showBackground){
+		  draw shape texture:backGrounds[currentBackGround].path;	
+		}
 	}
 }
 
@@ -420,7 +405,7 @@ experiment ReChamp type: gui autorun:true{
 				}
 			}
 			event["p"] action: {showPeople<-!showPeople;};
-			//event["t"] action: {showTrace<-!showTrace;};
+			event["g"] action: {showBackground<-!showBackground;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["v"] action: {showBike<-!showBike;};
