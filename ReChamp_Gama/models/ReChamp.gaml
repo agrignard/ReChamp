@@ -25,8 +25,8 @@ global {
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
-	
-	
+	file gamaRaster <- file('../includes/PNG/4k still_proposal.png');
+
 	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 
 	
@@ -38,7 +38,7 @@ global {
 	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
-	bool showPeople parameter: 'People' category: "Parameters" <-true;
+	bool showPeople parameter: 'People' category: "Parameters" <-false;
 	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
 	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -57,6 +57,9 @@ global {
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
+	int currentBackGround <-0;
+	list<file> backGrounds <- [file('../includes/PNG/4K still_white.png'),file('../includes/PNG/4k still_proposal.png'),file('../includes/PNG/4k still_existing.png'),file('../includes/PNG/4K still_black.png'),file('../includes/PNG/4k still_B_proposal.png'),file('../includes/PNG/4k still_B_existing.png')];
+
 	
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
@@ -81,7 +84,7 @@ global {
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
-		//create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
+		create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
 		create bikelane from:bikelane_shapefile{
 			color<-#blue;
@@ -106,10 +109,10 @@ global {
 					color<-blend(#red, #green,(minCap+myself.capacity)/(maxCap-minCap));
 					type <- flip (0.5) ? "people" : (flip(0.33) ? "car" : (flip(0.33) ? "bus": "bike"));
 					nationality <- flip(0.3) ? "french" :"foreigner"; 
-					if(type="car" or type="people"){
+					if(type="car"){
 						location<-any_location_in(myself);
 					}
-					if (type="people"){
+					if (type="bike"){
 						location<-any_location_in(one_of(voirie));
 					}
 					if(type="bus"){
@@ -142,12 +145,9 @@ global {
 		
 		
 		car_graph <- as_edge_graph(gksection);
-		people_graph <- as_edge_graph(voirie);
+		people_graph <- as_edge_graph(gksection);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
-		
-		
-		
 
 		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude"))]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
@@ -157,6 +157,8 @@ global {
 		}*/	
 		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
 		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
+		
+		create graphicWorld from:shape_file_bounds;
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		if(currentMode="default"){
@@ -205,7 +207,7 @@ species voirie schedules:[]{
 	
 	aspect base {
 		if(showVoierie){
-		  draw shape color:rgb(50,50,50) ;	
+		  draw shape color:rgb(100,100,100) ;	
 		}	
 	}
 }
@@ -337,7 +339,7 @@ species people skills:[moving]{
 	    do wander on:car_graph speed:25.0#km/#h;	
 	  }
 	  if(type="people"){
-	    do wander on:car_graph speed:5.0#km/#h;	
+	    do wander on:people_graph speed:5.0#km/#h;	
 	  }	 	 
 	}
 	aspect base {
@@ -375,11 +377,19 @@ species pedestrianZone{
 	}
 }
 
+species graphicWorld{
+	aspect base{
+		//draw shape color:#yellow;
+		draw shape texture:backGrounds[currentBackGround].path;
+	}
+}
+
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:black ? #black: #white draw_env:false rotate:angle fullscreen:1 toolbar:false autosave:false synchronized:true
-	    camera_pos: {2031.0419,1495.3268,2558.6074} camera_look_pos: {2031.0419,1495.2822,4.0E-4} camera_up_vector: {0.0,1.0,0.0}{
+		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+	    camera_pos: {1665.3977,1480.2698,3769.5284} camera_look_pos: {1665.3977,1480.2041,7.0E-4} camera_up_vector: {0.0,1.0,0.0}{
+	    	species graphicWorld aspect:base position:{0,0,-0.01};
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
@@ -393,8 +403,7 @@ experiment ReChamp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 			species voirie aspect:base;
-			
-			
+						
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
 				draw string("Share of low income")  at: { 0#px, world.shape.height*0.95 } color: #white font: font("Helvetica", 32);
@@ -408,9 +417,7 @@ experiment ReChamp type: gui autorun:true{
 						geometry edge_geom <- geometry(eg);
 						draw line(edge_geom.points) color: type_colors[currentMode];
 					}
-
 				}
-
 			}
 			event["p"] action: {showPeople<-!showPeople;};
 			//event["t"] action: {showTrace<-!showTrace;};
@@ -426,8 +433,8 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["i"] action: {showInteraction<-!showInteraction;};
 			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
-			event[" "] action: {black<-!black;};
 			event["f"] action: {randomColor<-!randomColor;};
+			event[" "] action: {currentBackGround<-currentBackGround mod (length(backGrounds)-1) +1;};
 			
 			event["0"] action: {currentMode<-"default";};
 			event["1"] action: {currentMode<-"car";};
@@ -435,12 +442,6 @@ experiment ReChamp type: gui autorun:true{
 			event["3"] action: {currentMode<-"bike";};
 			event["4"] action: {currentMode<-"bus";};
 			
-			
-			
-			
-			graphics 'frame'{
-				//draw geometry(shape_file_bounds)*1.25 - geometry(shape_file_bounds) color:#black;
-			}			
 		}
 	}
 }
