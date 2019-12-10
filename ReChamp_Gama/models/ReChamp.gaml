@@ -69,9 +69,10 @@ global {
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY")),date_of_creation:int(read ("AN_CONST"))];
+		create gksection from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
 		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
-		create bus_line from: bus_shapefile ;
+		create bus_line from: bus_shapefile;
 		create station from: station_shapefile with: [type:string(read ("type"))];
 		create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
@@ -84,55 +85,44 @@ global {
 			type<-"shop";
 			color<-#blue;
 		}
-		if(realData){
-			//create road from: roads_count_shapefile with: [capacity::float(read ("vol_base")),cap24_no_intervention::float(read ("vol_ref")),cap24_pca_intervention::float(read ("vol_proj"))];
-			create gksection from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
-			float maxCap<- max(gksection collect each.capacity);
-			float minCap<- min((gksection where (each.capacity >0) )collect each.capacity);
-			ask gksection {
+		//Create Car
+		float maxCap<- max(gksection collect each.capacity);
+		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
+		ask gksection {
 				color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/1000{
-					//location<-any_location_in(myself);
-					color<-blend(#red, #green,(minCap+myself.capacity)/(maxCap-minCap));
-					type <- flip (0.5) ? "people" : (flip(0.33) ? "car" : (flip(0.33) ? "bus": "bike"));
-					nationality <- flip(0.3) ? "french" :"foreigner"; 
-					if(type="car"){
-						location<-any_location_in(myself);
-					}
-					if (type="bike"){
-						location<-any_location_in(one_of(voirie));
-					}
-					if(type="bus"){
-					    location<-any_location_in(one_of(bus_line));	
-					}
-					if flip(0.5){
-						do die;
-					}
-					
-				}
-			}
-			ask voirie{
-				/*create people number:1{
-					type <- "people";
+				create people number:self.capacity/500{
+					type <- "car";
 					location<-any_location_in(myself);
-				}*/
+				}
+		}
+		//Create Pedestrain
+		ask voirie{
+			create people number:1{
+			  type <- "people";
+			  location<-any_location_in(myself);
+			  //Voirie shapefile is so big that there is too much pedestrain for now
+			  if flip(0.99){
+			  	do die;
+			  }	
+		    }
+		}
+        //Create Bike
+		ask bikelane{
+			create people number:1{
+			  type <- "bike";
+			  location<-any_location_in(myself);	
 			}
-		}else{
-		  create road from: roads_shapefile {
-		  	color<-#white;
-		  }	
-		  create people number:2000{
-			color<-flip (0.33) ? #blue : (flip(0.33) ? #white : #red);
-			type <- flip (0.5) ? "people" : (flip(0.33) ? "car" : (flip(0.33) ? "bus": "bike"));
-			location<-any_location_in(one_of(road));
-			nationality <- flip(0.3) ? "french" :"foreigner"; 	
-		}	
+		}
+		//Create Buus
+		ask bus_line{
+			create people number:1{
+			  type <- "bus";
+			  location<-any_location_in(myself);	
+			}
 		}
 		
-		
-		
 		car_graph <- as_edge_graph(gksection);
-		people_graph <- as_edge_graph(gksection);
+		people_graph <- as_edge_graph(voirie);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 
@@ -333,7 +323,7 @@ species people skills:[moving]{
 	  if(showPeople){
 	     	
 	     if (type="car"){
-	     	 draw circle(6#m)  color:type_colors[type];	
+	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:type_colors[type];	
 	     }else{
 	     	draw circle(3#m) color:type_colors[type];
 	     }
@@ -431,10 +421,3 @@ experiment ReChamp type: gui autorun:true{
 	}
 }
 
-experiment Ep1 type: gui autorun:false parent:ReChamp{
-	output {
-		display city_display type:java2D background:#white draw_env:false rotate:angle fullscreen:true toolbar:false parent:champ{
-			species people aspect:base;	
-		}
-	}
-}
