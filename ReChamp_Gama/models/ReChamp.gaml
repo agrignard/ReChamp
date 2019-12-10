@@ -363,7 +363,7 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
 		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-	    camera_pos: {1665.3977,1480.2698,3769.5284} camera_look_pos: {1665.3977,1480.2041,7.0E-4} camera_up_vector: {0.0,1.0,0.0}{
+	    camera_pos: {1803.8563,1528.4784,2339.1708} camera_look_pos: {1803.8563,1528.4376,-1.0E-4} camera_up_vector: {0.0,1.0,0.0}{
 	    	species graphicWorld aspect:base position:{0,0,-0.01};
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
@@ -380,7 +380,7 @@ experiment ReChamp type: gui autorun:true{
 			species voirie aspect:base;
 						
 			graphics 'tablebackground'{
-				draw geometry(shape_file_bounds)*1.25 color:#white empty:true;
+				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("Share of low income")  at: { 0#px, world.shape.height*0.95 } color: #white font: font("Helvetica", 32);
 			}
 			
