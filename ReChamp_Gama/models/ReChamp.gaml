@@ -15,7 +15,7 @@ global {
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
 	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
 	
-	file roads_count_shapefile <- file("../includes/GIS/gksection.shp");
+	file gksection_shapefile <- file("../includes/GIS/gksection.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
@@ -69,12 +69,12 @@ global {
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY")),date_of_creation:int(read ("AN_CONST"))];
-		create gksection from: roads_count_shapefile with: [capacity::float(read ("capac_city"))];
+		create gksection from: gksection_shapefile with: [capacity::float(read ("capac_city"))];
 		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile;
 		create station from: station_shapefile with: [type:string(read ("type"))];
-		create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
+		//create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
 		create bikelane from:bikelane_shapefile{color<-#blue;}
 		create amenities from: amenities_shapefile {
@@ -90,22 +90,17 @@ global {
 		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
 		ask gksection {
 				color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
-				create people number:self.capacity/500{
+				create people number:self.capacity/2000{
 					type <- "car";
 					location<-any_location_in(myself);
 				}
 		}
 		//Create Pedestrain
-		ask voirie{
-			create people number:1{
-			  type <- "people";
-			  location<-any_location_in(myself);
-			  //Voirie shapefile is so big that there is too much pedestrain for now
-			  if flip(0.99){
-			  	do die;
-			  }	
-		    }
+		create people number:1000{
+		  type <- "people";
+		  location<-any_location_in(one_of(gksection));
 		}
+		
         //Create Bike
 		ask bikelane{
 			create people number:1{
@@ -122,7 +117,7 @@ global {
 		}
 		
 		car_graph <- as_edge_graph(gksection);
-		people_graph <- as_edge_graph(voirie);
+		people_graph <- as_edge_graph(gksection);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 
@@ -364,7 +359,7 @@ experiment ReChamp type: gui autorun:true{
 	output {
 		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	    camera_pos: {1803.8563,1528.4784,2339.1708} camera_look_pos: {1803.8563,1528.4376,-1.0E-4} camera_up_vector: {0.0,1.0,0.0}{
-	    	species graphicWorld aspect:base position:{0,0,-0.01};
+	    	species graphicWorld aspect:base position:{0,0,0};
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
@@ -377,7 +372,7 @@ experiment ReChamp type: gui autorun:true{
 			species pedestrianZone aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species voirie aspect:base;
+			//species voirie aspect:base;
 						
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
