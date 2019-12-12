@@ -150,6 +150,12 @@ global {
 		create concorde{
 			location<-point(to_GAMA_CRS({2.3211,48.8655}, "EPSG:4326"));
 		}
+		create champHaut{
+			location<-{1550,1358};
+		}
+		create champBas{
+			location<-{2267,1714};
+		}
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		if(currentMode="default"){
@@ -392,14 +398,30 @@ species concorde{
 		}
 }
 
+species champHaut{
+		aspect base {
+			draw rectangle(800#m,30#m) empty:true color:#white rotate:angle;
+			//draw gif_file("../images/fish3.gif") size: {10,10};
+		}
+}
+
+species champBas{
+		aspect base {
+			draw rectangle(600#m,30#m) empty:true color:#white rotate:angle;
+			//draw gif_file("../images/fish3.gif") size: {10,10};
+		}
+}
+
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:0 toolbar:false autosave:false synchronized:true
 	    camera_pos: {1803.8563,1528.4784,2339.1708} camera_look_pos: {1803.8563,1528.4376,-1.0E-4} camera_up_vector: {0.0,1.0,0.0}{
 	    	species graphicWorld aspect:base position:{0,0,0};
 	    	species placeEtoile aspect: base position:{0,0,0};
 	    	species concorde aspect: base position:{0,0,0};
+	    	species champHaut aspect: base position:{0,0,0};
+	    	species champBas aspect: base position:{0,0,0};
 	    	
 	    	
 			species building aspect: base;// transparency:0.5;
