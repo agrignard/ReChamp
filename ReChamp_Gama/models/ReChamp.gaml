@@ -336,12 +336,13 @@ species people skills:[moving]{
 	  }
 	  float val_pt <- val + rnd(-fuzzyness, fuzzyness);
 	  point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};
+	  	  
+	  loop while:(length(current_trajectory) > trajectoryLength)
+  	  {
+      current_trajectory >> first(current_trajectory);
+      }
+      current_trajectory << pt;
 	  
-	  if (length(current_trajectory) > trajectoryLength)
-	  {
-	  	current_trajectory >> first(current_trajectory);
-	  }
-	  current_trajectory << pt;	
 	}
 	aspect base {
 	  if(showPeople){
