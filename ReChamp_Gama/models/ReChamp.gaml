@@ -380,8 +380,8 @@ species graphicWorld{
 
 species placeEtoile{
 		aspect base {
-			draw square(500#m) empty:true color:#white rotate:angle;
-			//draw gif_file("../images/fish3.gif") size: {10,10};
+			//draw square(500#m) empty:true color:#white rotate:angle;
+			draw gif_file("../includes/GIF/testchamps.gif") size: {548,550} rotate:angle;
 		}
 }
 
