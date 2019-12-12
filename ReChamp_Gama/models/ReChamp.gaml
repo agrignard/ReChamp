@@ -37,7 +37,13 @@ global {
 	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
+	float max_dev <- 10.0;
+	float fuzzyness <- 1.0;
+	
+	
 	bool showPeople parameter: 'People' category: "Parameters" <-true;
+	bool showTrajectory parameter: 'People Trajectory' category: "Parameters" <-false;
+	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Parameters" min: 1 max: 100;
 	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
 	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -114,6 +120,11 @@ global {
 			  type <- "bus";
 			  location<-any_location_in(myself);	
 			}
+		}
+		
+		ask people{
+			val <- rnd(-max_dev,max_dev);
+		current_trajectory <- [];
 		}
 		
 		car_graph <- as_edge_graph(gksection);
@@ -307,6 +318,8 @@ species people skills:[moving]{
 	string profile;
 	string aspect;
 	string type;
+	float val ;
+	list<point> current_trajectory;
 	
 	reflex move{
 	  if(type="bike"){
@@ -320,7 +333,15 @@ species people skills:[moving]{
 	  }
 	  if(type="people"){
 	    do wander on:people_graph speed:5.0#km/#h;	
-	  }	 	 
+	  }
+	  float val_pt <- val + rnd(-fuzzyness, fuzzyness);
+	  point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};
+	  
+	  if (length(current_trajectory) > trajectoryLength)
+	  {
+	  	current_trajectory >> first(current_trajectory);
+	  }
+	  current_trajectory << pt;	
 	}
 	aspect base {
 	  if(showPeople){
@@ -329,16 +350,10 @@ species people skills:[moving]{
 	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:type_colors[type];	
 	     }else{
 	     	draw circle(3#m) color:type_colors[type];
-	     }
+	     }   
 	  }
-	}
-	aspect congestion {
-	  draw circle(4#m) color:color  ;
-	}
-	aspect nationality{
-	  draw circle(4#m) color:(nationality=("french")) ? #white : #red  ;
-	  if(nationality=("french")){
-	    draw circle(8#m) - circle(6#m) color:#green;
+	  if(showTrajectory){
+	       draw line(current_trajectory) color: type_colors[type];	
 	  }
 	}	
 }
@@ -415,11 +430,11 @@ experiment ReChamp type: gui autorun:true{
 				}
 			}
 			event["p"] action: {showPeople<-!showPeople;};
+			event["t"] action: {showTrajectory<-!showTrajectory;};
 			event["g"] action: {showBackground<-!showBackground;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["v"] action: {showBike<-!showBike;};
-			event["t"] action: {showVoierie<-!showVoierie;};
 			event["m"] action: {showMetro<-!showMetro;};
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
