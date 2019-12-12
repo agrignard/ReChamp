@@ -78,11 +78,13 @@ global {
 		create gksection from: gksection_shapefile with: [capacity::float(read ("capac_city"))];
 		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
-		create bus_line from: bus_shapefile;
+		create bus_line from: bus_shapefile{
+			color<-type_colors["bus"];
+		}
 		create station from: station_shapefile with: [type:string(read ("type"))];
 		//create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		create bikelane from:bikelane_shapefile{color<-#blue;}
+		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
 		create amenities from: amenities_shapefile {
 			type<-"restaurant";
 			color<-#yellow;
@@ -95,7 +97,8 @@ global {
 		float maxCap<- max(gksection collect each.capacity);
 		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
 		ask gksection {
-				color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
+				//color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
+				color<-type_colors["car"];
 				create people number:self.capacity/2000{
 					type <- "car";
 					location<-any_location_in(myself);
@@ -400,14 +403,14 @@ species concorde{
 
 species champHaut{
 		aspect base {
-			draw rectangle(800#m,30#m) empty:true color:#white rotate:angle;
+			draw rectangle(800#m,50#m) empty:true color:#white rotate:angle;
 			//draw gif_file("../images/fish3.gif") size: {10,10};
 		}
 }
 
 species champBas{
 		aspect base {
-			draw rectangle(600#m,30#m) empty:true color:#white rotate:angle;
+			draw rectangle(600#m,50#m) empty:true color:#white rotate:angle;
 			//draw gif_file("../images/fish3.gif") size: {10,10};
 		}
 }
@@ -415,9 +418,9 @@ species champBas{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:0 toolbar:false autosave:false synchronized:true
-	    camera_pos: {1803.8563,1528.4784,2339.1708} camera_look_pos: {1803.8563,1528.4376,-1.0E-4} camera_up_vector: {0.0,1.0,0.0}{
-	    	species graphicWorld aspect:base position:{0,0,0};
+		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
+	   	species graphicWorld aspect:base position:{0,0,0};
 	    	species placeEtoile aspect: base position:{0,0,0};
 	    	species concorde aspect: base position:{0,0,0};
 	    	species champHaut aspect: base position:{0,0,0};
