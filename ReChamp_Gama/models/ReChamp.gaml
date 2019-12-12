@@ -130,7 +130,15 @@ global {
 		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
 		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
 		
+		
+		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
+		create placeEtoile{
+			location<-point(to_GAMA_CRS({2.29500000,48.8738}, "EPSG:4326"));
+		}
+		create concorde{
+			location<-point(to_GAMA_CRS({2.3211,48.8655}, "EPSG:4326"));
+		}
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		if(currentMode="default"){
@@ -354,12 +362,30 @@ species graphicWorld{
 	}
 }
 
+species placeEtoile{
+		aspect base {
+			draw square(500#m) empty:true color:#white rotate:angle;
+			//draw gif_file("../images/fish3.gif") size: {10,10};
+		}
+}
+
+species concorde{
+		aspect base {
+			draw rectangle(200#m,400#m) empty:true color:#white rotate:angle;
+			//draw gif_file("../images/fish3.gif") size: {10,10};
+		}
+}
+
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
 		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	    camera_pos: {1803.8563,1528.4784,2339.1708} camera_look_pos: {1803.8563,1528.4376,-1.0E-4} camera_up_vector: {0.0,1.0,0.0}{
 	    	species graphicWorld aspect:base position:{0,0,0};
+	    	species placeEtoile aspect: base position:{0,0,0};
+	    	species concorde aspect: base position:{0,0,0};
+	    	
+	    	
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
@@ -376,7 +402,6 @@ experiment ReChamp type: gui autorun:true{
 						
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
-				draw string("Share of low income")  at: { 0#px, world.shape.height*0.95 } color: #white font: font("Helvetica", 32);
 			}
 			
 			graphics "interaction_graph" {
