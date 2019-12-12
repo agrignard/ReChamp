@@ -43,7 +43,7 @@ global {
 	
 	bool showPeople parameter: 'People' category: "Parameters" <-true;
 	bool showTrajectory parameter: 'People Trajectory' category: "Parameters" <-false;
-	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Parameters" min: 1 max: 100;
+	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Parameters" min: 1 max: 50;
 	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
 	bool showRoad parameter: 'Road' category: "Parameters" <-false;
 	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -67,7 +67,7 @@ global {
 	list<file> backGrounds <- [file('../includes/PNG/4K still_white.png'),file('../includes/PNG/4k still_proposal.png'),file('../includes/PNG/4k still_existing.png'),file('../includes/PNG/4K still_black.png'),file('../includes/PNG/4k still_B_proposal.png'),file('../includes/PNG/4k still_B_existing.png')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
-	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::#red,"bike"::#blue, "bus"::#yellow];
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
 	float angle<-26.5;
@@ -381,7 +381,7 @@ species graphicWorld{
 species placeEtoile{
 		aspect base {
 			//draw square(500#m) empty:true color:#white rotate:angle;
-			draw gif_file("../includes/GIF/testchamps.gif") size: {548,550} rotate:angle;
+			draw gif_file("../includes/GIF/Etoile/etoile.gif") size: {548,550} rotate:angle;
 		}
 }
 
@@ -440,7 +440,7 @@ experiment ReChamp type: gui autorun:true{
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
 			event["a"] action: {showAmenities<-!showAmenities;};
-			event["g"] action: {showGreen<-!showGreen;};
+			event["j"] action: {showGreen<-!showGreen;};
 			event["w"] action: {showWater<-!showWater;};
 			event["i"] action: {showInteraction<-!showInteraction;};
 			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
