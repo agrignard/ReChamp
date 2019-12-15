@@ -21,6 +21,7 @@ global {
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
+	file trottoir_shapefile <- file("../includes/GIS/Trottoir_Champ.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
@@ -93,6 +94,12 @@ global {
 			type<-"shop";
 			color<-#blue;
 		}
+		create trottoirChamp from:trottoir_shapefile{
+			create modularBlock number:1{
+				location<-myself.location;
+			}
+			
+		}
 		//Create Car
 		float maxCap<- max(gksection collect each.capacity);
 		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
@@ -156,17 +163,14 @@ global {
 		create champHaut{
 			shape<-rectangle(800#m,50#m) rotated_by angle;
 			location<-{1550,1358};
-			create modularBlock number:10{
-				location<-any_location_in(myself);
-			}
+			
 		}
 		create champBas{
 			shape<-rectangle(600#m,50#m) rotated_by angle;
 			location<-{2267,1714};
-			create modularBlock number:10{
-				location<-any_location_in(myself);
-			}
 		}
+		
+		 
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		if(currentMode="default"){
@@ -429,6 +433,12 @@ species champBas{
 		}
 }
 
+
+species trottoirChamp{
+		aspect base {
+			draw shape empty:true color:#white;
+		}
+}
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
