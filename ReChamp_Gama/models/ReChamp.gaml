@@ -154,10 +154,18 @@ global {
 			location<-point(to_GAMA_CRS({2.3211,48.8655}, "EPSG:4326"));
 		}
 		create champHaut{
+			shape<-rectangle(800#m,50#m) rotated_by angle;
 			location<-{1550,1358};
+			create modularBlock number:10{
+				location<-any_location_in(myself);
+			}
 		}
 		create champBas{
+			shape<-rectangle(600#m,50#m) rotated_by angle;
 			location<-{2267,1714};
+			create modularBlock number:10{
+				location<-any_location_in(myself);
+			}
 		}
 	}
 	reflex updateGraph when: (showInteraction = true) {
@@ -305,6 +313,12 @@ species station{
 	}
 }
 
+species modularBlock{
+	aspect base{
+		draw square(10) color:#white rotate:angle;
+	}
+}
+
 
 species metro_line{
 	rgb color;
@@ -403,14 +417,14 @@ species concorde{
 
 species champHaut{
 		aspect base {
-			draw rectangle(800#m,50#m) empty:true color:#white rotate:angle;
+			draw shape empty:true color:#white;
 			//draw gif_file("../images/fish3.gif") size: {10,10};
 		}
 }
 
 species champBas{
 		aspect base {
-			draw rectangle(600#m,50#m) empty:true color:#white rotate:angle;
+			draw shape empty:true color:#white;
 			//draw gif_file("../images/fish3.gif") size: {10,10};
 		}
 }
@@ -439,6 +453,7 @@ experiment ReChamp type: gui autorun:true{
 			species pedestrianZone aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
+			species modularBlock aspect:base;
 			//species voirie aspect:base;
 						
 			graphics 'tablebackground'{
