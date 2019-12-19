@@ -14,6 +14,8 @@ global {
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
 	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
+	file hotspot_shapefile <- file("../includes/GIS/Hotspot.shp");
+	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
 	
 	file gksection_shapefile <- file("../includes/GIS/gksection.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
@@ -26,8 +28,6 @@ global {
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
-	file gamaRaster <- file('../includes/PNG/MIT4k.jpg');
-
 	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 
 	geometry shape <- envelope(shape_file_bounds);
@@ -51,8 +51,8 @@ global {
 	bool showPCA parameter: 'PCA' category: "Parameters" <-false;
 	bool showBuilding parameter: 'Building' category: "Parameters" <-false;
 	bool showVoierie parameter: 'Voierie' category: "Parameters" <-false;
-	bool showGreen parameter: 'Green' category: "Parameters" <-true;
-	bool showWater parameter: 'Water' category: "Parameters" <-true;
+	bool showGreen parameter: 'Green' category: "Parameters" <-false;
+	bool showWater parameter: 'Water' category: "Parameters" <-false;
 	bool showBus parameter: 'Bus' category: "Parameters" <-false;
 	bool showMetro parameter: 'Metro' category: "Parameters" <-false;
 	bool showTrace parameter: 'Trace' category: "Parameters" <-false;
@@ -65,7 +65,7 @@ global {
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
-	list<file> backGrounds <- [file('../includes/PNG/MIT4k.jpg')];
+	list<file> backGrounds <- [file('../includes/PNG/MIT4k.jpg'),file('../includes/PNG/4K still_white.png'),file('../includes/PNG/4k still_existing.png'),file('../includes/PNG/4k still_proposal.png')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
@@ -100,6 +100,8 @@ global {
 			}
 			
 		}
+		create hotSpot from:hotspot_shapefile;
+		create coldSpot from:coldspot_shapefile;
 		//Create Car
 		float maxCap<- max(gksection collect each.capacity);
 		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
@@ -189,6 +191,18 @@ global {
 		  interaction_graph <- graph<people, people>(people where (each.type="bus") as_distance_graph (distance));	
 		}
 		
+	}
+	
+	reflex updatecolor{
+		ask people {
+			color<-type_colors[type];
+			color<-rgb(color.red,color.green,color.blue,75);
+		}
+		ask hotSpot{
+			ask people overlapping self{
+				color<-type_colors[type];
+			}
+		}
 	}
 }
 
@@ -373,15 +387,14 @@ species people skills:[moving]{
 	}
 	aspect base {
 	  if(showPeople){
-	     	
 	     if (type="car"){
-	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:type_colors[type];	
+	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:color;	
 	     }else{
 	     	draw circle(3#m) color:type_colors[type];
 	     }   
 	  }
 	  if(showTrajectory){
-	       draw line(current_trajectory) color: type_colors[type];	
+	       draw line(current_trajectory) color: color;	
 	  }
 	}	
 }
@@ -439,16 +452,29 @@ species trottoirChamp{
 			draw shape empty:true color:#white;
 		}
 }
+
+species hotSpot{
+		aspect base {
+			draw shape empty:true color:#white;
+		}
+}
+
+species coldSpot{
+		aspect base {
+			draw shape color:rgb(0,0,0,200);
+		}
+}
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
 		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
-	   	species graphicWorld aspect:base position:{0,0,0};
+	   	    species graphicWorld aspect:base position:{0,0,0};
 	    	species placeEtoile aspect: base position:{0,0,0};
-	    	species concorde aspect: base position:{0,0,0};
+	    	
 	    	species champHaut aspect: base position:{0,0,0};
 	    	species champBas aspect: base position:{0,0,0};
+	    	species concorde aspect: base position:{0,0,0};
 	    	
 	    	
 			species building aspect: base;// transparency:0.5;
@@ -464,6 +490,8 @@ experiment ReChamp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 			species modularBlock aspect:base;
+			
+			
 			//species voirie aspect:base;
 						
 			graphics 'tablebackground'{
@@ -480,6 +508,7 @@ experiment ReChamp type: gui autorun:true{
 					}
 				}
 			}
+			//species coldSpot aspect:base;
 			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrajectory<-!showTrajectory;};
 			event["g"] action: {showBackground<-!showBackground;};
