@@ -6,6 +6,7 @@ Project for the Champs Elysées project
 **MIT Team**
 
 Arnaud Grignard, Nicolas Ayoub, Kent Larson
+
 Collaborating Researcher: Luis Alonso, Ariel Noyman, Markus Elkatsha
 
 **Gama Team**
