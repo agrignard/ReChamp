@@ -10,7 +10,6 @@ model ReChamp
 global {
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	file green_spaces_shapefile <- file("../includes/GIS/green_space.shp");
-	file ilots_shapefile <- file("../includes/GIS/ilots.shp");
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
 	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
@@ -42,26 +41,27 @@ global {
 	float fuzzyness <- 1.0;
 	
 	
-	bool showPeople parameter: 'People' category: "Parameters" <-true;
-	bool showTrajectory parameter: 'People Trajectory' category: "Parameters" <-false;
-	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Parameters" min: 1 max: 50;
-	bool showPedestrianCount parameter: 'Pedestrian Count' category: "Parameters" <-true;
-	bool showRoad parameter: 'Road' category: "Parameters" <-false;
-	bool showBike  parameter: 'Bike Lane' category: "Parameters" <-false;
-	bool showPCA parameter: 'PCA' category: "Parameters" <-false;
-	bool showBuilding parameter: 'Building' category: "Parameters" <-false;
-	bool showVoierie parameter: 'Voierie' category: "Parameters" <-false;
+	bool showPeople parameter: 'People' category: "Agent" <-true;
+	bool showTrajectory parameter: 'People Trajectory' category: "Agent" <-false;
+	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Agent" min: 1 max: 50;
+	bool showPedestrianCount;// parameter: 'Pedestrian Count' category: "Parameters" <-true;
+	
+	bool showRoad parameter: 'Road' category: "Mobility" <-false;
+	bool showBike  parameter: 'Bike Lane' category: "Mobility" <-false;
+	bool showBuilding parameter: 'Building' category: "Mobility" <-false;
+	bool showBus parameter: 'Bus' category: "Mobility" <-false;
+	bool showMetro parameter: 'Metro' category: "Mobility" <-false;
+	bool showStation parameter: 'Station' category: "Mobility" <-false;
+	
 	bool showGreen parameter: 'Green' category: "Parameters" <-false;
 	bool showWater parameter: 'Water' category: "Parameters" <-false;
-	bool showBus parameter: 'Bus' category: "Parameters" <-false;
-	bool showMetro parameter: 'Metro' category: "Parameters" <-false;
-	bool showTrace parameter: 'Trace' category: "Parameters" <-false;
-	bool showStation parameter: 'Station' category: "Parameters" <-false;
+	
 	bool showAmenities parameter: 'Amenities' category: "Parameters" <-false;
+	bool showKiosk parameter: 'Kiosque' category: "Parameters" <-false;
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
-	bool black <- true parameter: "Black:" category: "Vizu";
 	bool showBackground <- false parameter: "Background:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
+	bool showHotSpot  parameter: 'HotSpot' category: "Vizu" <-false;
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
@@ -75,9 +75,8 @@ global {
 	
 	init {
 		create greenSpace from: green_spaces_shapefile ;
-		create building from: buildings_shapefile with: [depth:float(read ("H_MOY")),date_of_creation:int(read ("AN_CONST"))];
+		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create gksection from: gksection_shapefile with: [capacity::float(read ("capac_city"))];
-		create ilots from: ilots_shapefile ;
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
@@ -146,7 +145,7 @@ global {
 
 		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude"))]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
-			if flip(0.95){
+			if flip(0.5){
 				do die;
 			}
 		}*/	
@@ -192,23 +191,10 @@ global {
 		}
 		
 	}
-	
-	reflex updatecolor{
-		ask people {
-			color<-type_colors[type];
-			color<-rgb(color.red,color.green,color.blue,75);
-		}
-		ask hotSpot{
-			ask people overlapping self{
-				color<-type_colors[type];
-			}
-		}
-	}
 }
 
 species building {
 	string type; 
-	int date_of_creation;
 	float depth;
 	rgb color <- rgb(75,75,75);
 	aspect base {
@@ -227,16 +213,6 @@ species ilots {
 	}
 }
 
-species voirie schedules:[]{
-	string type; 
-	rgb color <- rgb(175,175,175);
-	
-	aspect base {
-		if(showVoierie){
-		  draw shape color:rgb(100,100,100) ;	
-		}	
-	}
-}
 
 species greenSpace {
 	string type; 
@@ -333,7 +309,10 @@ species station{
 
 species modularBlock{
 	aspect base{
-		draw square(10) color:#white rotate:angle;
+		if(showKiosk){
+		  draw square(10) color:#white rotate:angle;	
+		}
+		
 	}
 }
 
@@ -388,13 +367,13 @@ species people skills:[moving]{
 	aspect base {
 	  if(showPeople){
 	     if (type="car"){
-	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:color;	
+	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:type_colors[type];	
 	     }else{
 	     	draw circle(3#m) color:type_colors[type];
 	     }   
 	  }
 	  if(showTrajectory){
-	       draw line(current_trajectory) color: color;	
+	       draw line(current_trajectory) color: type_colors[type];	
 	  }
 	}	
 }
@@ -461,13 +440,15 @@ species hotSpot{
 
 species coldSpot{
 		aspect base {
-			draw shape color:rgb(0,0,0,200);
+			if(showHotSpot){
+			  draw shape color:rgb(0,0,0,200);	
+			}	
 		}
 }
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
-		display champ type:opengl background:black ? #black: #white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
 	   	    species graphicWorld aspect:base position:{0,0,0};
 	    	species placeEtoile aspect: base position:{0,0,0};
@@ -485,7 +466,8 @@ experiment ReChamp type: gui autorun:true{
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
-			species people aspect:base trace:showTrace ? 200 :0 fading:true;
+			species people aspect:base;
+			species coldSpot aspect:base;
 			species pedestrianZone aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
@@ -508,7 +490,6 @@ experiment ReChamp type: gui autorun:true{
 					}
 				}
 			}
-			//species coldSpot aspect:base;
 			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrajectory<-!showTrajectory;};
 			event["g"] action: {showBackground<-!showBackground;};
@@ -519,11 +500,13 @@ experiment ReChamp type: gui autorun:true{
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
 			event["a"] action: {showAmenities<-!showAmenities;};
+			event["k"] action: {showKiosk<-!showKiosk;};
 			event["j"] action: {showGreen<-!showGreen;};
 			event["w"] action: {showWater<-!showWater;};
 			event["i"] action: {showInteraction<-!showInteraction;};
 			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
 			event["f"] action: {randomColor<-!randomColor;};
+			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event[" "] action: {currentBackGround<-currentBackGround mod (length(backGrounds)-1) +1;};
 			
 			event["0"] action: {currentMode<-"default";};
