@@ -65,13 +65,13 @@ global {
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
-	list<file> backGrounds <- [file('../includes/PNG/MIT4k.jpg'),file('../includes/PNG/4K still_white.png'),file('../includes/PNG/4k still_existing.png'),file('../includes/PNG/4k still_proposal.png')];
+	list<file> backGrounds <- [file('../includes/PNG/PCA_CE_EXPORT NEW_CADRAGE.png'),file('../includes/PNG/PCA_CE_EXPORT NEW_CADRAGE.png')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
-	float angle<-26.5;
+	float angle<-26.25;
 	
 	init {
 		create greenSpace from: green_spaces_shapefile ;
