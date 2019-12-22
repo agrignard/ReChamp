@@ -7,9 +7,11 @@ Project for the Champs Elysées project
 
 Arnaud Grignard, Nicolas Ayoub, Kent Larson
 
+Collaborating Researcher: Luis Alonso, Ariel Noyman, Markus Elkatsha
+
 **Gama Team**
 
-Tri Nguyen-Huu, Patrick Taillandier
+Tri Nguyen-Huu, Patrick Taillandier, Alexis Drogoul
 
 **PCA Team**
 
