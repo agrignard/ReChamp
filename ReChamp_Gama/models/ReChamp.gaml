@@ -15,6 +15,7 @@ global {
 	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
 	file hotspot_shapefile <- file("../includes/GIS/Hotspot.shp");
 	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
+	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");
 	
 	file gksection_shapefile <- file("../includes/GIS/gksection.shp");
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
@@ -61,11 +62,13 @@ global {
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
 	bool showBackground <- false parameter: "Background:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
+	bool showGif  parameter: 'Gif' category: "Vizu" <-true;
 	bool showHotSpot  parameter: 'HotSpot' category: "Vizu" <-false;
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
-	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_CE_EXPORT NEW_CADRAGE.png')];
+	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
+	list<string> interventionGif <- [('../includes/GIF/Etoile/etoile.gif'),('../includes/GIF/ChampBas/champbas.gif'),('../includes/GIF/ChampHaut/champhaut.gif'),('../includes/GIF/Concorde/Concorde.gif')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
@@ -76,7 +79,7 @@ global {
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create gksection from: gksection_shapefile with: [capacity::float(read ("capac_city"))];
+		create road from: roads_shapefile;
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
@@ -102,7 +105,7 @@ global {
 		create hotSpot from:hotspot_shapefile;
 		create coldSpot from:coldspot_shapefile;
 		//Create Car
-		float maxCap<- max(gksection collect each.capacity);
+		/*float maxCap<- max(gksection collect each.capacity);
 		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
 		ask gksection {
 				//color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
@@ -111,11 +114,18 @@ global {
 					type <- "car";
 					location<-any_location_in(myself);
 				}
+		}*/
+		
+		//Create Car
+		create people number:1000{
+		  type <- "car";
+		  location<-any_location_in(one_of(road));
 		}
+		
 		//Create Pedestrain
 		create people number:1000{
 		  type <- "people";
-		  location<-any_location_in(one_of(gksection));
+		  location<-any_location_in(one_of(road));
 		}
 		
         //Create Bike
@@ -138,8 +148,8 @@ global {
 		current_trajectory <- [];
 		}
 		
-		car_graph <- as_edge_graph(gksection);
-		people_graph <- as_edge_graph(gksection);
+		car_graph <- as_edge_graph(road);
+		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 
@@ -155,7 +165,14 @@ global {
 		
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
-		create placeEtoile{
+		
+		create intervention from:intervention_shapefile with: [type:int(read ("id"))]
+		{
+			type<-type-1;
+			gifFile<-interventionGif[type];
+		}
+		
+		/*create placeEtoile{
 			location<-point(to_GAMA_CRS({2.29500000,48.8738}, "EPSG:4326"));
 		}
 		create concorde{
@@ -167,9 +184,9 @@ global {
 			
 		}
 		create champBas{
-			shape<-rectangle(600#m,50#m) rotated_by angle;
-			location<-{2267,1714};
-		}
+			shape<-rectangle(650#m,650#m) rotated_by angle;
+			location<-{2200,2000};
+		}*/
 		
 		 
 	}
@@ -255,7 +272,7 @@ species road  {
 	float capacity;		
 	aspect base {
 		if(showRoad){
-		  draw shape color: color width:1;	
+		  draw shape color:type_colors["car"] width:1;	
 		}	
 	}
 }
@@ -269,10 +286,6 @@ species bikelane{
 }
 
 
-species gksection  parent:road{
-	float cap24_no_intervention;
-	float cap24_pca_intervention;
-}
 species bus_line{
 	rgb color;
 	float capacity;
@@ -312,7 +325,6 @@ species modularBlock{
 		if(showKiosk){
 		  draw square(10) color:#white rotate:angle;	
 		}
-		
 	}
 }
 
@@ -346,7 +358,7 @@ species people skills:[moving]{
 	  	do wander on:bike_graph speed:8.0#km/#h;
 	  }
 	  if(type="bus"){
-	    do wander on:bus_graph speed:6.0#km/#h;	
+	    do wander on:car_graph speed:6.0#km/#h;	
 	  }	
 	  if(type="car"){
 	    do wander on:car_graph speed:25.0#km/#h;	
@@ -373,7 +385,7 @@ species people skills:[moving]{
 	     }   
 	  }
 	  if(showTrajectory){
-	       draw line(current_trajectory) color: type_colors[type];	
+	       draw line(current_trajectory) color: type_colors[type] width:2.5;	
 	  }
 	}	
 }
@@ -397,34 +409,16 @@ species graphicWorld{
 	}
 }
 
-species placeEtoile{
-		aspect base {
-			//draw square(500#m) empty:true color:#white rotate:angle;
-			draw gif_file("../includes/GIF/Etoile/etoile.gif") size: {548,550} rotate:angle;
-		}
-}
-
-species concorde{
-		aspect base {
-			draw rectangle(200#m,400#m) empty:true color:#white rotate:angle;
-			//draw gif_file("../images/fish3.gif") size: {10,10};
-		}
-}
-
-species champHaut{
-		aspect base {
+species intervention{
+	int type;
+	string gifFile;
+	aspect base {
 			draw shape empty:true color:#white;
-			//draw gif_file("../images/fish3.gif") size: {10,10};
+			if(showGif){
+			  draw gif_file(gifFile) size:{self.shape.width#m,self.shape.height#m} rotate:angle;	
+			}
 		}
 }
-
-species champBas{
-		aspect base {
-			draw shape empty:true color:#white;
-			//draw gif_file("../images/fish3.gif") size: {10,10};
-		}
-}
-
 
 species trottoirChamp{
 		aspect base {
@@ -450,19 +444,12 @@ experiment ReChamp type: gui autorun:true{
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
-	   	    species graphicWorld aspect:base position:{0,0,0};
-	    	species placeEtoile aspect: base position:{0,0,0};
-	    	
-	    	species champHaut aspect: base position:{0,0,0};
-	    	species champBas aspect: base position:{0,0,0};
-	    	species concorde aspect: base position:{0,0,0};
-	    	
-	    	
+	   	    species graphicWorld aspect:base position:{0,0,0};	    	
+	    	species intervention aspect: base position:{0,0,0};
 			species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
-			species gksection aspect: base;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
@@ -492,7 +479,7 @@ experiment ReChamp type: gui autorun:true{
 			}
 			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrajectory<-!showTrajectory;};
-			event["g"] action: {showBackground<-!showBackground;};
+			event["g"] action: {showGif<-!showGif;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["v"] action: {showBike<-!showBike;};
@@ -507,7 +494,7 @@ experiment ReChamp type: gui autorun:true{
 			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
 			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event[" "] action: {currentBackGround<-currentBackGround mod (length(backGrounds)-1) +1;};
+			event[" "] action: {showBackground<-!showBackground;};
 			
 			event["0"] action: {currentMode<-"default";};
 			event["1"] action: {currentMode<-"car";};
