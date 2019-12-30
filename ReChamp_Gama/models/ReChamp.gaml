@@ -86,6 +86,7 @@ global {
 	// for lightings
 	float CAR_SPACING <- 20.0;
 	float CAR_SPEED <- 1.0;
+	float LANE_SPACING <- 22.0;
 
 
 	int currentSimuState<-0;
@@ -115,6 +116,10 @@ global {
 							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) - 180 to: segments_angle;
 						}				 
 					}
+					//add {0,LANE_SPACING} rotated_by(last(segments_angle)) to: lane_position_shift;
+//					point truc <- point({0,10} rotated_by(112));
+//					write truc;
+					add {- sin(last(segments_angle)), cos(last(segments_angle))} * LANE_SPACING  to: lane_position_shift;
 //					if oneway = false {// add lane position shift if two way road
 //					//	add {segments_y[i]/segments_length[i]*4,- segments_x[i]/segments_length[i]*4} to: lane_position_shift;
 //					}
@@ -336,6 +341,7 @@ species road  {
 			 		//if oneway = 1{		 			
 			 				point new_point <- shape.points[current_segment]+ {shift * cos (segments_angle[current_segment]), shift * sin (segments_angle[current_segment])};
 							draw circle(5, new_point) color: #green;
+							draw circle(5, new_point+lane_position_shift[current_segment]) color: #green;
 			 		//}else{
 			 			
 //			 				new_point <- {lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j + 1 -  mod(cycle,11)/11)/lights_number, lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + 1 - mod(cycle,11)/11)/lights_number};
