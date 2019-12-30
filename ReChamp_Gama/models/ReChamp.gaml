@@ -68,7 +68,7 @@ global {
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	list<string> interventionGif <- [('../includes/GIF/Etoile/etoile.gif'),('../includes/GIF/ChampBas/champbas.gif'),('../includes/GIF/ChampHaut/champhaut.gif'),('../includes/GIF/Concorde/Concorde.gif')];
+	list<string> interventionGif <- [('../includes/GIF/Etoile/etoile.gif'),('../includes/GIF/ChampHaut/champhaut.gif'),('../includes/GIF/ChampBas/champbas.gif'),('../includes/GIF/Concorde/Concorde.gif')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
@@ -469,7 +469,7 @@ experiment ReChamp type: gui autorun:true{
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
-		/*	species building aspect: base;// transparency:0.5;
+		 species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
@@ -481,7 +481,7 @@ experiment ReChamp type: gui autorun:true{
 			species pedestrianZone aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species modularBlock aspect:base; */
+			species modularBlock aspect:base; 
 			
 			
 			//species voirie aspect:base;
