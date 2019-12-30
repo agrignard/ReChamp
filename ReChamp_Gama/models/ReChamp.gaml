@@ -28,6 +28,8 @@ global {
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
+	
+	
 	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 
 	geometry shape <- envelope(shape_file_bounds);
@@ -62,86 +64,76 @@ global {
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
 	bool showBackground <- false parameter: "Background:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
-	bool showGif  parameter: 'Gif' category: "Vizu" <-true;
+	bool showGif  parameter: 'Gif' category: "Vizu" <-false;
 	bool showHotSpot  parameter: 'HotSpot' category: "Vizu" <-false;
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	list<string> interventionGif <- [('../includes/GIF/Etoile/Etoile.gif'),('../includes/GIF/Champs/Champs.gif'),('../includes/GIF/Palais/Palais.gif'),('../includes/GIF/Concorde/Concorde.gif')];
+	list<string> interventionGif <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs.gif'),('../includes/GIF/Palais/Palais.gif'),('../includes/GIF/Concorde/Concorde.gif')];
+    list<string> currentInterventionGif <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Etoile/Etoile_1.gif')];
 
+	
+	
+	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
 	float angle<-26.25;
 	
+	int currentSimuState<-0;
+	int nbAgent<-10;
+	
 	init {
+		//------------------ STATIC AGENT ----------------------------------- //
 		create greenSpace from: green_spaces_shapefile ;
-		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
+		//create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create water from: water_shapefile ;
-		create bus_line from: bus_shapefile{
-			color<-type_colors["bus"];
-		}
 		create station from: station_shapefile with: [type:string(read ("type"))];
-		//create voirie from: voierie_shapefile with: [type:string(read ("lib_classe"))];
-		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
-		create amenities from: amenities_shapefile {
+		/*create amenities from: amenities_shapefile {
 			type<-"restaurant";
 			color<-#yellow;
 		}
 		create amenities from: amenities_shop_shapefile {
 			type<-"shop";
 			color<-#blue;
-		}
-		create trottoirChamp from:trottoir_shapefile{
-			create modularBlock number:1{
-				location<-myself.location;
-			}
-			
-		}
+		}*/
 		create hotSpot from:hotspot_shapefile;
 		create coldSpot from:coldspot_shapefile;
-		//Create Car
-		/*float maxCap<- max(gksection collect each.capacity);
-		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
-		ask gksection {
-				//color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
-				color<-type_colors["car"];
-				create people number:self.capacity/2000{
-					type <- "car";
-					location<-any_location_in(myself);
-				}
-		}*/
 		
-		//Create Car
-		create people number:1000{
+		//------------------- NETWORK -------------------------------------- //
+		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
+		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
+		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
+		create bus_line from: bus_shapefile{
+			color<-type_colors["bus"];
+		}
+		
+		//------------------- AGENT ---------------------------------------- //
+		create people number:nbAgent{
 		  type <- "car";
 		  location<-any_location_in(one_of(road));
 		}
 		
 		//Create Pedestrain
-		create people number:1000{
+		create people number:nbAgent{
 		  type <- "people";
 		  location<-any_location_in(one_of(road));
 		}
 		
         //Create Bike
-		ask bikelane{
-			create people number:1{
-			  type <- "bike";
-			  location<-any_location_in(myself);	
-			}
+	    create people number:nbAgent{
+	      type <- "bike";
+		  location<-any_location_in(one_of(bikelane));	
 		}
-		//Create Buus
-		ask bus_line{
-			create people number:1{
-			  type <- "bus";
-			  location<-any_location_in(myself);	
-			}
-		}
+		
+		//Create Bus
+		create people number:nbAgent{
+		  type <- "bus";
+		  location<-any_location_in(one_of(bus_line));	
+	    }
+		
 		
 		ask people{
 			val <- rnd(-max_dev,max_dev);
@@ -163,33 +155,28 @@ global {
 		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
 		
 		
+		
+		//Create Car
+		/*float maxCap<- max(gksection collect each.capacity);
+		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
+		ask gksection {
+				//color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
+				color<-type_colors["car"];
+				create people number:self.capacity/2000{
+					type <- "car";
+					location<-any_location_in(myself);
+				}
+		}*/
+		
+		
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
-		create intervention from:intervention_shapefile with: [type:int(read ("id"))]
+		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
 		{
-			type<-type-1;
-			gifFile<-interventionGif[type];
+			gifFile<-interventionGif[id-1];
 			do initialize;
-		}
-		
-		/*create placeEtoile{
-			location<-point(to_GAMA_CRS({2.29500000,48.8738}, "EPSG:4326"));
-		}
-		create concorde{
-			location<-point(to_GAMA_CRS({2.3211,48.8655}, "EPSG:4326"));
-		}
-		create champHaut{
-			shape<-rectangle(800#m,50#m) rotated_by angle;
-			location<-{1550,1358};
-			
-		}
-		create champBas{
-			shape<-rectangle(650#m,650#m) rotated_by angle;
-			location<-{2200,2000};
-		}*/
-		
-		 
+		}		 
 	}
 	reflex updateGraph when: (showInteraction = true) {
 		if(currentMode="default"){
@@ -206,8 +193,24 @@ global {
 		}
 		if(currentMode="bus"){
 		  interaction_graph <- graph<people, people>(people where (each.type="bus") as_distance_graph (distance));	
+		}	
+	}
+	
+	
+	reflex updateSimuState{
+		if (currentSimuState = 0){
+
+			ask intervention where (each.type="Etoile"){
+				curIntervention<-0;
+				//gifFile<-('../includes/GIF/Etoile/Etoile_1.gif');
+			}
 		}
-		
+		if (currentSimuState = 1){
+			ask intervention where (each.type="Etoile"){
+				curIntervention<-1;
+				//gifFile<-('../includes/GIF/Etoile/Etoile_1.gif');
+			}
+		}
 	}
 }
 
@@ -377,11 +380,11 @@ species people skills:[moving]{
 	  float val_pt <- val + rnd(-fuzzyness, fuzzyness);
 	  point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};
 	  	  
-	  loop while:(length(current_trajectory) > trajectoryLength)
+	  /*loop while:(length(current_trajectory) > trajectoryLength)
   	  {
       current_trajectory >> first(current_trajectory);
       }
-      current_trajectory << pt;
+      current_trajectory << pt;*/
 	  
 	}
 	aspect base {
@@ -421,7 +424,9 @@ species graphicWorld{
 }
 
 species intervention{
-	int type;
+	int id;
+	string type;
+	int curIntervention<-0;
 	string gifFile;
 	float h;
 	float w;
@@ -445,17 +450,11 @@ species intervention{
 			
 	}
 	aspect base {
-			draw shape empty:true color:#white;
-			
+			draw shape empty:true color:#white;		
 			if(showGif){
-			  draw gif_file(gifFile) size:{w,h} rotate:angle;	
+			  //draw gif_file(interventionGif[id-1]) size:{w,h} rotate:angle;	
+			  draw gif_file(currentInterventionGif[curIntervention]) size:{w,h} rotate:angle;	
 			}
-		}
-}
-
-species trottoirChamp{
-		aspect base {
-			draw shape empty:true color:#white;
 		}
 }
 
@@ -479,7 +478,7 @@ experiment ReChamp type: gui autorun:true{
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
-		 species building aspect: base;// transparency:0.5;
+		    species building aspect: base;// transparency:0.5;
 			species greenSpace aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
@@ -498,6 +497,7 @@ experiment ReChamp type: gui autorun:true{
 						
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
+				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
 			graphics "interaction_graph" {
@@ -529,12 +529,25 @@ experiment ReChamp type: gui autorun:true{
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event[" "] action: {showBackground<-!showBackground;};
 			
-			event["0"] action: {currentMode<-"default";};
+			/*event["0"] action: {currentMode<-"default";};
 			event["1"] action: {currentMode<-"car";};
 			event["2"] action: {currentMode<-"people";};
 			event["3"] action: {currentMode<-"bike";};
-			event["4"] action: {currentMode<-"bus";};
+			event["4"] action: {currentMode<-"bus";};*/
 			
+			
+			event["0"] action: {currentSimuState<-0;};
+			event["1"] action: {currentSimuState<-1;};
+			event["2"] action: {currentSimuState<-2;};
+			event["3"] action: {currentSimuState<-3;};
+			event["4"] action: {currentSimuState<-4;};
+			event["5"] action: {currentSimuState<-5;};
+			event["6"] action: {currentSimuState<-6;};
+			event["7"] action: {currentSimuState<-7;};
+			event["8"] action: {currentSimuState<-8;};
+			event["9"] action: {currentSimuState<-9;};
+
+
 		}
 	}
 }
