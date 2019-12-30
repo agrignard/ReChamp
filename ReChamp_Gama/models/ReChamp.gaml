@@ -62,7 +62,7 @@ global {
 	bool showInteraction <- false parameter: "Interaction:" category: "Interaction";
 	bool showBackground <- false parameter: "Background:" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color:" category: "Vizu";
-	bool showGif  parameter: 'Gif' category: "Vizu" <-true;
+	bool showGif  parameter: 'Gif' category: "Vizu" <-false;
 	bool showHotSpot  parameter: 'HotSpot' category: "Vizu" <-false;
 	int distance <- 100 parameter: "Distance:" category: "Interaction" min: 1 max: 1000;
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
@@ -76,10 +76,39 @@ global {
 	
 	float angle<-26.25;
 	
+	// for lightings
+	float CAR_SPACING <- 20.0;
+	float CAR_SPEED <- 1.0;
+	
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
+		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
+			//------- compute coordinates of road segments
+			segments_number <- length(shape.points)-1;
+			
+			if(id=1968){//only for Champs Elysees avenue
+				loop i from: 0 to: segments_number-1{
+					add shape.points[i+1].x - shape.points[i].x to: segments_x;
+					add shape.points[i+1].y - shape.points[i].y to: segments_y;
+					add sqrt(segments_x[i]^2 + segments_y[i]^2) to: segments_length;
+					add sqrt(segments_x[i]^2 + segments_y[i]^2)+last(cumulated_segments_length) to: cumulated_segments_length;
+					if shape.points[i+1].x - shape.points[i].x = 0 {
+						if shape.points[i+1].y - shape.points[i].y > 0 {
+							add 90 to: segments_angle;
+						} else {
+							add -90 to: segments_angle;
+						}
+					} else {
+						add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) to: segments_angle;
+					}
+					if oneway = false {// add lane position shift if two way road
+						add {segments_y[i]/segments_length[i]*4,- segments_x[i]/segments_length[i]*4} to: lane_position_shift;
+					}
+				}
+			}
+		}	
+		
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
@@ -274,11 +303,55 @@ species road  {
 	int id;
 	rgb color;
 	float capacity;		
+	// attributes for animated lights
+//	float density <- 1.0;
+//	float traffic_density <- 0.0;
+	bool oneway <- false;
+	int segments_number ;
+//	int aspect_size <-1 ;
+	list<float> segments_x <- [];
+	list<float> segments_y <- [];
+	list<float> segments_length <- [];
+	list<float> cumulated_segments_length <- [0.0];
+	list<float> segments_angle <- [];
+	list<point> lane_position_shift <- []; // vecteur pour decaler les voies lorsqu'il y a deux voies à représenter
+		
+	
+	
+	
 	aspect base {
 		if(showRoad){
 		  draw shape color:type_colors["car"] width:1;	
-		  if(id=1968){
-		  	draw shape color:#yellow width:3;	
+		  if(id=1968){		 		
+		 	int first_car_index <- int(ceil(CAR_SPEED * cycle / CAR_SPACING));
+		 	int current_segment <- 0;
+//		 	float current_position <- CAR_SPEED * cycle; 
+//			 loop j from:0 to: int(floor(last(cumulated_segments_length)/CAR_SPACING)){
+			int j <- 0;
+			 loop  while: j * CAR_SPACING + first_car_index * CAR_SPACING - CAR_SPEED * cycle < last(cumulated_segments_length) {
+			 	loop while: cumulated_segments_length[current_segment+1] < j * CAR_SPACING + CAR_SPEED * cycle - first_car_index * CAR_SPACING{
+			 		current_segment <- current_segment + 1;
+			 	}
+			 	float shift <- j * CAR_SPACING - CAR_SPEED * cycle - cumulated_segments_length[current_segment];
+			 		
+			 		//if oneway = 1{		 			
+//			 				new_point <- {shape.points[i].x + segments_x[i] * (j +  mod(cycle,40)/40)/lights_number, shape.points[i].y + segments_y[i] * (j + mod(cycle,40)/40)/lights_number};
+			 				point new_point <- shape.points[current_segment]+ {shift * cos (segments_angle[current_segment]), shift * sin (segments_angle[current_segment])};
+							draw circle(5, new_point) color: #green;
+			 		//}else{
+			 			
+//			 				new_point <- {lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j + 1 -  mod(cycle,11)/11)/lights_number, lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + 1 - mod(cycle,11)/11)/lights_number};
+//							draw circle(aspect_size, new_point) color: first(colorSet).LIGHTS;
+//							new_point <- {-lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j +  mod(cycle,11)/11)/lights_number, -lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + mod(cycle,11)/11)/lights_number};
+//							draw circle(aspect_size, new_point) color: first(colorSet).LIGHTS;
+							
+			 	//	}
+				
+				j <- j+1;
+			}
+
+		  	
+
 		  }
 		}
 	
