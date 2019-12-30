@@ -70,9 +70,10 @@ global {
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	list<string> interventionGif <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs.gif'),('../includes/GIF/Palais/Palais.gif'),('../includes/GIF/Concorde/Concorde.gif')];
-    list<string> currentInterventionGif <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Etoile/Etoile_1.gif')];
-
+	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
+    list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
+    
+    
 	
 	
 	
@@ -88,14 +89,14 @@ global {
 	float CAR_SPEED <- 1.0;
 
 	int currentSimuState<-0;
-	int nbAgent<-10;
+	int nbAgent<-500;
 
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
 		create greenSpace from: green_spaces_shapefile ;
 
-//		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
+		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
 			segments_number <- length(shape.points)-1;
@@ -206,10 +207,19 @@ global {
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
+		//First Intervention
 		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
-		{
-			gifFile<-interventionGif[id-1];
+		{   gifFile<-interventionGif0[id-1];
 			do initialize;
+			interventionNumber<-1;
+			isActive<-true;
+		}
+		//Second Intervention
+		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
+		{   gifFile<-interventionGif1[id-1];
+			do initialize;
+			interventionNumber<-2;
+			isActive<-false;
 		}		 
 	}
 	reflex updateGraph when: (showInteraction = true) {
@@ -232,17 +242,20 @@ global {
 	
 	
 	reflex updateSimuState{
-		if (currentSimuState = 0){
-
-			ask intervention where (each.type="Etoile"){
-				curIntervention<-0;
-				//gifFile<-('../includes/GIF/Etoile/Etoile_1.gif');
+		if (currentSimuState = 1){
+			ask intervention{
+				isActive<-false;
+			}
+			ask intervention where (each.interventionNumber=1){
+				isActive<-true;
 			}
 		}
-		if (currentSimuState = 1){
-			ask intervention where (each.type="Etoile"){
-				curIntervention<-1;
-				//gifFile<-('../includes/GIF/Etoile/Etoile_1.gif');
+		if (currentSimuState = 2){
+			ask intervention{
+				isActive<-false;
+			}
+			ask intervention where (each.interventionNumber=2){
+				isActive<-true;
 			}
 		}
 	}
@@ -315,7 +328,7 @@ species road  {
 //	float density <- 1.0;
 //	float traffic_density <- 0.0;
 	bool oneway <- false;
-	int segments_number ;
+	int segments_number<-5 ;
 //	int aspect_size <-1 ;
 	list<float> segments_x <- [];
 	list<float> segments_y <- [];
@@ -502,13 +515,14 @@ species graphicWorld{
 }
 
 species intervention{
+	bool isActive;
+	int interventionNumber;
 	int id;
 	string type;
-	int curIntervention<-0;
 	string gifFile;
 	float h;
 	float w;
-	bool fit_to_shape <- false;
+	bool fit_to_shape <- true;
 	action initialize {
 		geometry s <- shape rotated_by (-angle);
 		w <- s.width ;
@@ -529,9 +543,8 @@ species intervention{
 	}
 	aspect base {
 			draw shape empty:true color:#white;		
-			if(showGif){
-			  //draw gif_file(interventionGif[id-1]) size:{w,h} rotate:angle;	
-			  draw gif_file(currentInterventionGif[curIntervention]) size:{w,h} rotate:angle;	
+			if(showGif and isActive){
+			  draw gif_file(gifFile) size:{w,h} rotate:angle;	
 			}
 		}
 }
