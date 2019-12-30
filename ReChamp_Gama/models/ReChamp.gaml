@@ -68,7 +68,7 @@ global {
 	string currentMode parameter: 'Current Mode:' category: 'Mobility' <-"default" among:["default", "car", "bike","people","bus"];
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	list<string> interventionGif <- [('../includes/GIF/Etoile/etoile.gif'),('../includes/GIF/ChampHaut/champhaut.gif'),('../includes/GIF/ChampBas/champbas.gif'),('../includes/GIF/Concorde/Concorde.gif')];
+	list<string> interventionGif <- [('../includes/GIF/Etoile/Etoile.gif'),('../includes/GIF/Champs/Champs.gif'),('../includes/GIF/Palais/Palais.gif'),('../includes/GIF/Concorde/Concorde.gif')];
 
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
