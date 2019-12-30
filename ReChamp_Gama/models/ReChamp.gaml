@@ -1,4 +1,4 @@
-/***
+  /***
 * Name: ReChamp
 * Author: Arnaud Grignard, Nicolas Ayoub
 * Description: ReChamp - 2019
@@ -79,7 +79,7 @@ global {
 	init {
 		create greenSpace from: green_spaces_shapefile ;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create road from: roads_shapefile;
+		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
 		create water from: water_shapefile ;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
@@ -153,12 +153,12 @@ global {
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 
-		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude"))]{
+		create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
 			if flip(0.5){
-				do die;
+				//do die;
 			}
-		}*/	
+		}	
 		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
 		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
 		
@@ -257,6 +257,8 @@ species amenities{
 	}
 }
 
+
+
 species water {
 	string type; 
 	rgb color <- rgb(25,25,25)  ;
@@ -269,12 +271,17 @@ species water {
 }
 
 species road  {
+	int id;
 	rgb color;
 	float capacity;		
 	aspect base {
 		if(showRoad){
 		  draw shape color:type_colors["car"] width:1;	
-		}	
+		  if(id=1968){
+		  	draw shape color:#yellow width:3;	
+		  }
+		}
+	
 	}
 }
 
@@ -395,9 +402,12 @@ species pedestrianZone{
 		int nbPeople;
 		float lat;
 		float long;
+		int type;
 		aspect base {
 		if(showPedestrianCount){
-		  draw circle(10) color: rgb(nbPeople,0,0);	
+		if (type=6){
+		  draw circle(10) color: rgb(nbPeople,0,0);		
+		} 
 		}
 	}
 }
