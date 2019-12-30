@@ -153,12 +153,12 @@ global {
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 
-		create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
+		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
 			if flip(0.5){
 				//do die;
 			}
-		}	
+		}*/	
 		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
 		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
 		
