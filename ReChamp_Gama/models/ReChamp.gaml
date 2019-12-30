@@ -87,6 +87,8 @@ global {
 	// for lightings
 	float CAR_SPACING <- 20.0;
 	float CAR_SPEED <- 1.0;
+	float LANE_SPACING <- 22.0;
+
 
 	int currentSimuState<-0;
 	int nbAgent<-500;
@@ -99,14 +101,9 @@ global {
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
-			segments_number <- length(shape.points)-1;
-			
 			if(id=1968){//only for Champs Elysees avenue
-				loop i from: 0 to: segments_number-1{
-					add shape.points[i+1].x - shape.points[i].x to: segments_x;
-					add shape.points[i+1].y - shape.points[i].y to: segments_y;
-					add sqrt(segments_x[i]^2 + segments_y[i]^2) to: segments_length;
-					add sqrt(segments_x[i]^2 + segments_y[i]^2)+last(cumulated_segments_length) to: cumulated_segments_length;
+				loop i from: 0 to: length(shape.points)-2{
+					add sqrt((shape.points[i+1].x - shape.points[i].x)^2 + (shape.points[i+1].y - shape.points[i].y)^2)+last(cumulated_segments_length) to: cumulated_segments_length;
 					if shape.points[i+1].x - shape.points[i].x = 0 {
 						if shape.points[i+1].y - shape.points[i].y > 0 {
 							add 90 to: segments_angle;
@@ -114,11 +111,19 @@ global {
 							add -90 to: segments_angle;
 						}
 					} else {
-						add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) to: segments_angle;
+						if shape.points[i+1].x - shape.points[i].x > 0 {
+							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) to: segments_angle; 
+						} else {
+							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) - 180 to: segments_angle;
+						}				 
 					}
-					if oneway = false {// add lane position shift if two way road
-						add {segments_y[i]/segments_length[i]*4,- segments_x[i]/segments_length[i]*4} to: lane_position_shift;
-					}
+					//add {0,LANE_SPACING} rotated_by(last(segments_angle)) to: lane_position_shift;
+//					point truc <- point({0,10} rotated_by(112));
+//					write truc;
+					add {- sin(last(segments_angle)), cos(last(segments_angle))} * LANE_SPACING  to: lane_position_shift;
+//					if oneway = false {// add lane position shift if two way road
+//					//	add {segments_y[i]/segments_length[i]*4,- segments_x[i]/segments_length[i]*4} to: lane_position_shift;
+//					}
 				}
 			}
 		}	
@@ -138,7 +143,6 @@ global {
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
 		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
 		create bus_line from: bus_shapefile{
@@ -325,14 +329,15 @@ species road  {
 	rgb color;
 	float capacity;		
 	// attributes for animated lights
-//	float density <- 1.0;
 //	float traffic_density <- 0.0;
 	bool oneway <- false;
+
 	int segments_number<-5 ;
 //	int aspect_size <-1 ;
 	list<float> segments_x <- [];
 	list<float> segments_y <- [];
 	list<float> segments_length <- [];
+	int lane_number <- 1;
 	list<float> cumulated_segments_length <- [0.0];
 	list<float> segments_angle <- [];
 	list<point> lane_position_shift <- []; // vecteur pour decaler les voies lorsqu'il y a deux voies à représenter
@@ -344,21 +349,18 @@ species road  {
 		if(showRoad){
 		  draw shape color:type_colors["car"] width:1;	
 		  if(id=1968){		 		
-		 	int first_car_index <- int(ceil(CAR_SPEED * cycle / CAR_SPACING));
+		 	int car_index <- int(ceil(CAR_SPEED * cycle / CAR_SPACING));
 		 	int current_segment <- 0;
-//		 	float current_position <- CAR_SPEED * cycle; 
-//			 loop j from:0 to: int(floor(last(cumulated_segments_length)/CAR_SPACING)){
-			int j <- 0;
-			 loop  while: j * CAR_SPACING + first_car_index * CAR_SPACING - CAR_SPEED * cycle < last(cumulated_segments_length) {
-			 	loop while: cumulated_segments_length[current_segment+1] < j * CAR_SPACING + CAR_SPEED * cycle - first_car_index * CAR_SPACING{
+			 loop  while: car_index * CAR_SPACING - CAR_SPEED * cycle < last(cumulated_segments_length) {
+			 	loop while: cumulated_segments_length[current_segment+1] < car_index * CAR_SPACING - CAR_SPEED * cycle {
 			 		current_segment <- current_segment + 1;
 			 	}
-			 	float shift <- j * CAR_SPACING - CAR_SPEED * cycle - cumulated_segments_length[current_segment];
+			 	float shift <- (car_index) * CAR_SPACING - CAR_SPEED * cycle - cumulated_segments_length[current_segment];
 			 		
 			 		//if oneway = 1{		 			
-//			 				new_point <- {shape.points[i].x + segments_x[i] * (j +  mod(cycle,40)/40)/lights_number, shape.points[i].y + segments_y[i] * (j + mod(cycle,40)/40)/lights_number};
 			 				point new_point <- shape.points[current_segment]+ {shift * cos (segments_angle[current_segment]), shift * sin (segments_angle[current_segment])};
 							draw circle(5, new_point) color: #green;
+							draw circle(5, new_point+lane_position_shift[current_segment]) color: #green;
 			 		//}else{
 			 			
 //			 				new_point <- {lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j + 1 -  mod(cycle,11)/11)/lights_number, lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + 1 - mod(cycle,11)/11)/lights_number};
@@ -368,7 +370,7 @@ species road  {
 							
 			 	//	}
 				
-				j <- j+1;
+				car_index <- car_index + 1;
 			}
 
 		  	
