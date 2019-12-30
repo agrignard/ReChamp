@@ -99,7 +99,10 @@ global {
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
 			segments_number <- length(shape.points)-1;
-			
+			write "prout";
+			write(shape.points);
+			write segments_number;
+			write length(shape.points);
 			if(id=1968){//only for Champs Elysees avenue
 				loop i from: 0 to: segments_number-1{
 					add shape.points[i+1].x - shape.points[i].x to: segments_x;
@@ -137,7 +140,6 @@ global {
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
 		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
 		create bus_line from: bus_shapefile{
@@ -333,6 +335,7 @@ species road  {
 		  if(id=1968){		 		
 		 	int first_car_index <- int(ceil(CAR_SPEED * cycle / CAR_SPACING));
 		 	int current_segment <- 0;
+		 	write segments_number;
 //		 	float current_position <- CAR_SPEED * cycle; 
 //			 loop j from:0 to: int(floor(last(cumulated_segments_length)/CAR_SPACING)){
 			int j <- 0;
