@@ -342,7 +342,6 @@ species road  {
 	list<float> segments_x <- [];
 	list<float> segments_y <- [];
 	list<float> segments_length <- [];
-	int lane_number <- 1;
 
 	list<float> cumulated_segments_length <- [0.0];
 	list<float> segments_angle <- [];
