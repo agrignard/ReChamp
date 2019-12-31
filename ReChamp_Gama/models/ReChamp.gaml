@@ -23,7 +23,6 @@ global {
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
-	file trottoir_shapefile <- file("../includes/GIS/Trottoir_Champ.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
