@@ -43,6 +43,9 @@ global {
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
 	
+	float traffic_density <- 2.0 parameter: 'Traffic Density' category: "Champs Elysées" min:  0.0 max: 5.0;
+	int lane_number <- 3 parameter: 'Lanes' category: "Champs Elysées" min:  1 max: 4;
+	bool one_way <- false parameter: 'One way'  category: "Champs Elysées";
 	
 	bool showPeople parameter: 'People' category: "Agent" <-true;
 	bool showTrajectory parameter: 'People Trajectory' category: "Agent" <-false;
@@ -84,11 +87,12 @@ global {
 	
 
 	// for lightings
-	float CAR_SPACING <- 20.0;
-	float CAR_SPEED <- 1.0;
-	float LANE_SPACING <- 22.0;
-
-
+	float CAR_SPACING <- 20.0#m;
+	float CAR_SPEED <- 2.0#m/#cycle;
+	matrix<float> car_density_var <- [];
+	matrix<float> h_shift <- [];
+	matrix<float> rand_table <- [];
+	
 	int currentSimuState<-0;
 	int nbAgent<-10;
 
@@ -116,14 +120,11 @@ global {
 							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) - 180 to: segments_angle;
 						}				 
 					}
-					//add {0,LANE_SPACING} rotated_by(last(segments_angle)) to: lane_position_shift;
-//					point truc <- point({0,10} rotated_by(112));
-//					write truc;
-					add {- sin(last(segments_angle)), cos(last(segments_angle))} * LANE_SPACING  to: lane_position_shift;
-//					if oneway = false {// add lane position shift if two way road
-//					//	add {segments_y[i]/segments_length[i]*4,- segments_x[i]/segments_length[i]*4} to: lane_position_shift;
-//					}
+					add {sin(last(segments_angle)), - cos(last(segments_angle))}  to: lane_position_shift;
 				}
+				car_density_var <- matrix_with({3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(1.0)); // the maximum number of lane is harcoded and equal to 4
+				h_shift <- matrix_with({3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(14.0)); // the maximum number of lane is harcoded and equal to 4
+				rand_table <- matrix_with({17+3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(1.0)); // the maximum number of lane is harcoded and equal to 4
 			}
 		}	
 		
@@ -314,51 +315,46 @@ species water {
 species road  {
 	int id;
 	rgb color;
-	float capacity;		
-	// attributes for animated lights
-//	float traffic_density <- 0.0;
-	bool oneway <- false;
-	int lane_number <- 1;
+	float capacity;
+	
+	// attributes for animated lights. Usefull only for Champs Elysees Avenue
+//	int ways <- 2; // 1 way traffic or 2 way traffic
+	float street_width <- 50.0;
 	list<float> cumulated_segments_length <- [0.0];
 	list<float> segments_angle <- [];
-	list<point> lane_position_shift <- []; // vecteur pour decaler les voies lorsqu'il y a deux voies à représenter
-		
+	list<point> lane_position_shift <- []; 
 	
-	
+	int posmod(int i, int m){// Gama modulo is not the math modulo and is not convenient for negative i. This function is used to replace Gama modulo by math modulo.
+		int tmp <- mod(i,m);
+		return tmp>=0?tmp:(tmp+m);
+	}
 	
 	aspect base {
 		if(showRoad){
-		  draw shape color:type_colors["car"] width:1;	
-		  if(id=1968){		 		
-		 	int car_index <- int(ceil(CAR_SPEED * cycle / CAR_SPACING));
-		 	int current_segment <- 0;
-			 loop  while: car_index * CAR_SPACING - CAR_SPEED * cycle < last(cumulated_segments_length) {
-			 	loop while: cumulated_segments_length[current_segment+1] < car_index * CAR_SPACING - CAR_SPEED * cycle {
-			 		current_segment <- current_segment + 1;
-			 	}
-			 	float shift <- (car_index) * CAR_SPACING - CAR_SPEED * cycle - cumulated_segments_length[current_segment];
-			 		
-			 		//if oneway = 1{		 			
-			 				point new_point <- shape.points[current_segment]+ {shift * cos (segments_angle[current_segment]), shift * sin (segments_angle[current_segment])};
-							draw circle(5, new_point) color: #green;
-							draw circle(5, new_point+lane_position_shift[current_segment]) color: #green;
-			 		//}else{
-			 			
-//			 				new_point <- {lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j + 1 -  mod(cycle,11)/11)/lights_number, lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + 1 - mod(cycle,11)/11)/lights_number};
-//							draw circle(aspect_size, new_point) color: first(colorSet).LIGHTS;
-//							new_point <- {-lane_position_shift[i].x + shape.points[i].x + segments_x[i] * (j +  mod(cycle,11)/11)/lights_number, -lane_position_shift[i].y + shape.points[i].y + segments_y[i] * (j + mod(cycle,11)/11)/lights_number};
-//							draw circle(aspect_size, new_point) color: first(colorSet).LIGHTS;
-							
-			 	//	}
-				
-				car_index <- car_index + 1;
+			draw shape color:type_colors["car"] width:1;	
+		 	if(id=1968){ 		
+		 		float lane_spacing <- street_width / ((one_way?1:2)*lane_number);
+		 		loop way over: one_way?[1]:[1,-1]{
+		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
+			 		int current_segment <- 0;
+			 		loop  while: car_index * CAR_SPACING - way * CAR_SPEED * cycle < last(cumulated_segments_length) {
+						loop while: cumulated_segments_length[current_segment+1] < car_index * CAR_SPACING - way * CAR_SPEED * cycle {
+				 			current_segment <- current_segment + 1;
+			 			}
+			 			float alpha <- min([car_index * CAR_SPACING - way * CAR_SPEED * cycle, last(cumulated_segments_length) - car_index * CAR_SPACING + way * CAR_SPEED * cycle,200])/200;
+						loop i from: 0 to: lane_number - 1 {
+							point offset <- lane_position_shift[current_segment]*(i+0.5 + (one_way?-0.5:0)*lane_number)*lane_spacing * way;
+							float shift <- (car_index) * CAR_SPACING - way * CAR_SPEED * cycle - cumulated_segments_length[current_segment] + way * h_shift[posmod(car_index,h_shift.columns),i];	 			
+				 			point new_point <- shape.points[current_segment]+ {cos (segments_angle[current_segment]), sin (segments_angle[current_segment])}*shift + offset;
+			 				if (car_density_var[posmod(car_index,car_density_var.columns),i]< traffic_density/lane_number) {
+								draw rectangle(8#m,4#m) at: new_point rotate:segments_angle[current_segment]  color: rgb(70+120*rand_table[posmod(car_index,rand_table.columns),i],61+80*rand_table[posmod(car_index+67,rand_table.columns),i],253,alpha);
+							}
+						}		 	
+						car_index <- car_index + 1;
+					}
+		 		}
 			}
-
-		  	
-
-		  }
 		}
-	
 	}
 }
 
@@ -545,6 +541,7 @@ species coldSpot{
 			}	
 		}
 }
+
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.0125;	
 	output {
