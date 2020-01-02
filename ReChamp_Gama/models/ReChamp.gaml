@@ -42,7 +42,7 @@ global {
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
 	
-	float traffic_density <- 2.0 parameter: 'Traffic Density' category: "Champs Elysées" min:  0.0 max: 5.0;
+	float traffic_density <- 2.0 parameter: 'Traffic Density' category: "Champs Elysées" min:  0.0 max: 4.0;
 	int lane_number <- 3 parameter: 'Lanes' category: "Champs Elysées" min:  1 max: 4;
 	bool one_way <- false parameter: 'One way'  category: "Champs Elysées";
 	
@@ -89,6 +89,7 @@ global {
 	// for lightings
 	float CAR_SPACING <- 20.0#m;
 	float CAR_SPEED <- 2.0#m/#cycle;
+	float MAX_LANE_NUMBER <- 4; // should be specified for each road instead of globally
 	matrix<float> car_density_var <- [];
 	matrix<float> h_shift <- [];
 	matrix<float> rand_table <- [];
@@ -355,7 +356,7 @@ species road  {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
 		 	if(id=1968 or id=1580){ 		
-		 		float lane_spacing <- street_width / ((one_way?1:2)*lane_number);
+		 		float lane_spacing <- street_width / ((one_way?1:2)*MAX_LANE_NUMBER);
 		 		loop way over: one_way?[1]:[1,-1]{
 		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
 			 		int current_segment <- 0;
