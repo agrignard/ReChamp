@@ -1,6 +1,6 @@
   /***
 * Name: ReChamp
-* Author: Arnaud Grignard, Nicolas Ayoub
+* Author: Arnaud Grignard, Nicolas Ayoub, Tri Nguyen-Huu
 * Description: ReChamp - 2019
 * Tags: Tag1, Tag2, TagN
 ***/
@@ -23,7 +23,6 @@ global {
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
-
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
@@ -457,7 +456,7 @@ species people skills:[moving]{
 	float val ;
 	list<point> current_trajectory;
 	
-	reflex move{
+	reflex move {
 	  if(type="bike"){
 	  	do wander on:bike_graph speed:8.0#km/#h;
 	  }
@@ -485,7 +484,7 @@ species people skills:[moving]{
 	     if (type="car"){
 	     	 draw rectangle(5#m,10#m) rotate:heading-90 color:type_colors[type];	
 	     }else{
-	     	draw circle(3#m) color:type_colors[type];
+	     	draw square(3#m) color:type_colors[type] rotate: angle;
 	     }   
 	  }
 	  if(showTrajectory){
