@@ -23,6 +23,7 @@ global {
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
+
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
@@ -104,7 +105,7 @@ global {
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
-			if(id=1968){//only for Champs Elysees avenue
+			if(id=1968 or id=1580){//only for Champs Elysees avenue
 				loop i from: 0 to: length(shape.points)-2{
 					add sqrt((shape.points[i+1].x - shape.points[i].x)^2 + (shape.points[i+1].y - shape.points[i].y)^2)+last(cumulated_segments_length) to: cumulated_segments_length;
 					if shape.points[i+1].x - shape.points[i].x = 0 {
@@ -354,7 +355,7 @@ species road  {
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
-		 	if(id=1968){ 		
+		 	if(id=1968 or id=1580){ 		
 		 		float lane_spacing <- street_width / ((one_way?1:2)*lane_number);
 		 		loop way over: one_way?[1]:[1,-1]{
 		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
@@ -629,8 +630,8 @@ experiment ReChamp type: gui autorun:true{
 			event["4"] action: {currentMode<-"bus";};*/
 			
 			
-			event["0"] action: {currentSimuState<-0;};
-			event["1"] action: {currentSimuState<-1;};
+			event["0"] action: {lane_number<-4;currentSimuState<-0;};
+			event["1"] action: {lane_number<-2;currentSimuState<-1;};
 			event["2"] action: {currentSimuState<-2;};
 			event["3"] action: {currentSimuState<-3;};
 			event["4"] action: {currentSimuState<-4;};
