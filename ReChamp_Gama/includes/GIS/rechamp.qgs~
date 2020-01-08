@@ -73,10 +73,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>648042.51022356539033353</xmin>
-      <ymin>6863858.14831758849322796</ymin>
-      <xmax>648276.76907366304658353</xmax>
-      <ymax>6864054.09082247130572796</ymax>
+      <xmin>648209.20324551360681653</xmin>
+      <ymin>6863972.84361312445253134</ymin>
+      <xmax>648267.76795803802087903</xmax>
+      <ymax>6864021.82923934515565634</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -916,7 +916,7 @@
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;mode&quot;" sortOrder="0">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;proba&quot;" sortOrder="0">
         <columns>
           <column width="-1" hidden="0" type="field" name="mode"/>
           <column width="-1" hidden="1" type="actions"/>

@@ -253,7 +253,7 @@ species road  {
 	int id;
 	rgb color;
 	string mode;
-	int proba_use <- 100;
+	float proba_use <- 100.0;
 
 	float capacity;		
 	
