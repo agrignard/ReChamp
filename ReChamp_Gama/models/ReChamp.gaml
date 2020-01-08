@@ -103,6 +103,7 @@ global {
 	
 	float angle<-26.25;
 	
+	map<road,float> proba_use_road;
 
 	// for lightings
 	float CAR_SPACING <- 20.0#m;
@@ -150,8 +151,10 @@ global {
 		}	
 		
 		
-		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
-		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
+		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
+		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
+
+		proba_use_road <- road as_map (each::each.proba_use);
 
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
@@ -348,6 +351,7 @@ species road  {
 	int id;
 	rgb color;
 	string mode;
+	int proba_use <- 100;
 
 	// attributes for animated lights. Usefull only for Champs Elysees Avenue
 //	int ways <- 2; // 1 way traffic or 2 way traffic
@@ -500,7 +504,7 @@ species people skills:[moving]{
 	  }	
 	  if(type="car"){
 	  	if(wander){
-	  	  do wander on:Champs_Mobility_Now speed:25.0#km/#h;	
+	  	  do wander on:Champs_Mobility_Now speed:25.0#km/#h proba_edges: proba_use_road ;	
 	  	}else{
 	  	  do goto target: target on: car_graph  speed:25.0#km/#h recompute_path: false;		
 	  	}
