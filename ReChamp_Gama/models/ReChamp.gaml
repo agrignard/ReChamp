@@ -33,6 +33,7 @@ global {
 	//CHAMPS
 	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
 	//ETOILE
+	file Etoile_Mobility_Now_shapefile <- file("../includes/GIS/Etoile_Mobility_Now.shp");
 	//CONCORDE
 	//GRAND PALAIS
 	
@@ -47,7 +48,7 @@ global {
 	
 	
     graph Champs_Mobility_Now;
-	
+	graph Etoile_Mobility_Now;
 	
 	
 	
@@ -150,6 +151,7 @@ global {
 		
 		
 		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
+		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
 
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
