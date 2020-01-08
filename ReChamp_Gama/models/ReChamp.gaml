@@ -1,6 +1,6 @@
   /***
 * Name: ReChamp
-* Author: Arnaud Grignard, Nicolas Ayoub, Tri Nguyen-Huu
+* Author: Arnaud Grignard, Tri Nguyen-Huu, Nicolas Ayoub 
 * Description: ReChamp - 2019
 * Tags: Tag1, Tag2, TagN
 ***/
@@ -8,7 +8,6 @@
 model ReChamp
 
 global {
-	
 	//EXISTING SHAPEFILE (FROM OPENDATA)
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	file green_spaces_shapefile <- file("../includes/GIS/green_space.shp");
@@ -29,15 +28,11 @@ global {
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
-	//GENERATED SHAPEFILE
-	//CHAMPS
+	//GENERATED SHAPEFILE (FROM QGIS)
 	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
-	//ETOILE
 	file Etoile_Mobility_Now_shapefile <- file("../includes/GIS/Etoile_Mobility_Now.shp");
-	//CONCORDE
-	//GRAND PALAIS
-	
-	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
+	file Concorde_Mobility_Now_shapefile <- file("../includes/GIS/Concorde_Mobility_Now.shp");
+	file Palais_Mobility_Now_shapefile <- file("../includes/GIS/Palais_Mobility_Now.shp");
 
 	geometry shape <- envelope(shape_file_bounds);
 	graph car_graph;
@@ -45,15 +40,9 @@ global {
 	graph bike_graph;
 	graph bus_graph;
 	
-	
-	
     graph Champs_Mobility_Now;
 	graph Etoile_Mobility_Now;
 	
-	
-	
-	map<string,graph> graphs;
-	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
 	float max_dev <- 10.0;
@@ -67,7 +56,7 @@ global {
 	bool wander parameter: 'People Wandering' category: "Agent" <-true;
 	bool showTrajectory parameter: 'People Trajectory' category: "Agent" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Agent" min: 1 max: 50;
-	bool showPedestrianCount;// parameter: 'Pedestrian Count' category: "Parameters" <-true;
+	bool showPedestrianCount parameter: 'Pedestrian Count (c)' category: "Parameters" <-true;
 	
 	bool showRoad parameter: 'Road' category: "Mobility" <-false;
 	bool showBike  parameter: 'Bike Lane' category: "Mobility" <-false;
@@ -93,25 +82,12 @@ global {
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
-    
-	
-	
-	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	
 	float angle<-26.25;
-	
-
-	// for lightings
-	float CAR_SPACING <- 20.0#m;
-	float CAR_SPEED <- 2.0#m/#cycle;
-	int MAX_LANE_NUMBER <- 4; // should be specified for each road instead of globally
-	matrix<float> car_density_var <- [];
-	matrix<float> h_shift <- [];
-	matrix<float> rand_table <- [];
-	
+		
 	int currentSimuState<-0;
 	int nbAgent<-1000;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
@@ -122,36 +98,11 @@ global {
 		create greenSpace from: green_spaces_shapefile ;
 
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
-			//------- compute coordinates of road segments
-			//if(id=1968 or id=1580 or id= 3599 or id = 3692){//only for Champs Elysees avenue
-			if(false){
-				loop i from: 0 to: length(shape.points)-2{
-					add sqrt((shape.points[i+1].x - shape.points[i].x)^2 + (shape.points[i+1].y - shape.points[i].y)^2)+last(cumulated_segments_length) to: cumulated_segments_length;
-					if shape.points[i+1].x - shape.points[i].x = 0 {
-						if shape.points[i+1].y - shape.points[i].y > 0 {
-							add 90 to: segments_angle;
-						} else {
-							add -90 to: segments_angle;
-						}
-					} else {
-						if shape.points[i+1].x - shape.points[i].x > 0 {
-							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) to: segments_angle; 
-						} else {
-							add atan((shape.points[i+1].y - shape.points[i].y)/(shape.points[i+1].x - shape.points[i].x)) - 180 to: segments_angle;
-						}				 
-					}
-					add {sin(last(segments_angle)), - cos(last(segments_angle))}  to: lane_position_shift;
-				}
-				car_density_var <- matrix_with({3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(1.0)); // the maximum number of lane is harcoded and equal to 4
-				h_shift <- matrix_with({3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(14.0)); // the maximum number of lane is harcoded and equal to 4
-				rand_table <- matrix_with({17+3*int(last(cumulated_segments_length)/CAR_SPACING),4},rnd(1.0)); // the maximum number of lane is harcoded and equal to 4
-			}
-		}	
-		
-		
+		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];	
 		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
 		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
+		create road from: Concorde_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
+		create road from: Palais_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
 
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
@@ -200,34 +151,9 @@ global {
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
-		
-		
+			
 		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
-
-		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
-			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
-			if flip(0.5){
-				//do die;
-			}
-		}*/	
-		//save pedestrianZone to: "../results/pedestrianZone.csv" type:"csv" rewrite: true;
-		//save pedestrianZone to:"../results/pedestrianZone.shp" type:"shp" attributes: ["ID":: int(self), "COUNT"::nbPeople];
-		
-		
-		
-		//Create Car
-		/*float maxCap<- max(gksection collect each.capacity);
-		float minCap<- min((gksection where (each.capacity >0) )collect each.capacity); 
-		ask gksection {
-				//color<-blend(#red, #green,(minCap+capacity)/(maxCap-minCap));
-				color<-type_colors["car"];
-				create people number:self.capacity/2000{
-					type <- "car";
-					location<-any_location_in(myself);
-				}
-		}*/
-		
-		
+			
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
@@ -246,24 +172,6 @@ global {
 			isActive<-false;
 		}		 
 	}
-	reflex updateGraph when: (showInteraction = true) {
-		if(currentMode="default"){
-		  interaction_graph <- graph<people, people>(people as_distance_graph (distance));	
-		}
-		if(currentMode="car"){
-		  interaction_graph <- graph<people, people>(people where (each.type="car") as_distance_graph (distance));	
-		}
-		if(currentMode="people"){
-		  interaction_graph <- graph<people, people>(people where (each.type="people") as_distance_graph (distance));	
-		}
-		if(currentMode="bike"){
-		  interaction_graph <- graph<people, people>(people where (each.type="bike") as_distance_graph (distance));	
-		}
-		if(currentMode="bus"){
-		  interaction_graph <- graph<people, people>(people where (each.type="bus") as_distance_graph (distance));	
-		}	
-	}
-	
 	
 	reflex updateSimuState{
 		if (currentSimuState = 1){
@@ -348,56 +256,11 @@ species road  {
 	int id;
 	rgb color;
 	string mode;
-
-	// attributes for animated lights. Usefull only for Champs Elysees Avenue
-//	int ways <- 2; // 1 way traffic or 2 way traffic
-	float street_width <- 50.0;
 	float capacity;		
-	// attributes for animated lights
-//	float traffic_density <- 0.0;
-	bool oneway <- false;
-
-	int segments_number<-5 ;
-//	int aspect_size <-1 ;
-	list<float> segments_x <- [];
-	list<float> segments_y <- [];
-	list<float> segments_length <- [];
-
-	list<float> cumulated_segments_length <- [0.0];
-	list<float> segments_angle <- [];
-	list<point> lane_position_shift <- []; 
-	
-	int posmod(int i, int m){// Gama modulo is not the math modulo and is not convenient for negative i. This function is used to replace Gama modulo by math modulo.
-		int tmp <- mod(i,m);
-		return tmp>=0?tmp:(tmp+m);
-	}
 	
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
-		 	//if(id=1968 or id=1580 or id= 3599 or id = 3692){ 
-		 	if(false){		
-		 		float lane_spacing <- street_width / ((one_way?1:2)*MAX_LANE_NUMBER);
-		 		loop way over: one_way?[1]:[1,-1]{
-		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
-			 		int current_segment <- 0;
-			 		loop  while: car_index * CAR_SPACING - way * CAR_SPEED * cycle < last(cumulated_segments_length) {
-						loop while: cumulated_segments_length[current_segment+1] < car_index * CAR_SPACING - way * CAR_SPEED * cycle {
-				 			current_segment <- current_segment + 1;
-			 			}
-			 			float alpha <- min([car_index * CAR_SPACING - way * CAR_SPEED * cycle, last(cumulated_segments_length) - car_index * CAR_SPACING + way * CAR_SPEED * cycle,200])/200;
-						loop i from: 0 to: lane_number - 1 {
-							point offset <- lane_position_shift[current_segment]*(i+0.5 + (one_way?-0.5:0)*lane_number)*lane_spacing * way;
-							float shift <- (car_index) * CAR_SPACING - way * CAR_SPEED * cycle - cumulated_segments_length[current_segment] + way * h_shift[posmod(car_index,h_shift.columns),i];	 			
-				 			point new_point <- shape.points[current_segment]+ {cos (segments_angle[current_segment]), sin (segments_angle[current_segment])}*shift + offset;
-			 				if (car_density_var[posmod(car_index,car_density_var.columns),i]< traffic_density/lane_number) {
-								draw rectangle(8#m,4#m) at: new_point rotate:segments_angle[current_segment]  color: rgb(70+120*rand_table[posmod(car_index,rand_table.columns),i],61+80*rand_table[posmod(car_index+67,rand_table.columns),i],253,alpha);
-							}
-						}		 	
-						car_index <- car_index + 1;
-					}
-		 		}
-			}
 		}
 	}
 }
@@ -444,15 +307,6 @@ species station{
 		}	
 	}
 }
-
-species modularBlock{
-	aspect base{
-		if(showKiosk){
-		  draw square(10) color:#white rotate:angle;	
-		}
-	}
-}
-
 
 species metro_line{
 	rgb color;
@@ -536,20 +390,6 @@ species people skills:[moving]{
 	}	
 }
 
-species pedestrianZone{
-		int nbPeople;
-		float lat;
-		float long;
-		int type;
-		aspect base {
-		if(showPedestrianCount){
-		if (type=6){
-		  draw circle(10) color: rgb(nbPeople,0,0);		
-		} 
-		}
-	}
-}
-
 species graphicWorld{
 	aspect base{
 		if(showBackground){
@@ -623,29 +463,14 @@ experiment ReChamp type: gui autorun:true{
 			species amenities aspect:base;
 			species people aspect:base;
 			species coldSpot aspect:base;
-			species pedestrianZone aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species modularBlock aspect:base; 
-			
-			
-			//species voirie aspect:base;
 						
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
-			graphics "interaction_graph" {
-				if (interaction_graph != nil and (showInteraction = true)) {
-					loop eg over: interaction_graph.edges {
-						people src <- interaction_graph source_of eg;
-						people target <- interaction_graph target_of eg;
-						geometry edge_geom <- geometry(eg);
-						draw line(edge_geom.points) color: type_colors[currentMode];
-					}
-				}
-			}
 			event["p"] action: {showPeople<-!showPeople;};
 			event["t"] action: {showTrajectory<-!showTrajectory;};
 			event["g"] action: {showGif<-!showGif;};
@@ -666,7 +491,6 @@ experiment ReChamp type: gui autorun:true{
 			event[" "] action: {showBackground<-!showBackground;};				
 			event["0"] action: {lane_number<-4;currentSimuState<-0;};
 			event["1"] action: {lane_number<-2;currentSimuState<-1;};
-
 		}
 	}
 }
