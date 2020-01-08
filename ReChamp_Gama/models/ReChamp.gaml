@@ -106,7 +106,7 @@ global {
 	// for lightings
 	float CAR_SPACING <- 20.0#m;
 	float CAR_SPEED <- 2.0#m/#cycle;
-	float MAX_LANE_NUMBER <- 4; // should be specified for each road instead of globally
+	int MAX_LANE_NUMBER <- 4; // should be specified for each road instead of globally
 	matrix<float> car_density_var <- [];
 	matrix<float> h_shift <- [];
 	matrix<float> rand_table <- [];
