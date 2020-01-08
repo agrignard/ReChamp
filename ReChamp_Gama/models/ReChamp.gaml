@@ -36,6 +36,7 @@ global {
 	graph people_graph;
 	graph bike_graph;
 	graph bus_graph;
+	map<string,graph> graphs;
 	graph<people, people> interaction_graph;
 	bool realData<-true;
 	
@@ -47,6 +48,7 @@ global {
 	bool one_way <- false parameter: 'One way'  category: "Champs Elysées";
 	
 	bool showPeople parameter: 'People' category: "Agent" <-true;
+	bool wander parameter: 'People Wandering' category: "Agent" <-true;
 	bool showTrajectory parameter: 'People Trajectory' category: "Agent" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Agent" min: 1 max: 50;
 	bool showPedestrianCount;// parameter: 'Pedestrian Count' category: "Parameters" <-true;
@@ -105,7 +107,7 @@ global {
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
-			if(id=1968 or id=1580){//only for Champs Elysees avenue
+			if(id=1968 or id=1580 or id= 3599 or id = 3692){//only for Champs Elysees avenue
 				loop i from: 0 to: length(shape.points)-2{
 					add sqrt((shape.points[i+1].x - shape.points[i].x)^2 + (shape.points[i+1].y - shape.points[i].y)^2)+last(cumulated_segments_length) to: cumulated_segments_length;
 					if shape.points[i+1].x - shape.points[i].x = 0 {
@@ -132,14 +134,7 @@ global {
 
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
-		/*create amenities from: amenities_shapefile {
-			type<-"restaurant";
-			color<-#yellow;
-		}
-		create amenities from: amenities_shop_shapefile {
-			type<-"shop";
-			color<-#blue;
-		}*/
+
 		create hotSpot from:hotspot_shapefile;
 		create coldSpot from:coldspot_shapefile;
 		
@@ -153,25 +148,25 @@ global {
 		//------------------- AGENT ---------------------------------------- //
 		create people number:nbAgent{
 		  type <- "car";
-		  location<-any_location_in(one_of(road));
+		  location <- any_location_in(one_of(building));
 		}
 		
 		//Create Pedestrain
 		create people number:nbAgent{
 		  type <- "people";
-		  location<-any_location_in(one_of(road));
+		  location<-any_location_in(one_of(building));
 		}
 		
         //Create Bike
 	    create people number:nbAgent{
 	      type <- "bike";
-		  location<-any_location_in(one_of(bikelane));	
+		  location<-any_location_in(one_of(building));	
 		}
 		
 		//Create Bus
 		create people number:nbAgent{
 		  type <- "bus";
-		  location<-any_location_in(one_of(bus_line));	
+		  location<-any_location_in(one_of(building));	
 	    }
 		
 		
@@ -212,14 +207,14 @@ global {
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
-		//First Intervention
+		//First Intervention (Paris Now)
 		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
 		{   gifFile<-interventionGif0[id-1];
 			do initialize;
 			interventionNumber<-1;
 			isActive<-true;
 		}
-		//Second Intervention
+		//Second Intervention (PCA proposal)
 		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
 		{   gifFile<-interventionGif1[id-1];
 			do initialize;
@@ -355,7 +350,7 @@ species road  {
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
-		 	if(id=1968 or id=1580){ 		
+		 	if(id=1968 or id=1580 or id= 3599 or id = 3692){ 		
 		 		float lane_spacing <- street_width / ((one_way?1:2)*MAX_LANE_NUMBER);
 		 		loop way over: one_way?[1]:[1,-1]{
 		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
@@ -457,18 +452,39 @@ species people skills:[moving]{
 	float val ;
 	list<point> current_trajectory;
 	
-	reflex move {
+	
+	reflex leave when: (target = nil) {
+		target <- any_location_in(one_of(building));
+	}
+	
+	reflex move when: target != nil{	
 	  if(type="bike"){
-	  	do wander on:bike_graph speed:8.0#km/#h;
+	  	if (wander){
+	  	  do wander on:bike_graph speed:8.0#km/#h;	
+	  	}else{
+	  	  do goto target: target on: bike_graph  speed:8.0#km/#h recompute_path: false;
+	  	}
 	  }
 	  if(type="bus"){
-	    do wander on:car_graph speed:6.0#km/#h;	
+	  	if(wander){
+	  	  do wander on:car_graph speed:6.0#km/#h;		
+	  	}else{
+	  	  do goto target: target on: car_graph  speed:6.0#km/#h recompute_path: false;	
+	  	}
 	  }	
 	  if(type="car"){
-	    do wander on:car_graph speed:25.0#km/#h;	
+	  	if(wander){
+	  	  do wander on:car_graph speed:25.0#km/#h;	
+	  	}else{
+	  	  do goto target: target on: car_graph  speed:25.0#km/#h recompute_path: false;		
+	  	}
 	  }
 	  if(type="people"){
-	    do wander on:people_graph speed:5.0#km/#h;	
+	  	if(wander){
+	  	  do wander on:people_graph speed:5.0#km/#h;		
+	  	}else{
+	  	  do goto target: target on: people_graph  speed:5.0#km/#h recompute_path: false;
+	  	}
 	  }
 	  float val_pt <- val + rnd(-fuzzyness, fuzzyness);
 	  point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};
@@ -621,26 +637,9 @@ experiment ReChamp type: gui autorun:true{
 			event["c"] action: {showPedestrianCount<-!showPedestrianCount;};
 			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event[" "] action: {showBackground<-!showBackground;};
-			
-			/*event["0"] action: {currentMode<-"default";};
-			event["1"] action: {currentMode<-"car";};
-			event["2"] action: {currentMode<-"people";};
-			event["3"] action: {currentMode<-"bike";};
-			event["4"] action: {currentMode<-"bus";};*/
-			
-			
+			event[" "] action: {showBackground<-!showBackground;};				
 			event["0"] action: {lane_number<-4;currentSimuState<-0;};
 			event["1"] action: {lane_number<-2;currentSimuState<-1;};
-			event["2"] action: {currentSimuState<-2;};
-			event["3"] action: {currentSimuState<-3;};
-			event["4"] action: {currentSimuState<-4;};
-			event["5"] action: {currentSimuState<-5;};
-			event["6"] action: {currentSimuState<-6;};
-			event["7"] action: {currentSimuState<-7;};
-			event["8"] action: {currentSimuState<-8;};
-			event["9"] action: {currentSimuState<-9;};
-
 
 		}
 	}
