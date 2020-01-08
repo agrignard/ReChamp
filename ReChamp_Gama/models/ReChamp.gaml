@@ -200,7 +200,7 @@ global {
 		bus_graph <- as_edge_graph(bus_line);
 		
 		
-		Champs_Mobility_Now <- as_edge_graph(road where (each.mode="car"));
+		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
 
 		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
