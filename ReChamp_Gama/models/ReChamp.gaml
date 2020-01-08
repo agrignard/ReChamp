@@ -31,7 +31,7 @@ global {
 	
 	//GENERATED SHAPEFILE
 	//CHAMPS
-	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Concorde_Mobility_Now.shp");
+	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
 	//ETOILE
 	//CONCORDE
 	//GRAND PALAIS
