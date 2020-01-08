@@ -8,6 +8,8 @@
 model ReChamp
 
 global {
+	
+	//EXISTING SHAPEFILE (FROM OPENDATA)
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	file green_spaces_shapefile <- file("../includes/GIS/green_space.shp");
 	file water_shapefile <- file("../includes/GIS/water.shp");
@@ -27,7 +29,12 @@ global {
 	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
-	
+	//GENERATED SHAPEFILE
+	//CHAMPS
+	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
+	//ETOILE
+	//CONCORDE
+	//GRAND PALAIS
 	
 	//file pedestrian_count_file <- csv_file("../includes/PCA_STREAM_KEPLER_MY_TRAFFIC.csv",",",true);
 
@@ -36,6 +43,14 @@ global {
 	graph people_graph;
 	graph bike_graph;
 	graph bus_graph;
+	
+	
+	
+    graph Champs_Mobility_Now;
+	
+	
+	
+	
 	map<string,graph> graphs;
 	graph<people, people> interaction_graph;
 	bool realData<-true;
@@ -97,7 +112,8 @@ global {
 	matrix<float> rand_table <- [];
 	
 	int currentSimuState<-0;
-	int nbAgent<-500;
+	int nbAgent<-1000;
+	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
 	
 	init {
@@ -107,7 +123,8 @@ global {
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
 			//------- compute coordinates of road segments
-			if(id=1968 or id=1580 or id= 3599 or id = 3692){//only for Champs Elysees avenue
+			//if(id=1968 or id=1580 or id= 3599 or id = 3692){//only for Champs Elysees avenue
+			if(false){
 				loop i from: 0 to: length(shape.points)-2{
 					add sqrt((shape.points[i+1].x - shape.points[i].x)^2 + (shape.points[i+1].y - shape.points[i].y)^2)+last(cumulated_segments_length) to: cumulated_segments_length;
 					if shape.points[i+1].x - shape.points[i].x = 0 {
@@ -131,6 +148,8 @@ global {
 			}
 		}	
 		
+		
+		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
 
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
@@ -146,25 +165,25 @@ global {
 		}
 		
 		//------------------- AGENT ---------------------------------------- //
-		create people number:nbAgent{
+		create people number:nbAgent*mobilityRatio["car"]{
 		  type <- "car";
-		  location <- any_location_in(one_of(building));
+		  location <- any_location_in(one_of(road where (each.mode="car")));
 		}
 		
 		//Create Pedestrain
-		create people number:nbAgent{
+		create people number:nbAgent*mobilityRatio["people"]{
 		  type <- "people";
 		  location<-any_location_in(one_of(building));
 		}
 		
         //Create Bike
-	    create people number:nbAgent{
+	    create people number:nbAgent*mobilityRatio["bike"]{
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
 		
 		//Create Bus
-		create people number:nbAgent{
+		create people number:nbAgent*mobilityRatio["bus"]{
 		  type <- "bus";
 		  location<-any_location_in(one_of(building));	
 	    }
@@ -179,6 +198,9 @@ global {
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
+		
+		
+		Champs_Mobility_Now <- as_edge_graph(road where (each.mode="car"));
 
 		/*create pedestrianZone from:pedestrian_shapefile with:[nbPeople::int(get("COUNT")) , lat::float(get("latitude")), long::float(get("longitude")),type::int(get("carte_num")) ]{
 			//location<-point(to_GAMA_CRS({long,lat}, "EPSG:4326"));
@@ -323,6 +345,7 @@ species water {
 species road  {
 	int id;
 	rgb color;
+	string mode;
 
 	// attributes for animated lights. Usefull only for Champs Elysees Avenue
 //	int ways <- 2; // 1 way traffic or 2 way traffic
@@ -350,7 +373,8 @@ species road  {
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
-		 	if(id=1968 or id=1580 or id= 3599 or id = 3692){ 		
+		 	//if(id=1968 or id=1580 or id= 3599 or id = 3692){ 
+		 	if(false){		
 		 		float lane_spacing <- street_width / ((one_way?1:2)*MAX_LANE_NUMBER);
 		 		loop way over: one_way?[1]:[1,-1]{
 		 			int car_index <- int(ceil(way * CAR_SPEED * cycle / CAR_SPACING));
@@ -474,7 +498,7 @@ species people skills:[moving]{
 	  }	
 	  if(type="car"){
 	  	if(wander){
-	  	  do wander on:car_graph speed:25.0#km/#h;	
+	  	  do wander on:Champs_Mobility_Now speed:25.0#km/#h;	
 	  	}else{
 	  	  do goto target: target on: car_graph  speed:25.0#km/#h recompute_path: false;		
 	  	}
