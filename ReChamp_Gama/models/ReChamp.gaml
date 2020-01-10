@@ -38,6 +38,10 @@ global {
 	//NATURE
 	file Nature_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_NATURE.shp");
 	file Nature_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_NATURE.shp");
+	
+	//USAGE
+	file Usage_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_USAGE.shp");
+	file Usage_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_USAGE.shp");
 
 	geometry shape <- envelope(shape_file_bounds);
 	graph car_graph;
@@ -99,7 +103,7 @@ global {
 
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 
-		
+		create culture from:Usage_Now_shapefile;
 
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];	
 		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
@@ -192,6 +196,12 @@ global {
 				isActive<-true;
 			}
 		}
+	}
+}
+
+species culture{
+	aspect base {
+		  draw shape color: #yellow;	
 	}
 }
 
@@ -461,6 +471,7 @@ experiment ReChamp type: gui autorun:true{
 	    	species intervention aspect: base position:{0,0,0};
 		    species building aspect: base;
 			species greenSpace aspect: base ;
+			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
 			species bus_line aspect: base;
