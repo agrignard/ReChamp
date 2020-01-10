@@ -10,7 +10,7 @@ model ReChamp
 global {
 	//EXISTING SHAPEFILE (FROM OPENDATA)
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
-	file green_spaces_shapefile <- file("../includes/GIS/green_space.shp");
+	
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads.shp");
 	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
@@ -29,10 +29,15 @@ global {
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
 	//GENERATED SHAPEFILE (FROM QGIS)
+	//MOBILITY
 	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
 	file Etoile_Mobility_Now_shapefile <- file("../includes/GIS/Etoile_Mobility_Now.shp");
 	file Concorde_Mobility_Now_shapefile <- file("../includes/GIS/Concorde_Mobility_Now.shp");
 	file Palais_Mobility_Now_shapefile <- file("../includes/GIS/Palais_Mobility_Now.shp");
+	
+	//NATURE
+	file Nature_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_NATURE.shp");
+	file Nature_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_NATURE.shp");
 
 	geometry shape <- envelope(shape_file_bounds);
 	graph car_graph;
@@ -58,7 +63,7 @@ global {
 	bool showMetro parameter: 'Metro (m)' category: "Mobility" <-false;
 	bool showStation parameter: 'Station (s)' category: "Mobility" <-false;
 	
-	bool showGreen parameter: 'Green (j)' category: "Parameters" <-false;
+	bool showGreen parameter: 'Green (j)' category: "Parameters" <-true;
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
@@ -85,11 +90,11 @@ global {
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
-		create greenSpace from: green_spaces_shapefile {
-			/*create stroller number:self.shape.area/1000{
+		create greenSpace from: Nature_Future_shapefile {
+			create stroller number:self.shape.area/1000{
 			  location<-any_location_in(myself.shape);	
 			  myCurrentGarden<-myself;	
-			}*/
+			}
 		}
 
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
