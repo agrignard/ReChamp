@@ -35,6 +35,11 @@ global {
 	file Concorde_Mobility_Now_shapefile <- file("../includes/GIS/Concorde_Mobility_Now.shp");
 	file Palais_Mobility_Now_shapefile <- file("../includes/GIS/Palais_Mobility_Now.shp");
 	
+	
+	//MOBILITY
+	file Mobility_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_MOBILITY.shp");
+	file Mobility_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_MOBILITY.shp");
+	
 	//NATURE
 	file Nature_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_NATURE.shp");
 	file Nature_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_NATURE.shp");
@@ -59,15 +64,19 @@ global {
 		
 	bool showPeople parameter: 'People (p)' category: "Agent" <-true;
 	bool wander parameter: 'People Wandering' category: "Agent" <-true;
+	bool showBuilding parameter: 'Building (b)' category: "Agent" <-false;
+	bool showRoad parameter: 'Road Simu(r)' category: "Agent" <-false;
 	
-	bool showRoad parameter: 'Road (r)' category: "Mobility" <-false;
-	bool showBike  parameter: 'Bike Lane (v)' category: "Mobility" <-false;
-	bool showBuilding parameter: 'Building (b)' category: "Mobility" <-false;
+	bool showVizuRoad parameter: 'Road Vizu(q)' category: "Interaction" <-false;
+	bool showBike  parameter: 'Bike Lane (v)' category: "Interaction" <-false;
+	bool showGreen parameter: 'Green (j)' category: "Interaction" <-true;
+	bool showUsage parameter: 'Usage (u)' category: "Interaction" <-true;
+	
 	bool showBus parameter: 'Bus (n)' category: "Mobility" <-false;
 	bool showMetro parameter: 'Metro (m)' category: "Mobility" <-false;
 	bool showStation parameter: 'Station (s)' category: "Mobility" <-false;
 	
-	bool showGreen parameter: 'Green (j)' category: "Parameters" <-true;
+	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
@@ -80,6 +89,9 @@ global {
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
+	
+	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
+	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
@@ -96,7 +108,9 @@ global {
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];	
+		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
+			mode<-"car";
+		}	
 		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
 		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];	
 		create road from: Concorde_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
@@ -171,10 +185,14 @@ global {
 	}
 	
 	reflex updateSimuState when:updateSim=true{
-		//UPDATE NATURE
 		ask stroller{do die;}
 		if (currentSimuState = 0){
-			
+			ask vizuRoad where (each.state="future"){
+				do die;
+			}
+			create vizuRoad from: Mobility_Now_shapefile with: [type:string(read ("type"))] {
+				state<-"present";
+			}
 			ask greenSpace where (each.state="future"){
 				do die;
 			}
@@ -193,6 +211,12 @@ global {
 			}
 		}
 		if (currentSimuState = 1){
+			ask vizuRoad where (each.state="present"){
+				do die;
+			}
+			create vizuRoad from: Mobility_Future_shapefile with: [type:string(read ("type"))] {
+				state<-"future";
+			}
 			ask greenSpace where (each.state="present"){
 				do die;
 			}
@@ -217,7 +241,19 @@ global {
 species culture{
 	string state;
 	aspect base {
+		if(showUsage){
 		  draw shape color: #yellow;	
+		}  	
+	}
+}
+
+species vizuRoad{
+	string state;
+	string type;
+	aspect base {
+		if(showVizuRoad){
+			draw shape color:type_colors[type] width:1;	
+		}
 	}
 }
 
@@ -280,6 +316,8 @@ species water {
 		}	
 	}
 }
+
+
 
 species road  {
 	int id;
@@ -491,6 +529,7 @@ experiment ReChamp type: gui autorun:true{
 			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
+			species vizuRoad aspect:base;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
@@ -509,12 +548,14 @@ experiment ReChamp type: gui autorun:true{
 			event["g"] action: {showGif<-!showGif;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
+			event["q"] action: {showVizuRoad<-!showVizuRoad;};
 			event["v"] action: {showBike<-!showBike;};
 			event["m"] action: {showMetro<-!showMetro;};
 			event["n"] action: {showBus<-!showBus;};
 			event["s"] action: {showStation<-!showStation;};
 			event["a"] action: {showAmenities<-!showAmenities;};
 			event["j"] action: {showGreen<-!showGreen;};
+			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
 			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
