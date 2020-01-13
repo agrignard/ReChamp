@@ -93,6 +93,9 @@ global {
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
 	map<road,float> proba_use_road;
+	list<intersection> input_intersections;
+	list<intersection> output_intersections;
+	list<intersection> possible_targets; 
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -105,6 +108,7 @@ global {
 
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 
+		
 		
 
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals")];
@@ -128,14 +132,16 @@ global {
 				match "-1" {
 					shape <- polyline(reverse(shape.points));
 				}
-
 			}
-
 		}
 
+		
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
-
+		
+		output_intersections <- intersection where (empty(each.roads_out));
+		input_intersections <- intersection where (empty(each.roads_in));
+		possible_targets <- intersection - input_intersections;
 		proba_use_road <- road as_map (each::each.proba_use);
 
 
@@ -162,7 +168,7 @@ global {
 			right_side_driving <- true;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
 			proba_lane_change_down <- 0.5 + (rnd(500) / 500);
-			location <- one_of(intersection where empty(each.stop)).location;
+			location <- one_of(intersection - output_intersections).location;
 			security_distance_coeff <- 5 / 9 * 3.6 * (1.5 - rnd(1000) / 1000);
 			proba_respect_priorities <- 1.0 - rnd(200 / 1000);
 			proba_respect_stops <- [1.0];
@@ -512,7 +518,15 @@ species people skills:[advanced_driving]{
 
 	reflex leave when: (type = "car" and final_target = nil) or (type != "car" and target = nil) {
 		if (type="car") {
-			target_intersection <- one_of(intersection);
+			if (target_intersection != nil and target_intersection in output_intersections) {
+				if current_road != nil {
+					ask current_road as road {
+						do unregister(myself);
+					}
+				}
+				location <- one_of(input_intersections).location;
+			}
+			target_intersection <- one_of(possible_targets);
 			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 		} else {
 			target <- any_location_in(one_of(building));
@@ -727,10 +741,23 @@ experiment ReChamp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 						
+			
+			graphics "input_intersection" {
+				loop it over: input_intersections {
+					draw circle(10) color: #magenta at: it.location;
+				}
+			}
+			graphics "output_intersection" {
+				loop it over: output_intersections {
+					draw circle(10) color: #cyan at: it.location;
+				}
+			}
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
+			
+			
 			
 			event["p"] action: {showPeople<-!showPeople;};
 			event["g"] action: {showGif<-!showGif;};
