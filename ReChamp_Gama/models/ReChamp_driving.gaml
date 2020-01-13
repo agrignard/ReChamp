@@ -232,27 +232,46 @@ global {
 	}
 	
 	action init_traffic_signal { 
+		
 		list<intersection> traffic_signals <- intersection where each.is_traffic_signal ;
+		list<intersection> to_remove <- traffic_signals where empty(each.roads_in);
+		ask to_remove {
+			is_traffic_signal <- false;
+		}
+		traffic_signals <- traffic_signals -to_remove;
 		ask traffic_signals {
 			stop << [];
 		}
 		
 		list<list<intersection>> groupes <- traffic_signals simple_clustering_by_distance dist_group_traffic_light;
 		loop gp over: groupes {
+			rgb col <- rnd_color(255);
+			ask gp {color_group <- col;}
 			int cpt_init <- rnd(100);
 			bool green <- flip(0.5);
-			
 			if (length(gp) = 1) {
 				ask (intersection(first(gp))) {
 					if (green) {do to_green;} 
 					else {do to_red;}
-					do compute_crossing;
+					float ref_angle <- 0.0;
+					if (length(roads_in) >= 2) {
+						road rd0 <- road(roads_in[0]);
+						list<point> pts <- rd0.shape.points;
+						ref_angle <- float(last(pts) direction_to rd0.location);
+					}
+					do compute_crossing(ref_angle);
 				}	
 			} else {
 				point centroide <- mean (gp collect (intersection(each)).location);
 				float angle_ref <- centroide direction_to intersection(first(gp)).location;
 				bool first <- true;
 				float ref_angle <- 0.0;
+				ask first(gp where (length(each.roads_in) > 0)) {
+					road rd0 <- road(roads_in[0]);
+					list<point> pts <- rd0.shape.points;
+					ref_angle <- float(last(pts) direction_to rd0.location);
+				}
+				
 				loop si over: gp {
 					intersection ns <- intersection(si);
 					bool green_si <- green;
@@ -262,26 +281,11 @@ global {
 					}
 					ask ns {
 						counter <- cpt_init;
+						
 						if (green_si) {do to_green;} 
 							else {do to_red;}
 						if (not empty(roads_in)) {
-							if (is_crossing or length(roads_in) >= 2) {
-								if (first) {
-									list<point> pts <- road(roads_in[0]).shape.points;
-									float angle_dest <- float( last(pts) direction_to road(roads_in[0]).location);
-									ref_angle <-  angle_dest;
-									first <- false;
-								}
-								loop rd over: roads_in {
-									list<point> pts <- road(rd).shape.points;
-									float angle_dest <- float(last(pts) direction_to rd.location);
-									
-									float ang <- abs(angle_dest - ref_angle);
-									if (ang > 45 and ang < 135) or  (ang > 225 and ang < 315) {
-										add road(rd) to: ways2;
-									}
-								}
-							} else {do compute_crossing;}
+							do compute_crossing(ref_angle);
 						}
 					}	
 				}
@@ -645,14 +649,10 @@ species intersection skills: [skill_road_node] {
 	list<road> ways2;
 	bool is_green;
 	rgb color_fire;
-	
+	rgb color_group;
 
-	action compute_crossing {
-		if (length(roads_in) >= 2) {
-			road rd0 <- road(roads_in[0]);
-			list<point> pts <- rd0.shape.points;
-			float ref_angle <- float(last(pts) direction_to rd0.location);
-			loop rd over: roads_in {
+	action compute_crossing(float ref_angle) {
+		loop rd over: roads_in {
 				list<point> pts2 <- road(rd).shape.points;
 				float angle_dest <- float(last(pts2) direction_to rd.location);
 				float ang <- abs(angle_dest - ref_angle);
@@ -661,9 +661,6 @@ species intersection skills: [skill_road_node] {
 				}
 
 			}
-
-		}
-
 		loop rd over: roads_in {
 			if not (rd in ways2) {
 				ways1 << road(rd);
@@ -702,6 +699,7 @@ species intersection skills: [skill_road_node] {
 	aspect default {
 		if (is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
+			draw triangle(5) color: color_group border: #black;
 		}	
 	}
 }
