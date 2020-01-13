@@ -53,23 +53,25 @@ global {
 	
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
 	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
+	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
+	
+	
 	bool wander parameter: 'People Wandering' category: "Agent" <-false;
 	bool showBuilding parameter: 'Building (b)' category: "Agent" <-false;
 	bool showRoad parameter: 'Road Simu(r)' category: "Agent" <-false;
 	
 	bool showVizuRoad parameter: 'Road Vizu(q)' category: "Interaction" <-false;
-	bool showBike  parameter: 'Bike Lane (v)' category: "Interaction" <-false;
+	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Interaction" <-false;
 	bool showGreen parameter: 'Green (j)' category: "Interaction" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Interaction" <-true;
 	
-	bool showBus parameter: 'Bus (n)' category: "Mobility" <-false;
-	bool showMetro parameter: 'Metro (m)' category: "Mobility" <-false;
+	bool showBusLane parameter: 'Bus Lane(n)' category: "Mobility" <-false;
+	bool showMetroLane parameter: 'Metro Lane (m)' category: "Mobility" <-false;
 	bool showStation parameter: 'Station (s)' category: "Mobility" <-false;
 	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Mobility" <-true;
 	
 	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
-	
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color (f):" category: "Vizu";
@@ -91,7 +93,7 @@ global {
 
 	int currentSimuState<-0;
 	bool updateSim<-true;
-	int nbAgent<-1000;
+	int nbAgent<-5000;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
 	map<road,float> proba_use_road;
@@ -178,21 +180,14 @@ global {
 		}
 		
         //Create Bike
-	    create people number:nbAgent*mobilityRatio["bike"]{
+	    create bike number:nbAgent*mobilityRatio["bike"]{
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
 		
-		//Create Bus
-		create people number:nbAgent*mobilityRatio["bus"]{
-		  type <- "bus";
-		  location<-any_location_in(one_of(building));	
-	    }
-		
 		car_graph <- as_edge_graph(road);
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
-		bus_graph <- as_edge_graph(bus_line);
 						
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -305,10 +300,10 @@ global {
 			create vizuRoad from: Mobility_Now_shapefile with: [type:string(read ("type"))] {
 				state<-"present";
 			}
-			ask greenSpace where (each.state="future"){
+			ask park where (each.state="future"){
 				do die;
 			}
-			create greenSpace from: Nature_Now_shapefile {
+			create park from: Nature_Now_shapefile {
 				state<-"present";
 				create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
@@ -329,10 +324,10 @@ global {
 			create vizuRoad from: Mobility_Future_shapefile with: [type:string(read ("type"))] {
 				state<-"future";
 			}
-			ask greenSpace where (each.state="present"){
+			ask park where (each.state="present"){
 				do die;
 			}
-			create greenSpace from: Nature_Future_shapefile {
+			create park from: Nature_Future_shapefile {
 				state<-"future";
 				create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
@@ -390,19 +385,17 @@ species ilots {
 }
 
 
-species greenSpace {
+species park {
 	string state;
 	string type; 
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
 		if(showGreen){
-		  draw shape color: rgb(50,50,50) ;	
+		  draw shape color: #olivedrab ;	
 		}	
 	}
-	aspect green {
-		draw shape color: #darkgreen ;
-	}
+
 }
 
 species amenities{
@@ -490,7 +483,7 @@ species road  skills: [skill_road]  {
 
 species bikelane{
 	aspect base {
-		if(showBike){
+		if(showBikeLane){
 		  draw shape color: color width:1;	
 		}	
 	}
@@ -502,7 +495,7 @@ species bus_line{
 	float capacity;
 	float capacity_pca;
 	aspect base {
-		if(showBus){
+		if(showBusLane){
 		  draw shape color: color;	
 		}
 	}
@@ -515,13 +508,13 @@ species station{
 	float capacity_pca;
 	aspect base {
 		if(showStation){
-		  if(showMetro){
+		  if(showMetroLane){
 		  	if(type="metro"){
 		  	  draw circle(20) - circle(16) color:#blue;	
 		  	  draw circle(16) color:#white;	
 		  	}
 		  }
-		  if(showBus){
+		  if(showBusLane){
 		  	if(type="bus"){
 		  	  draw circle(20) - circle(16) color:#yellow;	
 		  	  draw circle(16) color:#white;		
@@ -538,7 +531,7 @@ species metro_line{
 	string number;
 	string nature;
 	aspect base {
-		if(showMetro){
+		if(showMetroLane){
 		  draw shape color: metro_colors[number] width:3;	
 		}
 		
@@ -558,9 +551,21 @@ species pedestrian skills:[moving]{
 	}
 }
 
+species bike skills:[moving]{
+	string type;
+	reflex move{
+		do wander on:people_graph speed:8.0#km/#h;
+	}
+	aspect base{
+		if(showBike){
+		 draw square(3#m) color:type_colors[type] rotate: angle;	
+		}	
+	}
+}
+
 species stroller skills:[moving]{
 	
-	greenSpace myCurrentGarden;
+	park myCurrentGarden;
 		
 	reflex strol{
 		do wander bounds:myCurrentGarden.shape;
@@ -601,20 +606,6 @@ species people skills:[advanced_driving]{
 	
 	
 	reflex move when: (type = "car" and final_target != nil) or (type != "car" and target != nil){	
-	  if(type="bike"){
-	  	if (wander){
-	  	  do wander on:bike_graph speed:8.0#km/#h;	
-	  	}else{
-	  	  do goto target: target on: car_graph  speed:8.0#km/#h recompute_path: false;
-	  	}
-	  }
-	  if(type="bus"){
-	  	if(wander){
-	  	  do wander on:car_graph speed:6.0#km/#h;		
-	  	}else{
-	  	  do goto target: target on: car_graph  speed:6.0#km/#h recompute_path: false;	
-	  	}
-	  }	
 	  if(type="car"){
 	  	if(wander){
 	  	  do wander on:car_graph speed:25.0#km/#h proba_edges: proba_use_road ;	
@@ -782,7 +773,7 @@ experiment ReChamp type: gui autorun:true{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
 		    species building aspect: base;
-			species greenSpace aspect: base ;
+			species park aspect: base ;
 			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
@@ -793,6 +784,7 @@ experiment ReChamp type: gui autorun:true{
 			species intersection;
 			species people aspect:base;
 			species pedestrian aspect:base;
+			species bike aspect:base;
 			species stroller aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
@@ -805,13 +797,14 @@ experiment ReChamp type: gui autorun:true{
 			
 			event["p"] action: {showPedestrian<-!showPedestrian;};
 			event["c"] action: {showCar<-!showCar;};
+			event["b"] action: {showBike<-!showBike;};
 			event["g"] action: {showGif<-!showGif;};
-			event["b"] action: {showBuilding<-!showBuilding;};
+			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["q"] action: {showVizuRoad<-!showVizuRoad;};
 			event["v"] action: {showBike<-!showBike;};
-			event["m"] action: {showMetro<-!showMetro;};
-			event["n"] action: {showBus<-!showBus;};
+			event["m"] action: {showMetroLane<-!showMetroLane;};
+			event["n"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
 			event["a"] action: {showAmenities<-!showAmenities;};
 			event["j"] action: {showGreen<-!showGreen;};
