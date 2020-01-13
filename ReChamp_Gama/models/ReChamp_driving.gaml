@@ -308,6 +308,47 @@ species road skills: [skill_road] {
 
 	float capacity;		
 	
+	
+	//action (pas jolie jolie qui change le nombre de voie d'une route).
+	action change_number_of_lanes(int new_number) {
+		int prev <- lanes;
+		lanes <- new_number;
+		if prev < new_number {
+			list<list<list<agent>>> new_agents_on;
+			int nb_seg <- length(agents_on[0]);
+			loop i from: 0 to: new_number - 1 {
+				if (i < prev) {
+					list<list<agent>> ags_per_lanes <- agents_on[i];
+					new_agents_on << ags_per_lanes;
+				} else {
+					list<list<agent>> ags_per_lanes <- [];
+					loop times: nb_seg {
+						ags_per_lanes << [];
+					}
+					new_agents_on << ags_per_lanes;
+				}	
+			}
+			agents_on <- new_agents_on;
+		} else if prev > new_number {
+			list<list<list<agent>>> new_agents_on;
+			int nb_seg <- length(agents_on[0]);
+			loop i from: 0 to: prev - 1 {
+				list<list<agent>> ags_per_lanes <- agents_on[i];
+				if (i < new_number) {
+					new_agents_on << ags_per_lanes;
+				} else {
+					loop j from: 0 to: nb_seg -1 {
+						list<people> ags <- list<people>(ags_per_lanes[j]);
+						ask ags {
+							current_lane <- new_number - 1;
+							new_agents_on[new_number - 1][segment_index_on_road] << self;
+						}
+					} 	
+				}
+			}
+			agents_on <- new_agents_on;
+		}
+	}
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
