@@ -15,6 +15,7 @@ global {
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
 	file nodes_shapefile <- file("../includes/GIS/nodes_OSM.shp");
+	file signals_zone_shapefile <- file("../includes/GIS/signals_zone.shp");
 	
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
@@ -105,8 +106,8 @@ global {
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals")];
-	
+		create intersection from: nodes_shapefile with: [test:: string(read("type")), is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group"))];
+		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway"))] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 50.0 : 70.0)) °km / °h;
@@ -134,13 +135,13 @@ global {
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
 			
 		
+		
 		output_intersections <- intersection where (empty(each.roads_out));
 		input_intersections <- intersection where (empty(each.roads_in));
 		possible_targets <- intersection - input_intersections;
 		proba_use_road <- road as_map (each::each.proba_use);
-
-
-
+		do check_signals_integrity;
+		
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
 
@@ -212,12 +213,12 @@ global {
 			}
 		}	
 		ask intersection where each.is_traffic_signal{
-			if empty(intervention overlapping self){
+			if empty(signals_zone overlapping self){
 				is_traffic_signal <- false;
 			}
 		}
-		do init_traffic_signal;
 		
+		do init_traffic_signal;
 		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
 	}
@@ -342,6 +343,16 @@ global {
 			}
 		}
 		updateSim<-false;
+	}
+	
+	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
+	action check_signals_integrity{
+		ask input_intersections where(each.group != 0){
+			write "intersection "+self+" from group "+self.group+" is an input intersection";
+		}
+		ask output_intersections where(each.group != 0){
+			write "intersection "+self+" from group "+self.group+" is an output intersection";
+		}
 	}
 }
 
@@ -685,9 +696,17 @@ species intervention{
 		}
 }
 
+species signals_zone{
+		aspect base {
+			draw shape empty: true  color:#green;		
+		}
+}
+
 species intersection skills: [skill_road_node] {
+	string test;
 	bool is_traffic_signal;
 	bool is_crossing;
+	int group;
 	list<list> stop;
 	int time_to_change <- 100;
 	int counter <- rnd(time_to_change);
@@ -746,7 +765,10 @@ species intersection skills: [skill_road_node] {
 		if (is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
 			draw triangle(5) color: color_group border: #black;
-		}	
+		}
+//		else {
+//			draw circle(3) color: #orange;
+//		}
 	}
 }
 
@@ -789,6 +811,7 @@ experiment ReChamp type: gui autorun:true{
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
+			species signals_zone aspect: base;
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
