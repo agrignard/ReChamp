@@ -8,43 +8,32 @@
 model ReChamp
 
 global {
-	//EXISTING SHAPEFILE (FROM OPENDATA)
+	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
+	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	
 	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
 	file nodes_shapefile <- file("../includes/GIS/nodes_OSM.shp");
-	file voierie_shapefile <- file("../includes/GIS/voirie.shp");
-	file hotspot_shapefile <- file("../includes/GIS/Hotspot.shp");
-	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
-	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");
 	
-	file gksection_shapefile <- file("../includes/GIS/gksection.shp");
-	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
-	file pedestrian_shapefile <- file("../includes/GIS/pedestrianZone.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
 	
 	//GENERATED SHAPEFILE (FROM QGIS)
-	//MOBILITY
-	file Champs_Mobility_Now_shapefile <- file("../includes/GIS/Champs_Mobility_Now.shp");
-	file Etoile_Mobility_Now_shapefile <- file("../includes/GIS/Etoile_Mobility_Now.shp");
-	file Concorde_Mobility_Now_shapefile <- file("../includes/GIS/Concorde_Mobility_Now.shp");
-	file Palais_Mobility_Now_shapefile <- file("../includes/GIS/Palais_Mobility_Now.shp");
-	
-	
+	//INTERVENTION
+	file hotspot_shapefile <- file("../includes/GIS/Hotspot.shp");
+	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
+	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");		
 	//MOBILITY
 	file Mobility_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_MOBILITY.shp");
 	file Mobility_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_MOBILITY.shp");
-	
 	//NATURE
 	file Nature_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_NATURE.shp");
 	file Nature_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_NATURE.shp");
-	
 	//USAGE
 	file Usage_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_USAGE.shp");
 	file Usage_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_USAGE.shp");
@@ -56,17 +45,14 @@ global {
 	graph bus_graph;
 	
 	graph driving_road_network;
-	
-    graph Champs_Mobility_Now;
-	graph Etoile_Mobility_Now;
-	
-	bool realData<-true;
+		
 	
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
 	float dist_group_traffic_light <- 50.0;
 	
-	bool showPeople parameter: 'People (p)' category: "Agent" <-true;
+	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
+	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
 	bool wander parameter: 'People Wandering' category: "Agent" <-false;
 	bool showBuilding parameter: 'Building (b)' category: "Agent" <-false;
 	bool showRoad parameter: 'Road Simu(r)' category: "Agent" <-false;
@@ -117,15 +103,6 @@ global {
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		/*create road from: roads_shapefile with: [id:int(read ("OBJECTID"))]{
-			mode<-"car";
-		}	
-		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
-		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];	
-		create road from: Concorde_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
-		create road from: Palais_Mobility_Now_shapefile  with: [mode:string(read ("mode"))];
-		*/
-
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals")];
 	
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
@@ -195,7 +172,7 @@ global {
 		}
 		
 		//Create Pedestrain
-		create people number:nbAgent*mobilityRatio["people"]{
+		create pedestrian number:nbAgent*mobilityRatio["people"]{
 		  type <- "people";
 		  location<-any_location_in(one_of(building));
 		}
@@ -216,9 +193,7 @@ global {
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
-			
-		//Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
-			
+						
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
@@ -247,7 +222,6 @@ global {
 			}
 		}
 		do init_traffic_signal;
-		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
 		
 		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
@@ -572,6 +546,18 @@ species metro_line{
 }
 
 
+species pedestrian skills:[moving]{
+	string type;
+	reflex move{
+		do wander on:people_graph speed:5.0#km/#h;
+	}
+	aspect base{
+		if(showPedestrian){
+		 draw square(3#m) color:type_colors[type] rotate: angle;	
+		}	
+	}
+}
+
 species stroller skills:[moving]{
 	
 	greenSpace myCurrentGarden;
@@ -581,7 +567,7 @@ species stroller skills:[moving]{
 	}
 	
 	aspect base {
-	  if(showPeople){
+	  if(showPedestrian){
 	    draw square(3#m) color:type_colors["people"] rotate: angle;   
 	  }
 	}
@@ -596,7 +582,7 @@ species people skills:[advanced_driving]{
 	string aspect;
 	string type;
 		
-reflex leave when: (type = "car" and final_target = nil) or (type != "car" and target = nil) {
+	reflex leave when: (type = "car" and final_target = nil) or (type != "car" and target = nil) {
 		if (type="car") {
 			if (target_intersection != nil and target_intersection in output_intersections) {
 				if current_road != nil {
@@ -614,7 +600,7 @@ reflex leave when: (type = "car" and final_target = nil) or (type != "car" and t
 	}
 	
 	
-		reflex move when: (type = "car" and final_target != nil) or (type != "car" and target != nil){	
+	reflex move when: (type = "car" and final_target != nil) or (type != "car" and target != nil){	
 	  if(type="bike"){
 	  	if (wander){
 	  	  do wander on:bike_graph speed:8.0#km/#h;	
@@ -636,15 +622,7 @@ reflex leave when: (type = "car" and final_target = nil) or (type != "car" and t
 	  	  do drive;
 	  			
 	  	}
-	  }
-	  if(type="people"){
-	  	if(wander){
-	  	  do wander on:people_graph speed:5.0#km/#h;		
-	  	}else{
-	  		do wander on:people_graph speed:5.0#km/#h;
-	  	//  do goto target: target on: car_graph  speed:5.0#km/#h recompute_path: false;
-	  	}
-	  }	  
+	  } 
 	}
 	
 	point calcul_loc {
@@ -663,7 +641,7 @@ reflex leave when: (type = "car" and final_target = nil) or (type != "car" and t
 
 	} 
 	aspect base {
-	  if(showPeople){
+	  if(showCar){
 	     if (type="car"){
 	      	 draw rectangle(5#m,10#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	
 	    }else{
@@ -814,28 +792,19 @@ experiment ReChamp type: gui autorun:true{
 			species amenities aspect:base;
 			species intersection;
 			species people aspect:base;
+			species pedestrian aspect:base;
 			species stroller aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-			
-			/*graphics "input_intersection" {
-				loop it over: input_intersections {
-					draw circle(10) color: #magenta at: it.location;
-				}
-			}
-			graphics "output_intersection" {
-				loop it over: output_intersections {
-					draw circle(10) color: #cyan at: it.location;
-				}
-			}*/
-						
+									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
-			event["p"] action: {showPeople<-!showPeople;};
+			event["p"] action: {showPedestrian<-!showPedestrian;};
+			event["c"] action: {showCar<-!showCar;};
 			event["g"] action: {showGif<-!showGif;};
 			event["b"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
