@@ -54,8 +54,36 @@ global{
 			}
 		}
 		write "Road and node agents created";
-		
 		ask road {
+			list<road> rds <- (road overlapping self) - self;
+			point pt1 <- first(shape.points);
+			point pt2 <- last(shape.points);
+			rds <- rds where (first(each.shape.points) = pt1 and last(each.shape.points) = pt2);
+			if (not empty(rds)) {
+				if (type = "") {
+					list<string> types <- rds collect each.type;
+					string t <- types first_with (each != "");
+					if (t != nil) {type <- t;}
+				}
+				if (oneway = "") {
+					list<string> oneways <- rds collect each.oneway;
+					string t <- oneways first_with (each != "");
+					if (t != nil) {oneway <- t;}
+				}
+				if (maxspeed = 0) {
+					list<float> maxspeeds <- rds collect each.maxspeed;
+					float t <- maxspeeds first_with (each > 0);
+					if (t != nil) {maxspeed <- t;}
+				}
+				if (lanes = 0) {
+					list<int> laness <- rds collect each.lanes;
+					int t <- laness first_with (each > 0);
+					if (t != nil) {lanes <- t;}
+				}
+				ask rds {
+					do die;
+				}
+			}
 			point ptF <- first(shape.points);
 			if (not(ptF in nodes_map.keys)) {
 				create intersection with:[location::ptF] {
@@ -69,12 +97,34 @@ global{
 				}
 			}
 		}
-			
+		
 		write "Supplementary node agents created";
 		ask intersection {
 			if (empty (road overlapping (self))) {
 				do die;
 			}
+		}
+		
+		ask intersection {
+			list<intersection> inters <- ((intersection where (each.location = location)) - self);
+			
+			if not empty(inters) {
+				if (type = "") {
+						list<string> types <- inters collect each.type;
+						string t <- types first_with (each != "");
+						if (t != nil) {type <- t;}
+					}
+					if (crossing = "") {
+						list<string> crossings <- inters collect each.crossing;
+						string t <- crossings first_with (each != "");
+						if (t != nil) {crossing <- t;}
+					}
+				
+				ask inters {
+					do die;
+				}
+			}
+			
 		}
 		
 		write "node agents filtered";
