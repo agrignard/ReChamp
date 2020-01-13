@@ -55,6 +55,8 @@ global {
 	
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
+	
+	float dist_group_traffic_light <- 50.0;
 		
 	bool showPeople parameter: 'People (p)' category: "Agent" <-true;
 	bool wander parameter: 'People Wandering' category: "Agent" <-false;
@@ -91,6 +93,9 @@ global {
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
 	map<road,float> proba_use_road;
+	list<intersection> input_intersections;
+	list<intersection> output_intersections;
+	list<intersection> possible_targets; 
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -104,9 +109,10 @@ global {
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 
 		
+		
 
-		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals")];
-
+		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals")];
+	
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway"))] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 50.0 : 70.0)) °km / °h;
@@ -126,16 +132,16 @@ global {
 				match "-1" {
 					shape <- polyline(reverse(shape.points));
 				}
-
 			}
-
 		}
 
-		map general_speed_map <- road as_map (each::(each.shape.perimeter / each.maxspeed));
-
+		
 		//creation of the road network using the road and intersection agents
-		driving_road_network <- (as_driving_graph(road, intersection)) with_weights general_speed_map;
-
+		driving_road_network <- (as_driving_graph(road, intersection)) ;
+		
+		output_intersections <- intersection where (empty(each.roads_out));
+		input_intersections <- intersection where (empty(each.roads_in));
+		possible_targets <- intersection - input_intersections;
 		proba_use_road <- road as_map (each::each.proba_use);
 
 
@@ -162,7 +168,7 @@ global {
 			right_side_driving <- true;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
 			proba_lane_change_down <- 0.5 + (rnd(500) / 500);
-			location <- one_of(intersection where empty(each.stop)).location;
+			location <- one_of(intersection - output_intersections).location;
 			security_distance_coeff <- 5 / 9 * 3.6 * (1.5 - rnd(1000) / 1000);
 			proba_respect_priorities <- 1.0 - rnd(200 / 1000);
 			proba_respect_stops <- [1.0];
@@ -195,9 +201,7 @@ global {
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 			
-		ask intersection {
-			do initialize;
-		}
+		do init_traffic_signal;
 		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
 			
 		//Graphical Species (gif loader)
@@ -216,7 +220,80 @@ global {
 			do initialize;
 			interventionNumber<-2;
 			isActive<-false;
-		}		 
+		}
+		
+		ask intervention {
+			ask road overlapping self {
+				hot_spot <- true;
+			}
+		}	
+		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
+		driving_road_network <- driving_road_network with_weights general_speed_map;	 
+	}
+	
+	action init_traffic_signal { 
+		list<intersection> traffic_signals <- intersection where each.is_traffic_signal ;
+		ask traffic_signals {
+			stop << [];
+		}
+		
+		list<list<intersection>> groupes <- traffic_signals simple_clustering_by_distance dist_group_traffic_light;
+		loop gp over: groupes {
+			int cpt_init <- rnd(100);
+			bool green <- flip(0.5);
+			
+			if (length(gp) = 1) {
+				ask (intersection(first(gp))) {
+					if (green) {do to_green;} 
+					else {do to_red;}
+					do compute_crossing;
+				}	
+			} else {
+				point centroide <- mean (gp collect (intersection(each)).location);
+				float angle_ref <- centroide direction_to intersection(first(gp)).location;
+				bool first <- true;
+				float ref_angle <- 0.0;
+				loop si over: gp {
+					intersection ns <- intersection(si);
+					bool green_si <- green;
+					float ang <- abs((centroide direction_to ns.location) - angle_ref);
+					if (ang > 45 and ang < 135) or  (ang > 225 and ang < 315) {
+						green_si <- not(green_si);
+					}
+					ask ns {
+						counter <- cpt_init;
+						if (green_si) {do to_green;} 
+							else {do to_red;}
+						if (not empty(roads_in)) {
+							if (is_crossing or length(roads_in) >= 2) {
+								if (first) {
+									list<point> pts <- road(roads_in[0]).shape.points;
+									float angle_dest <- float( last(pts) direction_to road(roads_in[0]).location);
+									ref_angle <-  angle_dest;
+									first <- false;
+								}
+								loop rd over: roads_in {
+									list<point> pts <- road(rd).shape.points;
+									float angle_dest <- float(last(pts) direction_to rd.location);
+									
+									float ang <- abs(angle_dest - ref_angle);
+									if (ang > 45 and ang < 135) or  (ang > 225 and ang < 315) {
+										add road(rd) to: ways2;
+									}
+								}
+							} else {do compute_crossing;}
+						}
+					}	
+				}
+			}
+		}
+		ask traffic_signals {
+			loop rd over: roads_in {
+				if not(rd in ways2) {
+					ways1 << road(rd);
+				}
+			}
+		} 
 	}
 	
 	reflex updateSimuState{
@@ -303,11 +380,53 @@ species road skills: [skill_road] {
 	rgb color;
 	string mode;
 	string oneway;
+	bool hot_spot <- false;
 	
 	float proba_use <- 100.0;
 
 	float capacity;		
 	
+	
+	//action (pas jolie jolie) qui change le nombre de voie d'une route.
+	action change_number_of_lanes(int new_number) {
+		int prev <- lanes;
+		lanes <- new_number;
+		if prev < new_number {
+			list<list<list<agent>>> new_agents_on;
+			int nb_seg <- length(agents_on[0]);
+			loop i from: 0 to: new_number - 1 {
+				if (i < prev) {
+					list<list<agent>> ags_per_lanes <- agents_on[i];
+					new_agents_on << ags_per_lanes;
+				} else {
+					list<list<agent>> ags_per_lanes <- [];
+					loop times: nb_seg {
+						ags_per_lanes << [];
+					}
+					new_agents_on << ags_per_lanes;
+				}	
+			}
+			agents_on <- new_agents_on;
+		} else if prev > new_number {
+			list<list<list<agent>>> new_agents_on;
+			int nb_seg <- length(agents_on[0]);
+			loop i from: 0 to: prev - 1 {
+				list<list<agent>> ags_per_lanes <- agents_on[i];
+				if (i < new_number) {
+					new_agents_on << ags_per_lanes;
+				} else {
+					loop j from: 0 to: nb_seg -1 {
+						list<people> ags <- list<people>(ags_per_lanes[j]);
+						ask ags {
+							current_lane <- new_number - 1;
+							new_agents_on[new_number - 1][segment_index_on_road] << self;
+						}
+					} 	
+				}
+			}
+			agents_on <- new_agents_on;
+		}
+	}
 	aspect base {
 		if(showRoad){
 			draw shape color:type_colors["car"] width:1;	
@@ -399,7 +518,15 @@ species people skills:[advanced_driving]{
 
 	reflex leave when: (type = "car" and final_target = nil) or (type != "car" and target = nil) {
 		if (type="car") {
-			target_intersection <- one_of(intersection);
+			if (target_intersection != nil and target_intersection in output_intersections) {
+				if current_road != nil {
+					ask current_road as road {
+						do unregister(myself);
+					}
+				}
+				location <- one_of(input_intersections).location;
+			}
+			target_intersection <- one_of(possible_targets);
 			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 		} else {
 			target <- any_location_in(one_of(building));
@@ -510,6 +637,7 @@ species intervention{
 
 species intersection skills: [skill_road_node] {
 	bool is_traffic_signal;
+	bool is_crossing;
 	list<list> stop;
 	int time_to_change <- 100;
 	int counter <- rnd(time_to_change);
@@ -517,20 +645,7 @@ species intersection skills: [skill_road_node] {
 	list<road> ways2;
 	bool is_green;
 	rgb color_fire;
-
-	action initialize {
-		if (is_traffic_signal) {
-			do compute_crossing;
-			stop << [];
-			if (flip(0.5)) {
-				do to_green;
-			} else {
-				do to_red;
-			}
-
-		}
-
-	}
+	
 
 	action compute_crossing {
 		if (length(roads_in) >= 2) {
@@ -626,10 +741,23 @@ experiment ReChamp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 						
+			
+			graphics "input_intersection" {
+				loop it over: input_intersections {
+					draw circle(10) color: #magenta at: it.location;
+				}
+			}
+			graphics "output_intersection" {
+				loop it over: output_intersections {
+					draw circle(10) color: #cyan at: it.location;
+				}
+			}
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
+			
+			
 			
 			event["p"] action: {showPeople<-!showPeople;};
 			event["g"] action: {showGif<-!showGif;};

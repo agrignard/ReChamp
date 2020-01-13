@@ -87,6 +87,7 @@ global {
 	float angle<-26.25;
 
 	int currentSimuState<-0;
+	bool updateSim<-true;
 	int nbAgent<-1000;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
@@ -94,17 +95,7 @@ global {
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
-		create greenSpace from: Nature_Future_shapefile {
-			create stroller number:self.shape.area/1000{
-			  location<-any_location_in(myself.shape);	
-			  myCurrentGarden<-myself;	
-			}
-		}
-
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-
-		create culture from:Usage_Now_shapefile;
-
 		create road from: roads_shapefile with: [id:int(read ("OBJECTID"))];	
 		create road from: Champs_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];
 		create road from: Etoile_Mobility_Now_shapefile  with: [mode:string(read ("mode")),proba_use:float(read("proba"))];	
@@ -179,27 +170,52 @@ global {
 		}		 
 	}
 	
-	reflex updateSimuState{
+	reflex updateSimuState when:updateSim=true{
+		//UPDATE NATURE
+		ask stroller{do die;}
+		if (currentSimuState = 0){
+			
+			ask greenSpace where (each.state="future"){
+				do die;
+			}
+			create greenSpace from: Nature_Now_shapefile {
+				state<-"present";
+				create stroller number:self.shape.area/1000{
+			  		location<-any_location_in(myself.shape);	
+			  		myCurrentGarden<-myself;	
+				}
+			}
+			ask culture where (each.state="future"){
+				do die;
+			}
+			create culture from: Usage_Now_shapefile {
+				state<-"present";
+			}
+		}
 		if (currentSimuState = 1){
-			ask intervention{
-				isActive<-false;
+			ask greenSpace where (each.state="present"){
+				do die;
 			}
-			ask intervention where (each.interventionNumber=1){
-				isActive<-true;
+			create greenSpace from: Nature_Future_shapefile {
+				state<-"future";
+				create stroller number:self.shape.area/1000{
+			  		location<-any_location_in(myself.shape);	
+			  		myCurrentGarden<-myself;	
+				}
+			}
+			ask culture where (each.state="present"){
+				do die;
+			}
+			create culture from: Usage_Future_shapefile {
+				state<-"future";
 			}
 		}
-		if (currentSimuState = 2){
-			ask intervention{
-				isActive<-false;
-			}
-			ask intervention where (each.interventionNumber=2){
-				isActive<-true;
-			}
-		}
+		updateSim<-false;
 	}
 }
 
 species culture{
+	string state;
 	aspect base {
 		  draw shape color: #yellow;	
 	}
@@ -227,6 +243,7 @@ species ilots {
 
 
 species greenSpace {
+	string state;
 	string type; 
 	rgb color <- #darkgreen  ;
 	
@@ -340,7 +357,7 @@ species metro_line{
 species stroller skills:[moving]{
 	
 	greenSpace myCurrentGarden;
-	
+		
 	reflex strol{
 		do wander bounds:myCurrentGarden.shape;
 	}
@@ -502,8 +519,8 @@ experiment ReChamp type: gui autorun:true{
 			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event[" "] action: {showBackground<-!showBackground;};				
-			event["0"] action: {currentSimuState<-0;};
-			event["1"] action: {currentSimuState<-1;};
+			event["0"] action: {if(currentSimuState!=0){currentSimuState<-0;updateSim<-true;}};
+			event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
 }
