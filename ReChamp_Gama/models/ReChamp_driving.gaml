@@ -742,7 +742,7 @@ experiment ReChamp type: gui autorun:true{
 			species bikelane aspect:base;
 						
 			
-			graphics "input_intersection" {
+			/*graphics "input_intersection" {
 				loop it over: input_intersections {
 					draw circle(10) color: #magenta at: it.location;
 				}
@@ -751,7 +751,7 @@ experiment ReChamp type: gui autorun:true{
 				loop it over: output_intersections {
 					draw circle(10) color: #cyan at: it.location;
 				}
-			}
+			}*/
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
