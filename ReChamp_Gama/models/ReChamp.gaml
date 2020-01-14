@@ -835,7 +835,7 @@ experiment ReChamp type: gui autorun:true{
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species signals_zone aspect: base;
+	//		species signals_zone aspect: base;
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
