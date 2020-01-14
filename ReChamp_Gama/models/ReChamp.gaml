@@ -117,10 +117,7 @@ global {
 						lanes <- max([1, int(myself.lanes / 2.0)]);
 						shape <- polyline(reverse(myself.shape.points));
 						maxspeed <- myself.maxspeed;
-						linked_road <- myself;
-						myself.linked_road <- self;
 					}
-
 					lanes <- int(lanes / 2.0 + 0.5);
 				}
 
@@ -636,6 +633,7 @@ species people skills:[advanced_driving]{
 				location <- one_of(input_intersections).location;
 			}
 			target_intersection <- one_of(possible_targets);
+			current_lane <- 0;
 			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 		} else {
 			target <- any_location_in(one_of(building));
