@@ -243,8 +243,15 @@ global {
 			bool green <- flip(0.5);
 			ask gp {
 				color_group <- col;
+				point centroide <- mean (gp collect (intersection(each)).location);
 				loop rd over: roads_in {
-					ways1 << road(rd);
+					road r <- road(rd);
+					bool inward <- distance_to(centroide, first(rd.shape.points)) > distance_to(centroide, last(rd.shape.points));
+					if length(roads_in) = 1{// trouver un truc moins moche et plus générique pour ça
+						ways1 << r;
+					}else if inward {
+						ways1 << r;
+					}
 					if phase = 1 {
 						if green{do to_green;}else{do to_red;}
 					}else{
