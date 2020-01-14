@@ -103,7 +103,7 @@ global {
 	list<intersection> input_intersections;
 	list<intersection> output_intersections;
 	list<intersection> possible_targets; 
-	
+	map<agent,float> proba_choose_target;
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -133,13 +133,13 @@ global {
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
 			
-		
-		
 		output_intersections <- intersection where (empty(each.roads_out));
 		input_intersections <- intersection where (empty(each.roads_in));
 		possible_targets <- intersection - input_intersections;
 		proba_use_road <- road as_map (each::each.proba_use);
 		do check_signals_integrity;
+		
+		do updateSimuState;
 		
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
@@ -156,9 +156,8 @@ global {
 		}
 		
 		//------------------- AGENT ---------------------------------------- //
-		create people number:nbAgent*mobilityRatio["car"]{
-		  type <- "car";
-		  // location <- any_location_in(one_of(road where (each.mode="car")));
+		create car number:nbAgent*mobilityRatio["car"]{
+		 	 type <- "car";
 		  	max_speed <- 160 #km / #h;
 			vehicle_length <- 10.0 #m;
 			right_side_driving <- true;
@@ -177,7 +176,17 @@ global {
 		//Create Pedestrain
 		create pedestrian number:nbAgent*mobilityRatio["people"]{
 		  type <- "people";
-		  location<-any_location_in(one_of(building));
+			if flip(0.3) {
+				target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+				target <- (any_location_in(target_place));
+				location<-copy(target);
+				state <- "stroll";
+				
+				
+			} else {
+				location<-any_location_in(one_of(road));
+			}
+		  	
 		}
 		
         //Create Bike
@@ -359,19 +368,22 @@ global {
 		
 	}
 	
-	reflex updateSim{
+	reflex updateSim when: every(5 #mn){
 		//Create people going in and out of metro station
 		ask station where (each.type="metro"){
-			create metropolitan number:1{
-				lifespan<-25;
+			create pedestrian number:rnd(0,10){
+				//lifespan<-25;
 				type<-"people";
 				location<-any_location_in(myself);
 			}
 		}
 	}
-	
 	reflex updateSimuState when:updateSim=true{
-		ask stroller{do die;}
+		do updateSimuState;
+	}
+	
+	action updateSimuState {
+	//	ask stroller{do die;}
 		if (currentSimuState = 0){
 			ask vizuRoad where (each.state="future"){
 				do die;
@@ -384,10 +396,10 @@ global {
 			}
 			create park from: Nature_Now_shapefile with: [type:string(read ("type"))] {
 				state<-"present";
-				create stroller number:self.shape.area/1000{
+				/*create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
 			  		myCurrentGarden<-myself;	
-				}
+				}*/
 			}
 			ask culture where (each.state="future"){
 				do die;
@@ -408,10 +420,10 @@ global {
 			}
 			create park from: Nature_Future_shapefile with: [type:string(read ("type"))] {
 				state<-"future";
-				create stroller number:self.shape.area/1000{
+				/*create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
 			  		myCurrentGarden<-myself;	
-				}
+				}*/
 			}
 			ask culture where (each.state="present"){
 				do die;
@@ -421,6 +433,7 @@ global {
 			}
 		}
 		updateSim<-false;
+		proba_choose_target <- park as_map (each::each.shape.area);
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
@@ -552,7 +565,7 @@ species road  skills: [skill_road]  {
 					new_agents_on << ags_per_lanes;
 				} else {
 					loop j from: 0 to: nb_seg -1 {
-						list<people> ags <- list<people>(ags_per_lanes[j]);
+						list<car> ags <- list<car>(ags_per_lanes[j]);
 						ask ags {
 							current_lane <- new_number - 1;
 							new_agents_on[new_number - 1][segment_index_on_road] << self;
@@ -629,7 +642,7 @@ species metro_line{
 }
 
 
-species metropolitan skills:[moving]{
+/*species metropolitan skills:[moving]{
 	string type;
 	int lifespan;
 	reflex move{
@@ -644,16 +657,65 @@ species metropolitan skills:[moving]{
 		 draw square(3#m) color:type_colors[type] rotate: angle;	
 		}	
 	}
-}
+}*/
 
-species pedestrian skills:[moving]{
+species pedestrian skills:[moving] control: fsm{
 	string type;
-	reflex move{
-		do wander on:people_graph speed:5.0#km/#h;
+	agent target_place;
+	point target;
+	int stroll_time;
+	float speed_walk <- rnd(3,6) #km/#h;
+	bool to_exit <- false;
+	float proba_sortie <- 0.5;
+	float offset <- rnd(0.0,2.0);
+
+	state walk_to_objective initial: true{
+		enter {
+			if flip(proba_sortie) {
+				target <- (station closest_to self).location;
+				to_exit <- true;
+			} else {
+				target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+				target <- (any_location_in(target_place));
+			}
+		}
+		do goto target: target on:people_graph speed: speed_walk;
+		transition to: stroll when: not to_exit and location = target;
+		transition to: outside_sim when:to_exit and location = target;
 	}
+	
+	state stroll {
+		enter {
+			stroll_time <- rnd(5, 30) * 60;
+		}
+		stroll_time <- stroll_time - 1;
+		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
+		transition to: walk_to_objective when: stroll_time = 0;
+	}
+	
+	state outside_sim {
+		do die;
+	}
+	
+	
+	point calcul_loc {
+		if (current_edge = nil) {
+			return location;
+		} else {
+			float val <- (road(current_edge).lanes +1)*3 +offset;
+			if (val = 0) {
+				return location;
+			} else {
+				return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
+			}
+
+		}
+ 
+	} 
+	
 	aspect base{
 		if(showPedestrian){
-		 draw square(3#m) color:type_colors[type] rotate: angle;	
+			 draw square(3#m) color:type_colors[type] at: calcul_loc() rotate: angle;	
 		}	
 	}
 }
@@ -680,7 +742,7 @@ species bike skills:[moving]{
 	}
 }
 
-species stroller skills:[moving]{
+/*species stroller skills:[moving]{
 	
 	park myCurrentGarden;
 		
@@ -693,9 +755,9 @@ species stroller skills:[moving]{
 	    draw square(3#m) color:type_colors["people"] rotate: angle;   
 	  }
 	}
-}
+}*/
 
-species people skills:[advanced_driving]{	
+species car skills:[advanced_driving]{	
 	rgb color;
 	point target;
 	intersection target_intersection;
@@ -704,34 +766,27 @@ species people skills:[advanced_driving]{
 	string aspect;
 	string type;
 		
-	reflex leave when: (type = "car" and final_target = nil) or (type != "car" and target = nil) {
-		if (type="car") {
-			if (target_intersection != nil and target_intersection in output_intersections) {
-				if current_road != nil {
-					ask current_road as road {
-						do unregister(myself);
-					}
+	reflex leave when: not wander and (final_target = nil)  {
+		if (target_intersection != nil and target_intersection in output_intersections) {
+			if current_road != nil {
+				ask current_road as road {
+					do unregister(myself);
 				}
-				location <- one_of(input_intersections).location;
 			}
-			target_intersection <- one_of(possible_targets);
-			current_lane <- 0;
-			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-		} else {
-			target <- any_location_in(one_of(building));
+			location <- one_of(input_intersections).location;
 		}
+		target_intersection <- one_of(possible_targets);
+		current_lane <- 0;
+		current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 	}
 	
 	
-	reflex move when: (type = "car" and final_target != nil) or (type != "car" and target != nil){	
-	  if(type="car"){
+	reflex move when: final_target != nil{	
 	  	if(wander){
 	  	  do wander on:car_graph speed:25.0#km/#h proba_edges: proba_use_road ;	
 	  	}else{
-	  	  do drive;
-	  			
-	  	}
-	  } 
+	  	  do drive;	
+	  	} 
 	}
 	
 	point calcul_loc {
@@ -751,11 +806,7 @@ species people skills:[advanced_driving]{
 	} 
 	aspect base {
 	  if(showCar){
-	     if (type="car"){
-	      	 draw rectangle(5#m,10#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	
-	    }else{
-	     	draw square(3#m) color:type_colors[type] rotate: angle;
-	     }   
+	    draw rectangle(5#m,10#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	   
 	  }
 	}	
 }
@@ -901,11 +952,11 @@ experiment ReChamp type: gui autorun:true{
 			species metro_line aspect: base;
 			species amenities aspect:base;
 			species intersection;
-			species people aspect:base;
+			species car aspect:base;
 			species pedestrian aspect:base;
-			species metropolitan aspect:base;
+			//species metropolitan aspect:base;
 			species bike aspect:base;
-			species stroller aspect:base;
+			//species stroller aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
