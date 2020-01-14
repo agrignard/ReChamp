@@ -22,7 +22,7 @@ global {
 	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
-	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable.shp");
+	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
@@ -96,7 +96,9 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-2000;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
-
+	
+	map<bikelane,float> weights_bikelane;
+	
 	map<road,float> proba_use_road;
 	list<intersection> input_intersections;
 	list<intersection> output_intersections;
@@ -145,7 +147,10 @@ global {
 		
 		//------------------- NETWORK -------------------------------------- //
 		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		create bikelane from:bikelane_shapefile{color<-type_colors["bike"];}
+		//do manage_cycle_network;
+		create bikelane from:bikelane_shapefile{
+			color<-type_colors["bike"];
+		}
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
 		}
@@ -183,8 +188,12 @@ global {
 				
 		car_graph <- as_edge_graph(road);
 		people_graph <- as_edge_graph(road);
-		bike_graph <- as_edge_graph(bikelane);
-						
+			
+		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
+		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
+		
+		bike_graph <- as_edge_graph(bikelane) with_weights weights_bikelane_sp;
+					
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
@@ -312,6 +321,42 @@ global {
 				}
 			}
 		} 
+	}
+	
+	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
+	action manage_cycle_network {
+		write "debut manage cycle network";
+		list<geometry> lines <- copy(bikelane_shapefile.contents);
+		list<geometry> lines2 <- (roads_shapefile.contents);
+		graph g <- as_edge_graph(lines);
+		loop v over: g.vertices {
+			if (g degree_of v) = 1{
+				geometry r <- lines2 closest_to v;
+				if (v distance_to r) < 20.0 {
+					point pt <- (v closest_points_with r)[1];
+					if (pt != first(r.points) and pt != last(r.points)) {
+						lines2 >> r;
+						list<geometry> sl <- r split_at pt;
+						lines2 <- lines2 + sl;
+					}
+					lines2 << line([v,pt]);
+				} 
+			}
+		}
+		lines2 <- lines2 where (each != nil  and each.perimeter > 0);
+		
+		lines <- lines + lines2;
+		lines <- clean_network(lines,3.0, true,true);
+		
+		write "nb: " + length(lines);
+		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
+		create bikelane from:lines{
+			from_road <- not (shape.perimeter in ref) ;
+			color<-from_road ? #red : type_colors["bike"];
+		}
+		create bikelane from:list(road);
+		save bikelane type: shp to: "../includes/GIS/reseau-cyclable_reconnected.shp" with: [from_road::"from_road"];
+		
 	}
 	
 	reflex updateSim{
@@ -526,8 +571,9 @@ species road  skills: [skill_road]  {
 }
 
 species bikelane{
+	bool from_road <- true;
 	aspect base {
-		if(showBikeLane){
+		if(showBikeLane and not from_road){
 		  draw shape color: color width:1;	
 		}	
 	}
@@ -614,8 +660,18 @@ species pedestrian skills:[moving]{
 
 species bike skills:[moving]{
 	string type;
+	point my_target;
+	reflex choose_target when: my_target = nil {
+		my_target <- any_location_in(one_of(bikelane));
+	}
 	reflex move{
-		do wander on:people_graph speed:8.0#km/#h;
+		if (wander) {
+			do wander on:bike_graph speed:8.0#km/#h;
+			
+		} else {
+			do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
+			if (my_target = location) {my_target <- nil;}
+		}
 	}
 	aspect base{
 		if(showBike){
