@@ -106,7 +106,7 @@ global {
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
-		create intersection from: nodes_shapefile with: [test:: string(read("type")), is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group"))];
+		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway"))] {
@@ -166,7 +166,7 @@ global {
 			proba_lane_change_down <- 0.5 + (rnd(500) / 500);
 			location <- one_of(intersection - output_intersections).location;
 			security_distance_coeff <- 5 / 9 * 3.6 * (1.5 - rnd(1000) / 1000);
-			proba_respect_priorities <- 1.0 - rnd(200 / 1000);
+			proba_respect_priorities <- 1.0;// - rnd(200 / 1000);
 			proba_respect_stops <- [1.0];
 			proba_block_node <- 0.0;
 			proba_use_linked_road <- 0.0;
@@ -235,7 +235,27 @@ global {
 			stop << [];
 		}
 		
-		list<list<intersection>> groupes <- traffic_signals simple_clustering_by_distance dist_group_traffic_light;
+		
+		loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {
+			list<intersection> gp <- traffic_signals where(each.group = i);
+			rgb col <- rnd_color(255);
+			int cpt_init <- rnd(100);
+			bool green <- flip(0.5);
+			ask gp {
+				color_group <- col;
+				loop rd over: roads_in {
+					ways1 << road(rd);
+					if phase = 1 {
+						if green{do to_green;}else{do to_red;}
+					}else{
+						if green{do to_red;}else{do to_green;}
+					}
+				counter <- cpt_init;	
+				}
+			}
+		}
+		
+		list<list<intersection>> groupes <- traffic_signals where (each.group = 0) simple_clustering_by_distance dist_group_traffic_light;
 		loop gp over: groupes {
 			rgb col <- rnd_color(255);
 			ask gp {color_group <- col;}
@@ -283,7 +303,7 @@ global {
 				}
 			}
 		}
-		ask traffic_signals {
+		ask traffic_signals where (each.group = 0){
 			loop rd over: roads_in {
 				if not(rd in ways2) {
 					ways1 << road(rd);
@@ -703,7 +723,7 @@ species signals_zone{
 }
 
 species intersection skills: [skill_road_node] {
-	string test;
+	int phase;
 	bool is_traffic_signal;
 	bool is_crossing;
 	int group;
@@ -766,9 +786,6 @@ species intersection skills: [skill_road_node] {
 			draw circle(5) color: color_fire;
 			draw triangle(5) color: color_group border: #black;
 		}
-//		else {
-//			draw circle(3) color: #orange;
-//		}
 	}
 }
 
