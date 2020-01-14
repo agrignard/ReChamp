@@ -26,7 +26,6 @@ global {
 	
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
-	file hotspot_shapefile <- file("../includes/GIS/Hotspot.shp");
 	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
 	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");		
 	//MOBILITY
@@ -89,12 +88,13 @@ global {
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
+	map<string, rgb> nature_colors <- ["pelouse"::rgb(112,116,68),"park"::rgb(170,176,144), "voute"::rgb(170,176,103)];
 	
 	float angle<-26.25;
 
 	int currentSimuState<-0;
 	bool updateSim<-true;
-	int nbAgent<-5000;
+	int nbAgent<-2000;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 
 	map<road,float> proba_use_road;
@@ -141,8 +141,6 @@ global {
 		
 		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type"))];
-
-		create hotSpot from:hotspot_shapefile;
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -182,7 +180,7 @@ global {
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
-		
+				
 		car_graph <- as_edge_graph(road);
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
@@ -316,6 +314,17 @@ global {
 		} 
 	}
 	
+	reflex updateSim{
+		//Create people going in and out of metro station
+		ask station where (each.type="metro"){
+			create metropolitan number:1{
+				lifespan<-25;
+				type<-"people";
+				location<-any_location_in(myself);
+			}
+		}
+	}
+	
 	reflex updateSimuState when:updateSim=true{
 		ask stroller{do die;}
 		if (currentSimuState = 0){
@@ -328,7 +337,7 @@ global {
 			ask park where (each.state="future"){
 				do die;
 			}
-			create park from: Nature_Now_shapefile {
+			create park from: Nature_Now_shapefile with: [type:string(read ("type"))] {
 				state<-"present";
 				create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
@@ -352,7 +361,7 @@ global {
 			ask park where (each.state="present"){
 				do die;
 			}
-			create park from: Nature_Future_shapefile {
+			create park from: Nature_Future_shapefile with: [type:string(read ("type"))] {
 				state<-"future";
 				create stroller number:self.shape.area/1000{
 			  		location<-any_location_in(myself.shape);	
@@ -427,7 +436,7 @@ species park {
 	
 	aspect base {
 		if(showGreen){
-		  draw shape color: #olivedrab ;	
+		  draw shape color: nature_colors[type] ;	
 		}	
 	}
 
@@ -573,6 +582,23 @@ species metro_line{
 	}
 }
 
+
+species metropolitan skills:[moving]{
+	string type;
+	int lifespan;
+	reflex move{
+		do wander amplitude:10.0 speed:2.0#km/#h;
+		lifespan<-lifespan-1;
+		if (lifespan =0){
+			do die;
+		}
+	}
+	aspect base{
+		if(showPedestrian){
+		 draw square(3#m) color:type_colors[type] rotate: angle;	
+		}	
+	}
+}
 
 species pedestrian skills:[moving]{
 	string type;
@@ -794,13 +820,6 @@ species intersection skills: [skill_road_node] {
 	}
 }
 
-
-species hotSpot{
-		aspect base {
-			draw shape empty:true color:#white;
-		}
-}
-
 species coldSpot{
 		aspect base {
 			if(showHotSpot){
@@ -828,6 +847,7 @@ experiment ReChamp type: gui autorun:true{
 			species intersection;
 			species people aspect:base;
 			species pedestrian aspect:base;
+			species metropolitan aspect:base;
 			species bike aspect:base;
 			species stroller aspect:base;
 			species coldSpot aspect:base;
