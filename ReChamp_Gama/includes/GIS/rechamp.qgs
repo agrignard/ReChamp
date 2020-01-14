@@ -73,10 +73,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649589.88368348916992545</xmin>
-      <ymin>6862500.08215356804430485</ymin>
-      <xmax>650526.91908387979492545</xmax>
-      <ymax>6863283.85217309929430485</ymax>
+      <xmin>649357.8655996184097603</xmin>
+      <ymin>6862716.92062487453222275</ymin>
+      <xmax>649826.3832998137222603</xmax>
+      <ymax>6863108.80563464015722275</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -2700,7 +2700,7 @@ def my_form_open(dialog, layer, feature):
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;type&quot;" sortOrder="1">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;phase&quot;" sortOrder="0">
         <columns>
           <column width="-1" hidden="0" type="field" name="type"/>
           <column width="-1" hidden="0" type="field" name="crossing"/>

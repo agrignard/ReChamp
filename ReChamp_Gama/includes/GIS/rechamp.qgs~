@@ -73,10 +73,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649772.98738079762551934</xmin>
-      <ymin>6862774.3559861583635211</ymin>
-      <xmax>650241.50508099293801934</xmax>
-      <ymax>6863166.2409959239885211</ymax>
+      <xmin>649589.88368348916992545</xmin>
+      <ymin>6862500.08215356804430485</ymin>
+      <xmax>650526.91908387979492545</xmax>
+      <ymax>6863283.85217309929430485</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -4263,7 +4263,7 @@ def my_form_open(dialog, layer, feature):
         <value>to_vertex_and_segment</value>
         <value>to_vertex_and_segment</value>
       </LayerSnapToList>
-      <DefaultSnapType type="QString">off</DefaultSnapType>
+      <DefaultSnapType type="QString">to vertex</DefaultSnapType>
       <DefaultSnapTolerance type="double">10</DefaultSnapTolerance>
       <LayerSnappingToleranceList type="QStringList">
         <value>0.000000</value>
