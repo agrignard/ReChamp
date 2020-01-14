@@ -894,6 +894,8 @@ species intersection skills: [skill_road_node] {
 		if (is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
 			draw triangle(5) color: color_group border: #black;
+		}else{
+//			draw circle(3) color: #orange;
 		}
 	}
 }
