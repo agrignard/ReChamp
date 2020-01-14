@@ -157,8 +157,9 @@ global {
 		
 		//------------------- AGENT ---------------------------------------- //
 		create car number:nbAgent*mobilityRatio["car"]{
-		 	 type <- "car";
+		 	type <- "car";
 		  	max_speed <- 160 #km / #h;
+		  	speed<-15 #km/#h + rnd(10 #km/#h);
 			vehicle_length <- 10.0 #m;
 			right_side_driving <- true;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
@@ -642,23 +643,6 @@ species metro_line{
 }
 
 
-/*species metropolitan skills:[moving]{
-	string type;
-	int lifespan;
-	reflex move{
-		do wander amplitude:10.0 speed:2.0#km/#h;
-		lifespan<-lifespan-1;
-		if (lifespan =0){
-			do die;
-		}
-	}
-	aspect base{
-		if(showPedestrian){
-		 draw square(3#m) color:type_colors[type] rotate: angle;	
-		}	
-	}
-}*/
-
 species pedestrian skills:[moving] control: fsm{
 	string type;
 	agent target_place;
@@ -672,7 +656,7 @@ species pedestrian skills:[moving] control: fsm{
 	state walk_to_objective initial: true{
 		enter {
 			if flip(proba_sortie) {
-				target <- (station closest_to self).location;
+				target <- (station where (each.type="metro") closest_to self).location;
 				to_exit <- true;
 			} else {
 				target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
@@ -742,20 +726,6 @@ species bike skills:[moving]{
 	}
 }
 
-/*species stroller skills:[moving]{
-	
-	park myCurrentGarden;
-		
-	reflex strol{
-		do wander bounds:myCurrentGarden.shape;
-	}
-	
-	aspect base {
-	  if(showPedestrian){
-	    draw square(3#m) color:type_colors["people"] rotate: angle;   
-	  }
-	}
-}*/
 
 species car skills:[advanced_driving]{	
 	rgb color;
@@ -765,6 +735,7 @@ species car skills:[advanced_driving]{
 	string profile;
 	string aspect;
 	string type;
+	float speed;
 		
 	reflex leave when: not wander and (final_target = nil)  {
 		if (target_intersection != nil and target_intersection in output_intersections) {
@@ -783,7 +754,7 @@ species car skills:[advanced_driving]{
 	
 	reflex move when: final_target != nil{	
 	  	if(wander){
-	  	  do wander on:car_graph speed:25.0#km/#h proba_edges: proba_use_road ;	
+	  	  do wander on:car_graph speed:speed proba_edges: proba_use_road ;	
 	  	}else{
 	  	  do drive;	
 	  	} 
@@ -806,7 +777,7 @@ species car skills:[advanced_driving]{
 	} 
 	aspect base {
 	  if(showCar){
-	    draw rectangle(5#m,10#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	   
+	    draw rectangle(2.5#m,5#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	   
 	  }
 	}	
 }
@@ -974,7 +945,7 @@ experiment ReChamp type: gui autorun:true{
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["q"] action: {showVizuRoad<-!showVizuRoad;};
-			event["v"] action: {showBike<-!showBike;};
+			event["v"] action: {showBikeLane<-!showBikeLane;};
 			event["m"] action: {showMetroLane<-!showMetroLane;};
 			event["n"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
