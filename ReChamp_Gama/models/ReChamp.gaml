@@ -183,7 +183,7 @@ global {
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
-		
+				
 		car_graph <- as_edge_graph(road);
 		people_graph <- as_edge_graph(road);
 		bike_graph <- as_edge_graph(bikelane);
@@ -315,6 +315,17 @@ global {
 				}
 			}
 		} 
+	}
+	
+	reflex updateSim{
+		//Create people going in and out of metro station
+		ask station where (each.type="metro"){
+			create metropolitan number:1{
+				lifespan<-25;
+				type<-"people";
+				location<-any_location_in(myself);
+			}
+		}
 	}
 	
 	reflex updateSimuState when:updateSim=true{
@@ -575,6 +586,23 @@ species metro_line{
 }
 
 
+species metropolitan skills:[moving]{
+	string type;
+	int lifespan;
+	reflex move{
+		do wander amplitude:10.0 speed:2.0#km/#h;
+		lifespan<-lifespan-1;
+		if (lifespan =0){
+			do die;
+		}
+	}
+	aspect base{
+		if(showPedestrian){
+		 draw square(3#m) color:type_colors[type] rotate: angle;	
+		}	
+	}
+}
+
 species pedestrian skills:[moving]{
 	string type;
 	reflex move{
@@ -821,6 +849,7 @@ experiment ReChamp type: gui autorun:true{
 			species intersection;
 			species people aspect:base;
 			species pedestrian aspect:base;
+			species metropolitan aspect:base;
 			species bike aspect:base;
 			species stroller aspect:base;
 			species coldSpot aspect:base;
