@@ -450,9 +450,54 @@ global {
 
 species culture{
 	string state;
+	int capacity_per_min <- 1;
+	geometry queue;
+	list<pedestrian> people_waiting;
+	list<pedestrian> waiting_tourists;
+	list<point> positions;
+	geometry waiting_area;
+	
+	//float queue_length <- 10.0;
+	
+	init {
+		point pt <- any_location_in(shape.contour);
+	 	float vect_x <- (location.x - pt.x) ; 
+		float vect_y <- (location.y - pt.y) ; 
+		
+		queue <- line([pt, pt - {vect_x,vect_y}]);
+		
+		positions <- queue points_on (2.0); 
+		waiting_area <- (last(positions) + 10.0)  - (queue + 1.0);
+	}
+	
+	action add_people(pedestrian the_tourist) {
+		if (length(waiting_tourists) < length(positions)) {
+			the_tourist.location <- positions[length(waiting_tourists)];
+		} else {
+			the_tourist.location  <- any_location_in(waiting_area);
+		}
+		waiting_tourists << the_tourist;
+	}
+	
+	reflex manage_visitor when: not empty(waiting_tourists) and every(60 / capacity_per_min) {
+		pedestrian the_tourist <- first(waiting_tourists);
+		waiting_tourists >> the_tourist;
+			
+		if (not empty(waiting_tourists)) {
+			loop i from: 0 to: length(waiting_tourists) - 1 {
+				if (i < length(positions)) {
+					waiting_tourists[i].location <- positions[i];
+				}
+			}
+		
+		}
+		
+	}
+	
 	aspect base {
 		if(showUsage){
 		  draw shape color: #yellow;	
+		  draw queue color: #yellow;
 		}  	
 	}
 }
@@ -648,24 +693,39 @@ species pedestrian skills:[moving] control: fsm{
 	agent target_place;
 	point target;
 	int stroll_time;
+	int visiting_time;
 	float speed_walk <- rnd(3,6) #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.5;
+	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,2.0);
-
+	bool to_culture <- false;
+	bool visiting <- false;
+	bool ready_to_visit <- false;
+	bool walking <- false;
 	state walk_to_objective initial: true{
 		enter {
 			if flip(proba_sortie) {
 				target <- (station where (each.type="metro") closest_to self).location;
 				to_exit <- true;
+				walking <- true;
 			} else {
-				target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+				if flip(proba_culture) {
+					target_place <- one_of(culture);
+					to_culture <- true;
+				} else {
+					target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+				}
 				target <- (any_location_in(target_place));
 			}
 		}
 		do goto target: target on:people_graph speed: speed_walk;
-		transition to: stroll when: not to_exit and location = target;
+		transition to: stroll when: not to_exit and not to_culture and location = target;
+		transition to: queueing when: not to_exit and to_culture and location = target;
 		transition to: outside_sim when:to_exit and location = target;
+		exit {
+			walking <- false;
+		}	
 	}
 	
 	state stroll {
@@ -681,6 +741,32 @@ species pedestrian skills:[moving] control: fsm{
 		do die;
 	}
 	
+	//ce mot existe ?
+	state queueing {
+		enter {
+			ask culture(target_place) {
+				do add_people(myself);
+			}
+		}
+		transition to: visiting_place when: ready_to_visit;
+		exit {
+			visiting <- false;
+			ready_to_visit <- false;
+		}
+	}
+	
+	state visiting_place {
+		enter {
+			visiting <- true;
+			visiting_time <- rnd(30,120) * 60;
+		}
+		visiting_time <- visiting_time - 1;
+		
+		transition to: walk_to_objective when: visiting_time = 0;
+		exit {
+			visiting <- false;
+		}
+	}
 	
 	point calcul_loc {
 		if (current_edge = nil) {
@@ -698,8 +784,8 @@ species pedestrian skills:[moving] control: fsm{
 	} 
 	
 	aspect base{
-		if(showPedestrian){
-			 draw square(3#m) color:type_colors[type] at: calcul_loc() rotate: angle;	
+		if(showPedestrian and not visiting){
+			 draw square(3#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}	
 	}
 }
