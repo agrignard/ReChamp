@@ -111,14 +111,15 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway"))] {
-			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 50.0 : 70.0)) °km / °h;
+		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway")), is_tunnel::(read("tunnel")="yes"?true:false)] {
+			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 			switch oneway {
 				match "no" {
 					create road {
 						lanes <- max([1, int(myself.lanes / 2.0)]);
 						shape <- polyline(reverse(myself.shape.points));
 						maxspeed <- myself.maxspeed;
+						is_tunnel <- myself.is_tunnel;
 					}
 					lanes <- int(lanes / 2.0 + 0.5);
 				}
@@ -574,6 +575,7 @@ species water {
 
 species road  skills: [skill_road]  {
 	int id;
+	bool is_tunnel <- false;
 	rgb color;
 	string mode;
 	float proba_use <- 100.0;
@@ -624,7 +626,7 @@ species road  skills: [skill_road]  {
 	}
 	aspect base {
 		if(showRoad){
-			draw shape color:type_colors["car"] width:1;	
+			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
 		}
 	}
 }
@@ -822,6 +824,7 @@ species car skills:[advanced_driving]{
 	string aspect;
 	string type;
 	float speed;
+	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
 		
 	reflex leave when: not wander and (final_target = nil)  {
 		if (target_intersection != nil and target_intersection in output_intersections) {
@@ -863,7 +866,7 @@ species car skills:[advanced_driving]{
 	} 
 	aspect base {
 	  if(showCar){
-	    draw rectangle(2.5#m,5#m) at:wander ? location : calcul_loc() rotate:heading-90 color:type_colors[type];	   
+	    draw rectangle(2.5#m,5#m) at:wander ? location : calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
 	  }
 	}	
 }
@@ -980,6 +983,8 @@ species intersection skills: [skill_road_node] {
 		if (is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
 			draw triangle(5) color: color_group border: #black;
+		}else{
+//			draw circle(3) color: #orange;
 		}
 	}
 }
