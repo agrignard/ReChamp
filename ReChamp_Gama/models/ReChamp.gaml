@@ -38,6 +38,8 @@ global {
 	file Usage_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_USAGE.shp");
 	file Usage_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_USAGE.shp");
 
+	file Waiting_line_shapefile <- shape_file("../includes/GIS/Waiting_line.shp");
+
 	geometry shape <- envelope(shape_file_bounds);
 	graph car_graph;
 	graph people_graph;
@@ -131,7 +133,6 @@ global {
 				}
 			}
 		}
-		
 
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
@@ -386,6 +387,17 @@ global {
 		do updateSimuState;
 	}
 	
+	action manage_waiting_line {
+		loop wl over: Waiting_line_shapefile.contents {
+			culture cult <- culture closest_to self;
+			ask cult {
+				queue <- wl;
+				do manage_queue;
+			}
+			
+		}
+	}
+	
 	action updateSimuState {
 	//	ask stroller{do die;}
 		if (currentSimuState = 0){
@@ -411,6 +423,7 @@ global {
 			create culture from: Usage_Now_shapefile {
 				state<-"present";
 			}
+			do manage_waiting_line;
 		}
 		if (currentSimuState = 1){
 			ask vizuRoad where (each.state="present"){
@@ -432,9 +445,11 @@ global {
 			ask culture where (each.state="present"){
 				do die;
 			}
+			
 			create culture from: Usage_Future_shapefile {
 				state<-"future";
 			}
+			do manage_waiting_line;
 		}
 		updateSim<-false;
 		proba_choose_park <- park as_map (each::each.shape.area);
@@ -469,11 +484,14 @@ species culture{
 		float vect_y <- (location.y - pt.y) ; 
 		
 		queue <- line([pt, pt - {vect_x,vect_y}]);
+		do manage_queue();
 		
+	}
+	
+	action manage_queue {
 		positions <- queue points_on (2.0); 
 		waiting_area <- (last(positions) + 10.0)  - (queue + 1.0);
 	}
-	
 	action add_people(pedestrian the_tourist) {
 		if (length(waiting_tourists) < length(positions)) {
 			the_tourist.location <- positions[length(waiting_tourists)];
