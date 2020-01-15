@@ -103,7 +103,9 @@ global {
 	list<intersection> input_intersections;
 	list<intersection> output_intersections;
 	list<intersection> possible_targets; 
-	map<agent,float> proba_choose_target;
+	map<agent,float> proba_choose_park;
+	map<agent,float> proba_choose_culture;
+	
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -179,7 +181,7 @@ global {
 		create pedestrian number:nbAgent*mobilityRatio["people"]{
 		  type <- "people";
 			if flip(0.3) {
-				target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
 				target <- (any_location_in(target_place));
 				location<-copy(target);
 				state <- "stroll";
@@ -435,7 +437,8 @@ global {
 			}
 		}
 		updateSim<-false;
-		proba_choose_target <- park as_map (each::each.shape.area);
+		proba_choose_park <- park as_map (each::each.shape.area);
+		proba_choose_culture <- culture as_map (each::each.shape.area);
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
@@ -451,7 +454,7 @@ global {
 
 species culture{
 	string state;
-	int capacity_per_min <- 1;
+	float capacity_per_min <- 1.0;
 	geometry queue;
 	list<pedestrian> people_waiting;
 	list<pedestrian> waiting_tourists;
@@ -633,6 +636,7 @@ species road  skills: [skill_road]  {
 
 species bikelane{
 	bool from_road <- true;
+	int lanes;
 	aspect base {
 		if(showBikeLane and not from_road){
 		  draw shape color: color width:1;	
@@ -713,12 +717,14 @@ species pedestrian skills:[moving] control: fsm{
 				walking <- true;
 			} else {
 				if flip(proba_culture) {
-					target_place <- one_of(culture);
+					target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
 					to_culture <- true;
+					target <- first(culture(target_place).positions);
 				} else {
-					target_place <- proba_choose_target.keys[rnd_choice(proba_choose_target.values)];
+					target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+					target <- (target_place closest_points_with self) [0] ;
 				}
-				target <- (any_location_in(target_place));
+				
 			}
 		}
 		do goto target: target on:people_graph speed: speed_walk;
