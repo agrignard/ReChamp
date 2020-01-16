@@ -94,6 +94,7 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(170,176,144),"pro"::rgb(112,116,68)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(125,125,125),"pro"::rgb(225,225,225)];
 	
 	float angle<-26.25;
 
@@ -420,15 +421,11 @@ global {
 			}
 			create park from: Nature_Now_shapefile with: [type:string(read ("type"))] {
 				state<-"present";
-				/*create stroller number:self.shape.area/1000{
-			  		location<-any_location_in(myself.shape);	
-			  		myCurrentGarden<-myself;	
-				}*/
 			}
 			ask culture where (each.state="future"){
 				do die;
 			}
-			create culture from: Usage_Now_shapefile {
+			create culture from: Usage_Now_shapefile with: [type:string(read ("type"))]{
 				state<-"present";
 			}
 			do manage_waiting_line;
@@ -445,16 +442,12 @@ global {
 			}
 			create park from: Nature_Future_shapefile with: [type:string(read ("type"))] {
 				state<-"future";
-				/*create stroller number:self.shape.area/1000{
-			  		location<-any_location_in(myself.shape);	
-			  		myCurrentGarden<-myself;	
-				}*/
 			}
 			ask culture where (each.state="present"){
 				do die;
 			}
 			
-			create culture from: Usage_Future_shapefile {
+			create culture from: Usage_Future_shapefile with: [type:string(read ("type"))]{
 				state<-"future";
 			}
 			do manage_waiting_line;
@@ -477,6 +470,7 @@ global {
 
 species culture{
 	string state;
+	string type;
 	float capacity_per_min <- 1.0;
 	geometry queue;
 	list<pedestrian> people_waiting;
@@ -526,7 +520,7 @@ species culture{
 	
 	aspect base {
 		if(showUsage){
-		  draw shape color: #white;	
+		  draw shape color: usage_colors[type];	
 		  draw queue color: #white;
 		}  	
 	}
