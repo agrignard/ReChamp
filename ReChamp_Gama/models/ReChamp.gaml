@@ -66,7 +66,7 @@ global {
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
 	
-		bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
+	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
 	bool showMetroLane parameter: 'Metro Lane (q)' category: "Parameters" <-false;
 	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
@@ -112,6 +112,7 @@ global {
 	list<intersection> possible_targets; 
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
+	list<intersection> tf_can_be_desactivated;
 	
 
 	
@@ -127,12 +128,14 @@ global {
 			switch oneway {
 				match "no" {
 					create road {
-						lanes <- max([1, int(myself.lanes / 2.0)]);
+						lanes <- myself.lanes;
+						ref_lanes <- lanes;
+						pro_lanes <- myself.pro_lanes;
 						shape <- polyline(reverse(myself.shape.points));
 						maxspeed <- myself.maxspeed;
 						is_tunnel <- myself.is_tunnel;
 					}
-					lanes <- int(lanes / 2.0 + 0.5);
+					//lanes <- int(lanes / 2.0 + 0.5);
 				}
 
 				match "-1" {
@@ -187,7 +190,7 @@ global {
 		
 		//Create Pedestrain
 		create pedestrian number:nbAgent*mobilityRatio["people"]{
-		  val <- rnd(-max_dev,max_dev);
+		  val_f <- rnd(-max_dev,max_dev);
 		  current_trajectory <- [];
 		  type <- "people";
 			if flip(0.3) {
@@ -246,6 +249,11 @@ global {
 		}
 		
 		do init_traffic_signal;
+		ask intersection where each.is_traffic_signal {
+			if (roads_in first_with (road(each).pro_lanes > 0) = nil) {
+				tf_can_be_desactivated << self;
+			}
+		}
 		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
 	}
@@ -429,6 +437,15 @@ global {
 				state<-"present";
 			}
 			do manage_waiting_line;
+			ask road {
+				if (lanes != ref_lanes and (ref_lanes > 0)) {
+					to_display <- true;
+					do change_number_of_lanes(ref_lanes);
+				}
+			}
+			ask tf_can_be_desactivated {
+				active <- true;
+			}
 		}
 		if (currentSimuState = 1){
 			ask vizuRoad where (each.state="present"){
@@ -451,10 +468,27 @@ global {
 				state<-"future";
 			}
 			do manage_waiting_line;
+			ask road {
+				
+				if (lanes != pro_lanes and (pro_lanes > 0)) {
+					do change_number_of_lanes(pro_lanes);
+				} else if (pro_lanes = 0) {
+					to_display <- false;
+				}
+			}
+			ask tf_can_be_desactivated {
+				stop[0] <- [];
+				active <- false;
+			}
 		}
 		updateSim<-false;
 		proba_choose_park <- park as_map (each::each.shape.area);
 		proba_choose_culture <- culture as_map (each::each.shape.area);
+		if (driving_road_network != nil) {
+			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
+			driving_road_network <- driving_road_network with_weights general_speed_map;	
+		}
+		
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
@@ -606,6 +640,11 @@ species road  skills: [skill_road]  {
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
+	bool to_display <- true;
+	
+	int pro_lanes;
+	int ref_lanes;
+	
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
@@ -648,7 +687,7 @@ species road  skills: [skill_road]  {
 		}
 	}
 	aspect base {
-		if(showRoad){
+		if(showRoad and to_display){
 			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
 		}
 	}
@@ -729,12 +768,12 @@ species pedestrian skills:[moving] control: fsm{
 	bool visiting <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
-	float val ;
+	float val_f ;
 	list<point> current_trajectory;
 	
 	action updatefuzzTrajectory{
 		if(showPeopleTrajectory){
-			float val_pt <- val + rnd(-fuzzyness, fuzzyness);
+			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
 		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
 		    loop while:(length(current_trajectory) > trajectoryLength)
 	  	    {
@@ -745,10 +784,10 @@ species pedestrian skills:[moving] control: fsm{
 	}
 	state walk_to_objective initial: true{
 		enter {
+			walking <- true;
 			if flip(proba_sortie) {
 				target <- (station where (each.type="metro") closest_to self).location;
 				to_exit <- true;
-				walking <- true;
 			} else {
 				if flip(proba_culture) {
 					target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
@@ -975,7 +1014,6 @@ species intersection skills: [skill_road_node] {
 	bool is_traffic_signal;
 	bool is_crossing;
 	int group;
-	list<list> stop;
 	int time_to_change <- 100;
 	int counter <- rnd(time_to_change);
 	list<road> ways1;
@@ -983,6 +1021,7 @@ species intersection skills: [skill_road_node] {
 	bool is_green;
 	rgb color_fire;
 	rgb color_group;
+	bool active <- true;
 
 	action compute_crossing(float ref_angle) {
 		loop rd over: roads_in {
@@ -1015,7 +1054,7 @@ species intersection skills: [skill_road_node] {
 		is_green <- false;
 	}
 
-	reflex dynamic_node when: is_traffic_signal {
+	reflex dynamic_node when: active and is_traffic_signal {
 		counter <- counter + 1;
 		if (counter >= time_to_change) {
 			counter <- 0;
@@ -1030,11 +1069,9 @@ species intersection skills: [skill_road_node] {
 	}
 
 	aspect default {
-		if (is_traffic_signal and showTrafficSignal) {
+		if (active and is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
-			draw triangle(5) color: color_group border: #black;
-		}else{
-//			draw circle(3) color: #orange;
+			//draw triangle(5) color: color_group border: #black;
 		}
 	}
 }
