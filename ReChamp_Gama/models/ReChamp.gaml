@@ -64,17 +64,18 @@ global {
 	
 	bool showVizuRoad parameter: 'Road Vizu(q)' category: "Interaction" <-false;
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Interaction" <-false;
-	bool showGreen parameter: 'Green (j)' category: "Interaction" <-true;
+	bool showGreen parameter: 'Green (j)' category: "Interaction" <-false;
 	bool showUsage parameter: 'Usage (u)' category: "Interaction" <-true;
 	
 	bool showBusLane parameter: 'Bus Lane(n)' category: "Mobility" <-false;
 	bool showMetroLane parameter: 'Metro Lane (m)' category: "Mobility" <-false;
 	bool showStation parameter: 'Station (s)' category: "Mobility" <-false;
-	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Mobility" <-true;
+	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Mobility" <-false;
 	
 	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
+	bool showIntervention parameter: 'Intervention (i)' category: "Vizu" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color (f):" category: "Vizu";
 	bool showGif  parameter: 'Gif (g)' category: "Vizu" <-false;
@@ -88,7 +89,7 @@ global {
 	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
-	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["pelouse"::rgb(112,116,68),"park"::rgb(170,176,144), "voute"::rgb(170,176,103)];
 	
@@ -97,6 +98,7 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
+	float step <- 10 #sec;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 	
 	map<bikelane,float> weights_bikelane;
@@ -518,8 +520,8 @@ species culture{
 	
 	aspect base {
 		if(showUsage){
-		  draw shape color: #yellow;	
-		  draw queue color: #yellow;
+		  draw shape color: #white;	
+		  draw queue color: #white;
 		}  	
 	}
 }
@@ -931,10 +933,13 @@ species intervention{
 			
 	}
 	aspect base {
+		if(showIntervention){
 			draw shape empty:true color:#white;		
 			if(showGif and isActive){
 			  draw gif_file(gifFile) size:{w,h} rotate:angle;	
 			}
+		}
+			
 		}
 }
 
@@ -1022,10 +1027,12 @@ species coldSpot{
 }
 
 experiment ReChamp type: gui autorun:true{
-	float minimum_cycle_duration<-0.0125;	
+	float minimum_cycle_duration<-0.025;	
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}{
+	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
+	   	keystone: [{-0.10982887476012507,-0.1653297859173477,0.0},{-0.09382366185538335,0.990597358146881,0.0},{1.041392791995022,1.0227230511450358,0.0},{1.075058929484308,-0.13790541384574972,0.0}]
+	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
 		    species building aspect: base;
@@ -1061,6 +1068,7 @@ experiment ReChamp type: gui autorun:true{
 			event["r"] action: {showRoad<-!showRoad;};
 			event["q"] action: {showVizuRoad<-!showVizuRoad;};
 			event["v"] action: {showBikeLane<-!showBikeLane;};
+			event["i"] action: {showIntervention<-!showIntervention;};
 			event["m"] action: {showMetroLane<-!showMetroLane;};
 			event["n"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
