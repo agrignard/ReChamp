@@ -1127,7 +1127,7 @@ experiment ReChamp type: gui autorun:true{
 	//		species signals_zone aspect: base;
 									
 			graphics 'tablebackground'{
-				draw geometry(shape_file_bounds) color:#white empty:true;
+				draw geometry(shape_file_bounds) color:#black empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
