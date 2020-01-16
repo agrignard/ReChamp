@@ -57,33 +57,31 @@ global {
 	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
 	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
 	
+
+	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
+	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-false;
+	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 	
-	bool wander parameter: 'People Wandering' category: "Agent" <-false;
-	bool showBuilding parameter: 'Building (b)' category: "Agent" <-false;
-	bool showRoad parameter: 'Road Simu(r)' category: "Agent" <-false;
-	
-	bool showVizuRoad parameter: 'Road Vizu(q)' category: "Interaction" <-false;
-	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Interaction" <-false;
-	bool showGreen parameter: 'Green (j)' category: "Interaction" <-false;
-	bool showUsage parameter: 'Usage (u)' category: "Interaction" <-true;
-	
-	bool showBusLane parameter: 'Bus Lane(n)' category: "Mobility" <-false;
-	bool showMetroLane parameter: 'Metro Lane (m)' category: "Mobility" <-false;
-	bool showStation parameter: 'Station (s)' category: "Mobility" <-false;
-	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Mobility" <-false;
-	
-	
-	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
-	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
-	bool showIntervention parameter: 'Intervention (i)' category: "Vizu" <-false;
-	bool showBackground <- false parameter: "Background (Space)" category: "Vizu";
-	bool randomColor <- false parameter: "Random Color (f):" category: "Vizu";
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	
+		bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
+	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
+	bool showMetroLane parameter: 'Metro Lane (q)' category: "Parameters" <-false;
+	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
+	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Parameters" <-false;
+	bool showBuilding parameter: 'Building (b)' category: "Parameters" <-false;
+	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
+	
+	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
+	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
+	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
+	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
+	
 	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparecny' category: "Trajectory" min: 0.0 max: 1.0;
-	bool showGif  parameter: 'Gif (g)' category: "Vizu" <-false;
-	bool showHotSpot  parameter: 'HotSpot (h)' category: "Vizu" <-false;
+	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
+	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
@@ -550,7 +548,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color: randomColor ? rnd_color(255): color;	
+		  draw shape color:color;	
 		}
 	}
 }
@@ -854,13 +852,8 @@ species bike skills:[moving]{
 		my_target <- any_location_in(one_of(bikelane));
 	}
 	reflex move{
-		if (wander) {
-			do wander on:bike_graph speed:8.0#km/#h;
-			
-		} else {
-			do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
-			if (my_target = location) {my_target <- nil;}
-		}
+	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
+	  if (my_target = location) {my_target <- nil;}
 	}
 	aspect base{
 		if(showBike){
@@ -882,7 +875,7 @@ species car skills:[advanced_driving]{
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
 	list<point> current_trajectory;
 		
-	reflex leave when: not wander and (final_target = nil)  {
+	reflex leave when: final_target = nil  {
 		if (target_intersection != nil and target_intersection in output_intersections) {
 			if current_road != nil {
 				ask current_road as road {
@@ -898,11 +891,7 @@ species car skills:[advanced_driving]{
 	
 	
 	reflex move when: final_target != nil{	
-	  	if(wander){
-	  	  do wander on:car_graph speed:speed proba_edges: proba_use_road ;	
-	  	}else{
-	  	  do drive;	
-	  	} 
+	  	do drive;	
 	  	loop while:(length(current_trajectory) > trajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
@@ -927,7 +916,7 @@ species car skills:[advanced_driving]{
 	} 
 	aspect base {
 	  if(showCar){
-	    draw rectangle(2.5#m,5#m) at:wander ? location : calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+	    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
 	  }
 	  if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
@@ -1103,17 +1092,16 @@ experiment ReChamp type: gui autorun:true{
 			event["g"] action: {showGif<-!showGif;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
-			event["q"] action: {showVizuRoad<-!showVizuRoad;};
+			event["m"] action: {showVizuRoad<-!showVizuRoad;};
 			event["v"] action: {showBikeLane<-!showBikeLane;};
 			event["i"] action: {showIntervention<-!showIntervention;};
-			event["m"] action: {showMetroLane<-!showMetroLane;};
-			event["n"] action: {showBusLane<-!showBusLane;};
+			event["q"] action: {showMetroLane<-!showMetroLane;};
+			event["j"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
 			event["a"] action: {showAmenities<-!showAmenities;};
-			event["j"] action: {showGreen<-!showGreen;};
+			event["n"] action: {showGreen<-!showGreen;};
 			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
-			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
 			event[" "] action: {showBackground<-!showBackground;};				
