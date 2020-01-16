@@ -59,7 +59,7 @@ global {
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-false;
+	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 	
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
@@ -94,10 +94,11 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(170,176,144),"pro"::rgb(112,116,68)];
-	map<string, rgb> usage_colors <- ["exi"::rgb(125,125,125),"pro"::rgb(225,225,225)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(168,192,208),"pro"::rgb(84,128,153)];
 	
 	float angle<-26.25;
 
+	string currentSimuState_str <- "present" among: ["present", "future"];
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
@@ -114,11 +115,53 @@ global {
 	map<agent,float> proba_choose_culture;
 	list<intersection> tf_can_be_desactivated;
 	
+	list<park> activated_parks;
+	list<culture> activated_cultures;
+	
+  	list<point,geometry> queue_per_loc;
 
 	
 	
 	init {
 		//------------------ STATIC AGENT ----------------------------------- //
+			create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
+			state<<"future";
+			if (shape = nil or shape.area = 0) {
+				do die;
+			}
+			
+		}
+		loop g over: Nature_Now_shapefile {
+			if (g != nil and not empty(g)) {
+				//park p <- (park first_with(each.shape.area = g.area));
+				park p <- first(park overlapping g.location);
+				if (p = nil) {p <- park first_with (each.location = g.location);}
+				if (p != nil){p.state << "present";}
+			}
+		
+			
+		}
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type"))]{
+			state<<"future";
+			if (shape = nil or shape.area = 0) {
+				do die;
+			}
+		}
+		loop g over: Usage_Now_shapefile where (each != nil and each.area > 0) {
+			culture p <- (culture first_with(each.shape.area = g.area));
+			//p <- first(culture overlapping g.location);
+			if (p = nil) {p <- culture first_with (each.location = g.location);}
+			if (p != nil){p.state << "present";}
+		}
+		
+		create vizuRoad from: Mobility_Now_shapefile with: [type:string(read ("type"))] {
+			state<<"present";
+		}
+		create vizuRoad from: Mobility_Future_shapefile with: [type:string(read ("type"))] {
+			state<<"future";
+		}
+		
+		do manage_waiting_line;
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
@@ -413,39 +456,25 @@ global {
 		do updateSimuState;
 	}
 	
-	action manage_waiting_line {
+action manage_waiting_line {
 		loop wl over: Waiting_line_shapefile.contents {
-			culture cult <- culture closest_to self;
+			culture cult <- culture closest_to wl;
+			
 			ask cult {
 				queue <- wl;
 				do manage_queue;
 			}
 			
 		}
+		ask culture where (each.queue = nil) {
+			do default_queue;
+		}
 	}
 	
 	action updateSimuState {
 	//	ask stroller{do die;}
 		if (currentSimuState = 0){
-			ask vizuRoad where (each.state="future"){
-				do die;
-			}
-			create vizuRoad from: Mobility_Now_shapefile with: [type:string(read ("type"))] {
-				state<-"present";
-			}
-			ask park where (each.state="future"){
-				do die;
-			}
-			create park from: Nature_Now_shapefile with: [type:string(read ("type"))] {
-				state<-"present";
-			}
-			ask culture where (each.state="future"){
-				do die;
-			}
-			create culture from: Usage_Now_shapefile with: [type:string(read ("type"))]{
-				state<-"present";
-			}
-			do manage_waiting_line;
+			currentSimuState_str <- "present";
 			ask road {
 				if (lanes != ref_lanes and (ref_lanes > 0)) {
 					to_display <- true;
@@ -455,28 +484,11 @@ global {
 			ask tf_can_be_desactivated {
 				active <- true;
 			}
+			
 		}
 		if (currentSimuState = 1){
-			ask vizuRoad where (each.state="present"){
-				do die;
-			}
-			create vizuRoad from: Mobility_Future_shapefile with: [type:string(read ("type"))] {
-				state<-"future";
-			}
-			ask park where (each.state="present"){
-				do die;
-			}
-			create park from: Nature_Future_shapefile with: [type:string(read ("type"))] {
-				state<-"future";
-			}
-			ask culture where (each.state="present"){
-				do die;
-			}
 			
-			create culture from: Usage_Future_shapefile with: [type:string(read ("type"))]{
-				state<-"future";
-			}
-			do manage_waiting_line;
+			currentSimuState_str <- "future";
 			ask road {
 				
 				if (lanes != pro_lanes and (pro_lanes > 0)) {
@@ -491,12 +503,27 @@ global {
 			}
 		}
 		updateSim<-false;
-		proba_choose_park <- park as_map (each::each.shape.area);
-		proba_choose_culture <- culture as_map (each::each.shape.area);
 		if (driving_road_network != nil) {
 			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
 			driving_road_network <- driving_road_network with_weights general_speed_map;	
 		}
+		activated_parks <- park where (currentSimuState_str in each.state);
+		activated_cultures <- culture where (currentSimuState_str in each.state);
+		ask  (culture - activated_cultures) {
+			ask waiting_tourists {
+				do die;
+			}
+			waiting_tourists <- [];
+		}
+		list<agent> to_remove <- (park - activated_parks) + (culture - activated_cultures);
+		ask pedestrian {
+			if (target_place in to_remove) {
+				do die;
+			}
+		}
+		proba_choose_park <- activated_parks as_map (each::each.shape.area);
+		proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
+		
 		
 	}
 	
@@ -512,7 +539,7 @@ global {
 }
 
 species culture{
-	string state;
+	list<string> state;
 	string type;
 	float capacity_per_min <- 1.0;
 	geometry queue;
@@ -523,7 +550,7 @@ species culture{
 	
 	//float queue_length <- 10.0;
 	
-	init {
+	action default_queue {
 		point pt <- any_location_in(shape.contour);
 	 	float vect_x <- (location.x - pt.x) ; 
 		float vect_y <- (location.y - pt.y) ; 
@@ -562,7 +589,7 @@ species culture{
 	}
 	
 	aspect base {
-		if(showUsage){
+		if(showUsage and (currentSimuState_str in state)){
 		  draw shape color: usage_colors[type];	
 		  draw queue color: #white;
 		}  	
@@ -570,10 +597,10 @@ species culture{
 }
 
 species vizuRoad{
-	string state;
+	list<string> state;
 	string type;
 	aspect base {
-		if(showVizuRoad){
+		if(showVizuRoad and (currentSimuState_str in state)){
 			draw shape color:type_colors[type] width:1;	
 		}
 	}
@@ -585,7 +612,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color:color;	
+		  draw shape color:rgb(75,75,75) empty:true;	
 		}
 	}
 }
@@ -601,12 +628,12 @@ species ilots {
 
 
 species park {
-	string state;
+	list<string> state;
 	string type; 
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
-		if(showGreen){
+		if(showGreen and (currentSimuState_str in state)){
 		  draw shape color: nature_colors[type] ;	
 		}	
 	}
@@ -690,7 +717,11 @@ species road  skills: [skill_road]  {
 						list<car> ags <- list<car>(ags_per_lanes[j]);
 						ask ags {
 							current_lane <- new_number - 1;
+							if (segment_index_on_road >= length(new_agents_on[new_number - 1])) {
+								segment_index_on_road <- length(new_agents_on[new_number - 1]) - 1;
+							}
 							new_agents_on[new_number - 1][segment_index_on_road] << self;
+							
 						}
 					} 	
 				}
@@ -875,9 +906,7 @@ species pedestrian skills:[moving] control: fsm{
 			} else {
 				return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
 			}
-
 		}
- 
 	} 
 	
 	aspect base{
