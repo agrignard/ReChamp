@@ -73,10 +73,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>648065.78107282030396163</xmin>
-      <ymin>6862812.09512009564787149</ymin>
-      <xmax>649939.85187360155396163</xmax>
-      <ymax>6864379.63515915814787149</ymax>
+      <xmin>649122.39471467735711485</xmin>
+      <ymin>6863531.08416675869375467</ymin>
+      <xmax>649180.95942720177117735</xmax>
+      <ymax>6863580.06979297939687967</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -3359,6 +3359,12 @@ def my_form_open(dialog, layer, feature):
         <edittype widgetv2type="TextEdit" name="tunnel">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
+        <edittype widgetv2type="TextEdit" name="pro_lanes">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="pro_tunnel">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
       </edittypes>
       <renderer-v2 forceraster="0" symbollevels="0" type="singleSymbol" enableorderby="0">
         <symbols>
@@ -3589,11 +3595,13 @@ def my_form_open(dialog, layer, feature):
         <alias field="maxspeed" index="1" name=""/>
         <alias field="oneway" index="2" name=""/>
         <alias field="tunnel" index="3" name=""/>
+        <alias field="pro_lanes" index="4" name=""/>
+        <alias field="pro_tunnel" index="5" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;oneway&quot;" sortOrder="0">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;lanes&quot;" sortOrder="1">
         <columns>
           <column width="-1" hidden="0" type="field" name="lanes"/>
           <column width="-1" hidden="0" type="field" name="maxspeed"/>
@@ -3633,6 +3641,8 @@ def my_form_open(dialog, layer, feature):
         <default field="maxspeed" expression=""/>
         <default field="oneway" expression=""/>
         <default field="tunnel" expression=""/>
+        <default field="pro_lanes" expression=""/>
+        <default field="pro_tunnel" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "lanes", '&lt;NULL>' )</previewExpression>
     </maplayer>

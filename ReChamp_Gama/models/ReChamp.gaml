@@ -102,12 +102,12 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
-	float step <- 2 #sec;
+	float step <- 10 #sec;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 	
 	map<bikelane,float> weights_bikelane;
 	
-	map<road,float> proba_use_road;
+//	map<road,float> proba_use_road;
 	list<intersection> input_intersections;
 	list<intersection> output_intersections;
 	list<intersection> possible_targets; 
@@ -118,7 +118,7 @@ global {
 	list<park> activated_parks;
 	list<culture> activated_cultures;
 	
-  	list<point,geometry> queue_per_loc;
+  //	list<point,geometry> queue_per_loc;
 
 	
 	
@@ -202,7 +202,7 @@ global {
 		output_intersections <- intersection where (empty(each.roads_out));
 		input_intersections <- intersection where (empty(each.roads_in));
 		possible_targets <- intersection - input_intersections;
-		proba_use_road <- road as_map (each::each.proba_use);
+//		proba_use_road <- road as_map (each::each.proba_use);
 		do check_signals_integrity;
 		
 		do updateSimuState;
@@ -306,7 +306,8 @@ global {
 				tf_can_be_desactivated << self;
 			}
 		}
-		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
+		//map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
+		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
 	}
 	
@@ -504,7 +505,9 @@ action manage_waiting_line {
 		}
 		updateSim<-false;
 		if (driving_road_network != nil) {
-			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
+		//	map general_speed_map <- road as_map (each::( each.shape.perimeter / each.maxspeed) / (1+each.lanes));
+	//	map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
+			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
 			driving_road_network <- driving_road_network with_weights general_speed_map;	
 		}
 		activated_parks <- park where (currentSimuState_str in each.state);
