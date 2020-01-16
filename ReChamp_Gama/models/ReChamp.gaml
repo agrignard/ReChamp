@@ -126,12 +126,14 @@ global {
 			switch oneway {
 				match "no" {
 					create road {
-						lanes <- max([1, int(myself.lanes / 2.0)]);
+						lanes <- myself.lanes;
+						ref_lanes <- lanes;
+						pro_lanes <- myself.pro_lanes;
 						shape <- polyline(reverse(myself.shape.points));
 						maxspeed <- myself.maxspeed;
 						is_tunnel <- myself.is_tunnel;
 					}
-					lanes <- int(lanes / 2.0 + 0.5);
+					//lanes <- int(lanes / 2.0 + 0.5);
 				}
 
 				match "-1" {
@@ -186,7 +188,7 @@ global {
 		
 		//Create Pedestrain
 		create pedestrian number:nbAgent*mobilityRatio["people"]{
-		  val <- rnd(-max_dev,max_dev);
+		  val_f <- rnd(-max_dev,max_dev);
 		  current_trajectory <- [];
 		  type <- "people";
 			if flip(0.3) {
@@ -432,6 +434,12 @@ global {
 				state<-"present";
 			}
 			do manage_waiting_line;
+			ask road {
+				if (lanes != ref_lanes and (ref_lanes > 0)) {
+					to_display <- true;
+					do change_number_of_lanes(ref_lanes);
+				}
+			}
 		}
 		if (currentSimuState = 1){
 			ask vizuRoad where (each.state="present"){
@@ -458,10 +466,23 @@ global {
 				state<-"future";
 			}
 			do manage_waiting_line;
+			ask road {
+				
+				if (lanes != pro_lanes and (pro_lanes > 0)) {
+					do change_number_of_lanes(pro_lanes);
+				} else if (pro_lanes = 0) {
+					to_display <- false;
+				}
+			}
 		}
 		updateSim<-false;
 		proba_choose_park <- park as_map (each::each.shape.area);
 		proba_choose_culture <- culture as_map (each::each.shape.area);
+		if (driving_road_network != nil) {
+			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
+			driving_road_network <- driving_road_network with_weights general_speed_map;	
+		}
+		
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
@@ -612,6 +633,11 @@ species road  skills: [skill_road]  {
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
+	bool to_display <- true;
+	
+	int pro_lanes;
+	int ref_lanes;
+	
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
@@ -654,7 +680,7 @@ species road  skills: [skill_road]  {
 		}
 	}
 	aspect base {
-		if(showRoad){
+		if(showRoad and to_display){
 			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
 		}
 	}
@@ -735,12 +761,12 @@ species pedestrian skills:[moving] control: fsm{
 	bool visiting <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
-	float val ;
+	float val_f ;
 	list<point> current_trajectory;
 	
 	action updatefuzzTrajectory{
 		if(showPeopleTrajectory){
-			float val_pt <- val + rnd(-fuzzyness, fuzzyness);
+			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
 		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
 		    loop while:(length(current_trajectory) > trajectoryLength)
 	  	    {
@@ -751,10 +777,10 @@ species pedestrian skills:[moving] control: fsm{
 	}
 	state walk_to_objective initial: true{
 		enter {
+			walking <- true;
 			if flip(proba_sortie) {
 				target <- (station where (each.type="metro") closest_to self).location;
 				to_exit <- true;
-				walking <- true;
 			} else {
 				if flip(proba_culture) {
 					target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
