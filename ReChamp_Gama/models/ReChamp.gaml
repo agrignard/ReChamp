@@ -1031,7 +1031,6 @@ experiment ReChamp type: gui autorun:true{
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
-	   	keystone: [{-0.10982887476012507,-0.1653297859173477,0.0},{-0.09382366185538335,0.990597358146881,0.0},{1.041392791995022,1.0227230511450358,0.0},{1.075058929484308,-0.13790541384574972,0.0}]
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
