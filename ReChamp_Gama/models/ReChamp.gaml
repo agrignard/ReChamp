@@ -917,7 +917,6 @@ species car skills:[advanced_driving]{
 	string aspect;
 	string type;
 	float speed;
-	float val;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
 	list<point> current_trajectory;
 		
@@ -949,8 +948,8 @@ species car skills:[advanced_driving]{
 		if (current_road = nil) {
 			return location;
 		} else {
-			//val <- (road(current_road).lanes - current_lane)*3 + 1.0;
-			val <- road(current_road).oneway='no'?((road(current_road).lanes - current_lane - 0.5)*3 + 0.25):((0.5*road(current_road).lanes - current_lane - 0.5)*3);
+			//float val <- (road(current_road).lanes - current_lane)*3 + 1.0;
+			float val <- road(current_road).oneway='no'?((road(current_road).lanes - current_lane - 0.5)*3 + 0.25):((0.5*road(current_road).lanes - current_lane - 0.5)*3);
 			point offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
 			val <- on_linked_road ? -val : val;
 			if (val = 0) {
