@@ -78,6 +78,10 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Vizu" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Vizu";
 	bool randomColor <- false parameter: "Random Color (f):" category: "Vizu";
+	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
+	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
+	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparecny' category: "Trajectory" min: 0.0 max: 1.0;
 	bool showGif  parameter: 'Gif (g)' category: "Vizu" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Vizu" <-false;
 	int currentBackGround <-0;
@@ -109,6 +113,8 @@ global {
 	list<intersection> possible_targets; 
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
+	
+
 	
 	
 	init {
@@ -182,6 +188,8 @@ global {
 		
 		//Create Pedestrain
 		create pedestrian number:nbAgent*mobilityRatio["people"]{
+		  val <- rnd(-max_dev,max_dev);
+		  current_trajectory <- [];
 		  type <- "people";
 			if flip(0.3) {
 				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
@@ -729,6 +737,20 @@ species pedestrian skills:[moving] control: fsm{
 	bool visiting <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
+	float val ;
+	list<point> current_trajectory;
+	
+	action updatefuzzTrajectory{
+		if(showPeopleTrajectory){
+			float val_pt <- val + rnd(-fuzzyness, fuzzyness);
+		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
+		    loop while:(length(current_trajectory) > trajectoryLength)
+	  	    {
+	        current_trajectory >> first(current_trajectory);
+	        }
+	        current_trajectory << pt;	
+		}
+	}
 	state walk_to_objective initial: true{
 		enter {
 			if flip(proba_sortie) {
@@ -751,6 +773,7 @@ species pedestrian skills:[moving] control: fsm{
 		transition to: stroll when: not to_exit and not to_culture and location = target;
 		transition to: queueing when: not to_exit and to_culture and location = target;
 		transition to: outside_sim when:to_exit and location = target;
+		do updatefuzzTrajectory;		
 		exit {
 			walking <- false;
 		}	
@@ -762,10 +785,12 @@ species pedestrian skills:[moving] control: fsm{
 		}
 		stroll_time <- stroll_time - 1;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
+		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 	}
 	
 	state outside_sim {
+		do updatefuzzTrajectory;
 		do die;
 	}
 	
@@ -777,6 +802,7 @@ species pedestrian skills:[moving] control: fsm{
 			}
 		}
 		transition to: visiting_place when: ready_to_visit;
+		do updatefuzzTrajectory;
 		exit {
 			visiting <- false;
 			ready_to_visit <- false;
@@ -789,7 +815,7 @@ species pedestrian skills:[moving] control: fsm{
 			visiting_time <- rnd(30,120) * 60;
 		}
 		visiting_time <- visiting_time - 1;
-		
+		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: visiting_time = 0;
 		exit {
 			visiting <- false;
@@ -814,7 +840,10 @@ species pedestrian skills:[moving] control: fsm{
 	aspect base{
 		if(showPedestrian and not visiting){
 			 draw square(3#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-		}	
+		}
+		if(showPeopleTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
+	  	}	
 	}
 }
 
@@ -851,6 +880,7 @@ species car skills:[advanced_driving]{
 	string type;
 	float speed;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
+	list<point> current_trajectory;
 		
 	reflex leave when: not wander and (final_target = nil)  {
 		if (target_intersection != nil and target_intersection in output_intersections) {
@@ -873,6 +903,11 @@ species car skills:[advanced_driving]{
 	  	}else{
 	  	  do drive;	
 	  	} 
+	  	loop while:(length(current_trajectory) > trajectoryLength)
+  	    {
+        current_trajectory >> first(current_trajectory);
+        }
+        current_trajectory << location;
 	}
 	
 	point calcul_loc {
@@ -893,6 +928,9 @@ species car skills:[advanced_driving]{
 	aspect base {
 	  if(showCar){
 	    draw rectangle(2.5#m,5#m) at:wander ? location : calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+	  }
+	  if(showCarTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
 	  }
 	}	
 }
@@ -1077,7 +1115,7 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["f"] action: {randomColor<-!randomColor;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event["t"] action: {showTrafficSignal<-!showTrafficSignal;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
 			event[" "] action: {showBackground<-!showBackground;};				
 			event["0"] action: {if(currentSimuState!=0){currentSimuState<-0;updateSim<-true;}};
 			event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
