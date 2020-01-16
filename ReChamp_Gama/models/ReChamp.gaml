@@ -66,7 +66,7 @@ global {
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
 	
-		bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
+	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
 	bool showMetroLane parameter: 'Metro Lane (q)' category: "Parameters" <-false;
 	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
@@ -111,6 +111,7 @@ global {
 	list<intersection> possible_targets; 
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
+	list<intersection> tf_can_be_desactivated;
 	
 
 	
@@ -247,6 +248,11 @@ global {
 		}
 		
 		do init_traffic_signal;
+		ask intersection where each.is_traffic_signal {
+			if (roads_in first_with (road(each).pro_lanes > 0) = nil) {
+				tf_can_be_desactivated << self;
+			}
+		}
 		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
 	}
@@ -440,6 +446,9 @@ global {
 					do change_number_of_lanes(ref_lanes);
 				}
 			}
+			ask tf_can_be_desactivated {
+				active <- true;
+			}
 		}
 		if (currentSimuState = 1){
 			ask vizuRoad where (each.state="present"){
@@ -473,6 +482,10 @@ global {
 				} else if (pro_lanes = 0) {
 					to_display <- false;
 				}
+			}
+			ask tf_can_be_desactivated {
+				stop[0] <- [];
+				active <- false;
 			}
 		}
 		updateSim<-false;
@@ -1007,7 +1020,6 @@ species intersection skills: [skill_road_node] {
 	bool is_traffic_signal;
 	bool is_crossing;
 	int group;
-	list<list> stop;
 	int time_to_change <- 100;
 	int counter <- rnd(time_to_change);
 	list<road> ways1;
@@ -1015,6 +1027,7 @@ species intersection skills: [skill_road_node] {
 	bool is_green;
 	rgb color_fire;
 	rgb color_group;
+	bool active <- true;
 
 	action compute_crossing(float ref_angle) {
 		loop rd over: roads_in {
@@ -1047,7 +1060,7 @@ species intersection skills: [skill_road_node] {
 		is_green <- false;
 	}
 
-	reflex dynamic_node when: is_traffic_signal {
+	reflex dynamic_node when: active and is_traffic_signal {
 		counter <- counter + 1;
 		if (counter >= time_to_change) {
 			counter <- 0;
@@ -1062,11 +1075,9 @@ species intersection skills: [skill_road_node] {
 	}
 
 	aspect default {
-		if (is_traffic_signal and showTrafficSignal) {
+		if (active and is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
-			draw triangle(5) color: color_group border: #black;
-		}else{
-//			draw circle(3) color: #orange;
+			//draw triangle(5) color: color_group border: #black;
 		}
 	}
 }
