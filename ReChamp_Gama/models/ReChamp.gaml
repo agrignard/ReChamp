@@ -59,7 +59,7 @@ global {
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-false;
+	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 	
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
@@ -94,7 +94,7 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(170,176,144),"pro"::rgb(112,116,68)];
-	map<string, rgb> usage_colors <- ["exi"::rgb(125,125,125),"pro"::rgb(225,225,225)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(168,192,208),"pro"::rgb(84,128,153)];
 	
 	float angle<-26.25;
 
@@ -584,7 +584,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color:color;	
+		  draw shape color:rgb(75,75,75) empty:true;	
 		}
 	}
 }
@@ -874,9 +874,7 @@ species pedestrian skills:[moving] control: fsm{
 			} else {
 				return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
 			}
-
 		}
- 
 	} 
 	
 	aspect base{
@@ -1103,7 +1101,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#white draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
