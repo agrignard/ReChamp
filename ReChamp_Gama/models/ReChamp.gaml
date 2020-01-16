@@ -87,7 +87,7 @@ global {
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
-	
+	bool right_side_driving <- true;
 	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
@@ -139,6 +139,14 @@ global {
 				}
 			}
 		}
+		
+		ask road{
+			loop i from: 0 to: length(shape.points) -2{
+				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
+				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
+				vec_ref << [vec_dir,vec_ortho];
+			}
+		}
 
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
@@ -171,7 +179,7 @@ global {
 		  	max_speed <- 160 #km / #h;
 		  	speed<-15 #km/#h + rnd(10 #km/#h);
 			vehicle_length <- 10.0 #m;
-			right_side_driving <- true;
+			right_side_driving <- myself.right_side_driving;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
 			proba_lane_change_down <- 0.5 + (rnd(500) / 500);
 			location <- one_of(intersection - output_intersections).location;
@@ -612,6 +620,7 @@ species road  skills: [skill_road]  {
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
+	list<list<point>> vec_ref;
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
@@ -904,11 +913,13 @@ species car skills:[advanced_driving]{
 			return location;
 		} else {
 			float val <- (road(current_road).lanes - current_lane)*3 + 1.0;
+			point offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
 			val <- on_linked_road ? -val : val;
 			if (val = 0) {
 				return location;
 			} else {
-				return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
+			//	return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
+			return (location + offset);
 			}
 
 		}
@@ -982,7 +993,7 @@ species intersection skills: [skill_road_node] {
 	bool is_crossing;
 	int group;
 	list<list> stop;
-	int time_to_change <- 100;
+	int time_to_change <- 20;
 	int counter <- rnd(time_to_change);
 	list<road> ways1;
 	list<road> ways2;
