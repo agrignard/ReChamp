@@ -445,12 +445,13 @@ global {
 	
 	reflex updateSim when: every(5 #mn){
 		//Create people going in and out of metro station
-		ask station where (each.type="metro"){
+		if(length(pedestrian)<nbAgent*mobilityRatio["people"]){
+		  ask station where (each.type="metro"){
 			create pedestrian number:rnd(0,10){
-				//lifespan<-25;
 				type<-"people";
 				location<-any_location_in(myself);
 			}
+		  }	
 		}
 	}
 	reflex updateSimuState when:updateSim=true{
