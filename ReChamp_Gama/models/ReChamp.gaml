@@ -95,8 +95,8 @@ global {
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
-	map<string, rgb> nature_colors <- ["exi"::rgb(170,176,144),"pro"::rgb(112,116,68)];
-	map<string, rgb> usage_colors <- ["exi"::rgb(168,192,208),"pro"::rgb(84,128,153)];
+	map<string, rgb> nature_colors <- ["exi"::rgb(115,212,0),"pro"::rgb(173,255,77)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(120,120,120),"pro"::rgb(255,0,0)];
 	
 	float angle<-26.25;
 
