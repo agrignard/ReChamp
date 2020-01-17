@@ -50,7 +50,7 @@ global {
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
 	float dist_group_traffic_light <- 50.0;
-	int nb_max_pedestrians <- 1000;
+
 	
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
 	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
@@ -455,18 +455,6 @@ global {
 		
 	}
 	
-	reflex updateSim when: every(5 #mn){
-		//Create people going in and out of metro station
-		if(length(pedestrian)<nbAgent*mobilityRatio["people"]){
-		  ask station where (each.type="metro"){
-			create pedestrian number:rnd(0,10){
-				type<-"people";
-				location<-any_location_in(myself);
-			}
-		  }	
-		}
-	}
-
 	reflex updateSimuState when:updateSim=true{
 		do updateSimuState;
 	}
@@ -801,7 +789,7 @@ species station schedules: station where (each.type="metro") {
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
-	reflex add_people when: (length(pedestrian) < nb_max_pedestrians) and every(delay){
+	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatio["people"]) and every(delay){
 		create pedestrian number:rnd(0,10){
 			//lifespan<-25;
 			type<-"people";
