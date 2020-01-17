@@ -29,8 +29,8 @@ global {
 	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
 	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");		
 	//MOBILITY
-	file Mobility_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_MOBILITY.shp");
-	file Mobility_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_MOBILITY.shp");
+	file Mobility_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_MOBILITY_ABSTRACT.shp");
+	file Mobility_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_MOBILITY_ABSTRACT.shp");
 	//NATURE
 	file Nature_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_NATURE.shp");
 	file Nature_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_NATURE.shp");
@@ -61,9 +61,9 @@ global {
 	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 	
-	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
-	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
-	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
+	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
+	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -627,7 +627,7 @@ species vizuRoad{
 	string type;
 	aspect base {
 		if(showVizuRoad and (currentSimuState_str in state)){
-			draw shape color:type_colors[type] width:1;	
+			draw shape color:type_colors[type];	
 		}
 	}
 }
@@ -660,7 +660,7 @@ species park {
 	
 	aspect base {
 		if(showGreen and (currentSimuState_str in state)){
-		  draw shape color: nature_colors[type] ;	
+		  draw shape color: nature_colors[type]-100 border:nature_colors[type];	
 		}	
 	}
 
@@ -791,7 +791,6 @@ species station schedules: station where (each.type="metro") {
 	//Create people going in and out of metro station
 	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatio["people"]) and every(delay){
 		create pedestrian number:rnd(0,10){
-			//lifespan<-25;
 			type<-"people";
 			location<-any_location_in(myself);
 		}
@@ -1180,7 +1179,7 @@ experiment ReChamp type: gui autorun:true{
 			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
-			species vizuRoad aspect:base;
+			species vizuRoad aspect:base transparency:0.5;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
