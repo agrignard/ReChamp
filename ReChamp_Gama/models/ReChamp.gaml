@@ -1,6 +1,6 @@
   /***
 * Name: ReChamp
-* Author: Arnaud Grignard, Tri Nguyen-Huu, Nicolas Ayoub 
+* Author: Arnaud Grignard, Tri Nguyen-Huu, Patrick Taillandier, Nicolas Ayoub 
 * Description: ReChamp - 2019
 * Tags: Tag1, Tag2, TagN
 ***/
@@ -57,13 +57,16 @@ global {
 	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
 	
 
-	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
+	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-true;
 	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 	
+
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
+	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
 	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -78,7 +81,7 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	
-	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparecny' category: "Trajectory" min: 0.0 max: 1.0;
+	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
@@ -101,8 +104,10 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
-	float step <- 2 #sec;
-	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
+
+	float step <- 10 #sec;
+	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
+
 	
 	map<bikelane,float> weights_bikelane;
 	
@@ -943,7 +948,7 @@ species pedestrian skills:[moving] control: fsm{
 	
 	aspect base{
 		if(showPedestrian and not visiting){
-			 draw square(3#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(2#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
@@ -954,17 +959,27 @@ species pedestrian skills:[moving] control: fsm{
 species bike skills:[moving]{
 	string type;
 	point my_target;
+	list<point> current_trajectory;
+	
 	reflex choose_target when: my_target = nil {
 		my_target <- any_location_in(one_of(bikelane));
 	}
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
 	  if (my_target = location) {my_target <- nil;}
+	  loop while:(length(current_trajectory) > trajectoryLength)
+  	    {
+        current_trajectory >> first(current_trajectory);
+        }
+        current_trajectory << location;
 	}
 	aspect base{
 		if(showBike){
-		 draw square(3#m) color:type_colors[type] rotate: angle;	
+		 draw square(2#m) color:type_colors[type] rotate: angle;	
 		}	
+		if(showBikeTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
+	  }
 	}
 }
 
@@ -1028,7 +1043,7 @@ species car skills:[advanced_driving]{
 	} 
 	aspect base {
 	  if(showCar){
-	    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+	    draw rectangle(2#m,3#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
 	  }
 	  if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
@@ -1217,9 +1232,9 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
-			event[" "] action: {showBackground<-!showBackground;};				
-			event["0"] action: {if(currentSimuState!=0){currentSimuState<-0;updateSim<-true;}};
-			event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
+			//event[" "] action: {showBackground<-!showBackground;};				
+			event[" "] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
+			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
 }
