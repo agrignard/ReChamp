@@ -498,6 +498,7 @@ global {
 	}
 	
 	action updateSimuState {
+		
 	//	ask stroller{do die;}
 		if (currentSimuState = 0){
 			currentSimuState_str <- "present";
@@ -738,7 +739,7 @@ species road  skills: [skill_road]  {
 			lanes <- new_number;
 		} else if prev > new_number {
 			list<list<list<agent>>> new_agents_on;
-			int nb_seg <- length(agents_on[0]);
+			int nb_seg <- length(shape.points) - 1;
 			loop i from: 0 to: prev - 1 {
 				list<list<agent>> ags_per_lanes <- agents_on[i];
 				if (i < new_number) {
@@ -747,14 +748,16 @@ species road  skills: [skill_road]  {
 					loop j from: 0 to: nb_seg -1 {
 						list<car> ags <- list<car>(ags_per_lanes[j]);
 						loop ag over: ags {
-							do unregister(ag);
-							do register(ag, new_number - 1);
+							write agents_on;
+							new_agents_on[new_number - 1][j] << ag;
+							ag.current_lane <- 0;
 						}
 					} 	
 				}
 			}
 			lanes <- new_number;
 			agents_on <- new_agents_on;
+			
 		}
 	}
 	aspect base {
