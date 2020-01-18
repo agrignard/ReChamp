@@ -426,7 +426,7 @@ global {
 	
 	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
 	action manage_cycle_network {
-		write "debut manage cycle network";
+
 		list<geometry> lines <- copy(bikelane_shapefile.contents);
 		list<geometry> lines2 <- (roads_shapefile.contents);
 		graph g <- as_edge_graph(lines);
@@ -449,7 +449,6 @@ global {
 		lines <- lines + lines2;
 		lines <- clean_network(lines,3.0, true,true);
 		
-		write "nb: " + length(lines);
 		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
 		create bikelane from:lines{
 			from_road <- not (shape.perimeter in ref) ;
@@ -748,7 +747,6 @@ species road  skills: [skill_road]  {
 					loop j from: 0 to: nb_seg -1 {
 						list<car> ags <- list<car>(ags_per_lanes[j]);
 						loop ag over: ags {
-							write agents_on;
 							new_agents_on[new_number - 1][j] << ag;
 							ag.current_lane <- 0;
 						}
