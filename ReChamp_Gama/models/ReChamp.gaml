@@ -608,7 +608,7 @@ species culture{
 	reflex manage_visitor when: not empty(waiting_tourists) and every(60 / capacity_per_min) {
 		pedestrian the_tourist <- first(waiting_tourists);
 		waiting_tourists >> the_tourist;
-			
+		the_tourist.ready_to_visit<-true;
 		if (not empty(waiting_tourists)) {
 			loop i from: 0 to: length(waiting_tourists) - 1 {
 				if (i < length(positions)) {
@@ -907,7 +907,7 @@ species pedestrian skills:[moving] control: fsm{
 	
 	state stroll_in_city {
 		enter {
-			stroll_time <- rnd(1, 10) ;
+			stroll_time <- rnd(1, 10) *60;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander amplitude:10.0 speed:2.0#km/#h;
@@ -952,6 +952,7 @@ species pedestrian skills:[moving] control: fsm{
 			visiting_time <- rnd(1,10) * 60;
 		}
 		visiting_time <- visiting_time - 1;
+		do wander bounds:target_place amplitude:10.0 speed:0.5#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: visiting_time = 0;
 		exit {
@@ -973,7 +974,7 @@ species pedestrian skills:[moving] control: fsm{
 	} 
 	
 	aspect base{
-		if(showPedestrian and not visiting){
+		if(showPedestrian){
 			 draw square(2#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
