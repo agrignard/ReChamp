@@ -843,9 +843,12 @@ species pedestrian skills:[moving] control: fsm{
 	int visiting_time;
 	float speed_walk <- rnd(3,6) #km/#h;
 	bool to_exit <- false;
-	float proba_sortie <- 0.5;
+	float proba_sortie <- 0.3;
+	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,2.0);
+	
+	bool wandering <- false;
 	bool to_culture <- false;
 	bool visiting <- false;
 	bool ready_to_visit <- false;
@@ -867,23 +870,32 @@ species pedestrian skills:[moving] control: fsm{
 	state walk_to_objective initial: true{
 		enter {
 			walking <- true;
+			wandering <- false;
+			to_culture <- false;
+			float speed_walk_current <- speed_walk;
 			if flip(proba_sortie) {
 				target <- (station where (each.type="metro") closest_to self).location;
 				to_exit <- true;
 			} else {
-				if flip(proba_culture) {
-					target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
-					to_culture <- true;
-					target <- first(culture(target_place).positions);
+				if flip(proba_wandering) {
+					target <- any_location_in(agent(one_of(people_graph.edges)));
+					wandering <- true;
+					speed_walk_current <- speed_walk_current/ 3.0;
 				} else {
-					target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-					target <- (target_place closest_points_with self) [0] ;
+					if flip(proba_culture) {
+						target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
+						to_culture <- true;
+						target <- first(culture(target_place).positions);
+					} else {
+						target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+						target <- (target_place closest_points_with self) [0] ;
+					}
 				}
-				
 			}
 		}
-		do goto target: target on:people_graph speed: speed_walk;
-		transition to: stroll when: not to_exit and not to_culture and location = target;
+		do goto target: target on:people_graph speed: speed_walk_current;
+		transition to: stroll_in_city when: not to_exit and wandering and location = target;
+		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
 		transition to: queueing when: not to_exit and to_culture and location = target;
 		transition to: outside_sim when:to_exit and location = target;
 		do updatefuzzTrajectory;		
@@ -892,9 +904,21 @@ species pedestrian skills:[moving] control: fsm{
 		}	
 	}
 	
-	state stroll {
+	
+	state stroll_in_city {
 		enter {
-			stroll_time <- rnd(5, 30) * 60;
+			stroll_time <- rnd(1, 10) ;
+		}
+		stroll_time <- stroll_time - 1;
+		do wander amplitude:10.0 speed:2.0#km/#h;
+		do updatefuzzTrajectory;
+		transition to: walk_to_objective when: stroll_time = 0;
+	}
+	
+	
+	state stroll_in_park {
+		enter {
+			stroll_time <- rnd(1, 10) * 60;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
@@ -925,7 +949,7 @@ species pedestrian skills:[moving] control: fsm{
 	state visiting_place {
 		enter {
 			visiting <- true;
-			visiting_time <- rnd(30,120) * 60;
+			visiting_time <- rnd(1,10) * 60;
 		}
 		visiting_time <- visiting_time - 1;
 		do updatefuzzTrajectory;
