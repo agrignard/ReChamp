@@ -133,15 +133,16 @@ global {
 		//------------------ STATIC AGENT ----------------------------------- //
 			create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
-			if (shape = nil or shape.area = 0) {
+			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
 			}
 			
 		}
 		loop g over: Nature_Now_shapefile {
-			if (g != nil and not empty(g)) {
-				//park p <- (park first_with(each.shape.area = g.area));
-				park p <- first(park overlapping g.location);
+			
+			if (g != nil and not empty(g)) and (g overlaps world) {
+				park p <- (park first_with(each.shape.area = g.area));
+				//park p <- first(park overlapping g.location);
 				if (p = nil) {p <- park first_with (each.location = g.location);}
 				if (p != nil){p.state << "present";}
 			}
