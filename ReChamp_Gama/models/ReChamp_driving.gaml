@@ -138,6 +138,7 @@ global {
 		
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) ;
+			
 		
 		output_intersections <- intersection where (empty(each.roads_out));
 		input_intersections <- intersection where (empty(each.roads_in));
@@ -201,9 +202,6 @@ global {
 		bike_graph <- as_edge_graph(bikelane);
 		bus_graph <- as_edge_graph(bus_line);
 			
-		do init_traffic_signal;
-		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
-			
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
@@ -227,6 +225,14 @@ global {
 				hot_spot <- true;
 			}
 		}	
+		ask intersection where each.is_traffic_signal{
+			if empty(intervention overlapping self){
+				is_traffic_signal <- false;
+			}
+		}
+		do init_traffic_signal;
+		Champs_Mobility_Now <- directed(as_edge_graph(road where (each.mode="car")));
+		
 		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
 		driving_road_network <- driving_road_network with_weights general_speed_map;	 
 	}

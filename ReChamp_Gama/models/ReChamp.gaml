@@ -207,7 +207,7 @@ global {
 		}
 
 		//creation of the road network using the road and intersection agents
-		driving_road_network <- (as_driving_graph(road, intersection)) ;
+		driving_road_network <- (as_driving_graph(road, intersection)) use_cache false ;
 		vertices <- list<intersection>(driving_road_network.vertices);
 		loop i from: 0 to: length(vertices) - 1 {
 			vertices[i].id <- i; 
@@ -464,9 +464,10 @@ global {
 		do updateSimuState;
 	}
 
-	reflex update_cars{
+	//j'ai vire car je sais pas a quoi cela sert
+	reflex update_cars when: false{
 		ask first(100,shuffle(car where(each.to_update))){
-			do update;
+			//do update;
 		}
 		//write car count(each.to_update);
 	}
@@ -510,22 +511,38 @@ global {
 			ask road {do change_number_of_lanes(ref_lanes);}
 			ask tf_can_be_desactivated {
 				active <- true;
-			}		
+			}
+			possible_targets <- intersection - input_intersections;			
 		}
 		if (currentSimuState = 1){	
 			currentSimuState_str <- "future";
 			ask road {do change_number_of_lanes(pro_lanes);}
+			
+			list<car> car_to_update <- car where ((each.target_intersection in tf_can_be_desactivated) or each.use_blocked_road()) ;
+			ask car_to_update{
+				if (current_road != nil) {
+					ask current_road as road {
+						do unregister(myself);
+					}
+				}
+				final_target <- nil;
+				target_intersection <- nil;
+				fade_count <- rnd(5,30);
+			}
 			ask tf_can_be_desactivated {
 				stop[0] <- [];
 				active <- false;
 			}
+			possible_targets <- intersection - input_intersections - tf_can_be_desactivated;
+			
 		}
-		ask car {self.to_update <- true;}
+//		ask car {self.to_update <- true;}
 		updateSim<-false;
 		if (driving_road_network != nil) {
 			map general_speed_map <- road as_map (each:: !each.to_display ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
 			driving_road_network <- driving_road_network with_weights general_speed_map;	
 		}
+		
 		activated_parks <- park where (currentSimuState_str in each.state);
 		activated_cultures <- culture where (currentSimuState_str in each.state);
 		ask  (culture - activated_cultures) {
@@ -1024,19 +1041,38 @@ species car skills:[advanced_driving]{
 	intersection current_intersection;
 	
 
-	reflex leave when: final_target = nil  {
-		if (target_intersection != nil and target_intersection in output_intersections) {
-			if current_road != nil {
-				ask current_road as road {
-					do unregister(myself);
-				}
+	bool use_blocked_road {
+		if currentSimuState = 0 {return false;}
+		if (current_path = nil) {return false;}
+		loop rd over:current_path.edges {
+			if road(rd).pro_lanes = 0 {
+				return true;
 			}
-			current_intersection <- one_of(input_intersections);
-			location <-current_intersection.location;
 		}
-		target_intersection <- one_of(possible_targets);
-		current_lane <- 0;
-		current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+		return false;
+		
+	}
+	reflex leave when: final_target = nil  {
+		bool ok <- false;
+		if (fade_count > 0) {fade_count <- fade_count - 1;}
+		if (fade_count = 0) {
+			loop while: not ok {
+				if (target_intersection != nil and target_intersection in output_intersections) {
+					if current_road != nil {
+						ask current_road as road {
+							do unregister(myself);
+						}
+					}
+					current_intersection <- one_of(input_intersections);
+					location <-current_intersection.location;
+				}
+				target_intersection <- one_of(possible_targets);
+				current_lane <- 0;
+				current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+				
+				ok <- current_path != nil and not(use_blocked_road());
+			}
+		 }
 	}
 	
 	
@@ -1051,7 +1087,8 @@ species car skills:[advanced_driving]{
 	
 
 	
-	action update{
+	/*action update{
+		fade_count <- 15;
 		if current_road != nil{
 			if !road(current_road).to_display 
 			{
@@ -1069,9 +1106,9 @@ species car skills:[advanced_driving]{
 			to_update <- false;
 		}
 //		write "car "+int(self);
-	}
+	}*/
 	
-	reflex fade when: (fade_count > 0){
+	/*reflex fade when: (fade_count > 0){
 		fade_count <- fade_count - 1;
 		if fade_count = 0{
 			if current_road != nil{
@@ -1084,8 +1121,9 @@ species car skills:[advanced_driving]{
 			target_intersection <- one_of(possible_targets);
 			current_lane <- 0;
 			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+			
 		}	
-	}
+	}*/
 	
 	point calcul_loc {
 		if (current_road = nil) {
