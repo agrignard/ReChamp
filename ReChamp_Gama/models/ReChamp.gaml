@@ -76,6 +76,7 @@ global {
 	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
 	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
+	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
@@ -103,15 +104,11 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
-
-
 	float step <- 2 #sec;
 	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
 
 	
 	map<bikelane,float> weights_bikelane;
-	
-//	map<road,float> proba_use_road;
 	list<intersection> input_intersections;
 	list<intersection> output_intersections;
 	list<intersection> possible_targets; 
@@ -122,11 +119,6 @@ global {
 	list<park> activated_parks;
 	list<culture> activated_cultures;
 	list<intersection> vertices;
-	
-		
-  //	list<point,geometry> queue_per_loc;
-
-	
 	
 	init {
 		
@@ -142,14 +134,11 @@ global {
 			
 			if (g != nil and not empty(g)) and (g overlaps world) {
 				park p <- (park first_with(each.shape.area = g.area));
-				//park p <- first(park overlapping g.location);
 				if (p = nil) {p <- park first_with (each.location = g.location);}
 				if (p != nil){p.state << "present";}
 			}
-		
-			
 		}
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type"))]{
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
@@ -157,7 +146,6 @@ global {
 		}
 		loop g over: Usage_Now_shapefile where (each != nil and each.area > 0) {
 			culture p <- (culture first_with(each.shape.area = g.area));
-			//p <- first(culture overlapping g.location);
 			if (p = nil) {p <- culture first_with (each.location = g.location);}
 			if (p != nil){p.state << "present";}
 		}
@@ -558,7 +546,8 @@ global {
 			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
-		proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
+		//proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
+		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
@@ -576,6 +565,8 @@ global {
 species culture{
 	list<string> state;
 	string type;
+	string style;
+	float capacity;
 	float capacity_per_min <- 1.0;
 	geometry queue;
 	list<pedestrian> people_waiting;
@@ -626,7 +617,9 @@ species culture{
 	aspect base {
 		if(showUsage and (currentSimuState_str in state)){
 		  draw shape color: usage_colors[type];	
-		  draw queue color: #white;
+		  if(showWaitingLine){
+		    draw queue color: #white;	
+		  }
 		}  	
 	}
 }
@@ -964,7 +957,7 @@ species pedestrian skills:[moving] control: fsm{
 			visiting_time <- rnd(1,10) * 60;
 		}
 		visiting_time <- visiting_time - 1;
-		do wander bounds:target_place amplitude:10.0 speed:0.5#km/#h;
+		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: visiting_time = 0;
 		exit {
@@ -1356,7 +1349,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:true autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
@@ -1373,13 +1366,11 @@ experiment ReChamp type: gui autorun:true{
 			species intersection;
 			species car aspect:base;
 			species pedestrian aspect:base;
-			//species metropolitan aspect:base;
 			species bike aspect:base;
-			//species stroller aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
-	//		species signals_zone aspect: base;
+
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
@@ -1404,7 +1395,7 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
-			//event[" "] action: {showBackground<-!showBackground;};				
+			event[" "] action: {showBackground<-!showBackground;};				
 			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
