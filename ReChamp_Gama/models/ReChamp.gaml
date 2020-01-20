@@ -105,7 +105,7 @@ global {
 	int nbAgent<-2000;
 
 
-	float step <- 1 #sec;
+	float step <- 5 #sec;
 	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
 
 	
@@ -499,37 +499,20 @@ global {
 	}
 	
 	action updateSimuState {
-		
-	//	ask stroller{do die;}
 		if (currentSimuState = 0){
 			currentSimuState_str <- "present";
-			ask road {
-				if (lanes != ref_lanes and (ref_lanes > 0)) {
-					to_display <- true;
-					do change_number_of_lanes(ref_lanes);
-				}
-			}
+			ask road {do change_number_of_lanes(ref_lanes);}
 			ask tf_can_be_desactivated {
 				active <- true;
-			}
-			
-			if (driving_road_network != nil) {
-				map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
-				driving_road_network <- driving_road_network with_weights general_speed_map;
-			}
-			
+			}		
+//			if (driving_road_network != nil) {
+//				map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
+//				driving_road_network <- driving_road_network with_weights general_speed_map;
+//			}	
 		}
-		if (currentSimuState = 1){
-			
+		if (currentSimuState = 1){	
 			currentSimuState_str <- "future";
-			ask road {
-				
-				if (lanes != pro_lanes and (pro_lanes > 0)) {
-					do change_number_of_lanes(pro_lanes);
-				} else if (pro_lanes = 0) {
-					to_display <- false;
-				}
-			}
+			ask road {do change_number_of_lanes(pro_lanes);}
 			ask tf_can_be_desactivated {
 				stop[0] <- [];
 				active <- false;
@@ -537,8 +520,6 @@ global {
 		}
 		updateSim<-false;
 		if (driving_road_network != nil) {
-		//	map general_speed_map <- road as_map (each::( each.shape.perimeter / each.maxspeed) / (1+each.lanes));
-	//	map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : (((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed)));
 			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
 			driving_road_network <- driving_road_network with_weights general_speed_map;	
 		}
@@ -721,44 +702,49 @@ species road  skills: [skill_road]  {
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
-		int prev <- lanes;
-		if prev < new_number {
-			list<list<list<agent>>> new_agents_on;
-			int nb_seg <- length(agents_on[0]);
-			loop i from: 0 to: new_number - 1 {
-				if (i < prev) {
-					list<list<agent>> ags_per_lanes <- agents_on[i];
-					new_agents_on << ags_per_lanes;
-				} else {
-					list<list<agent>> ags_per_lanes <- [];
-					loop times: nb_seg {
-						ags_per_lanes << [];
-					}
-					new_agents_on << ags_per_lanes;
-				}	
-			}
-			agents_on <- new_agents_on;
-			lanes <- new_number;
-		} else if prev > new_number {
-			list<list<list<agent>>> new_agents_on;
-			int nb_seg <- length(shape.points) - 1;
-			loop i from: 0 to: prev - 1 {
-				list<list<agent>> ags_per_lanes <- agents_on[i];
-				if (i < new_number) {
-					new_agents_on << ags_per_lanes;
-				} else {
-					loop j from: 0 to: nb_seg -1 {
-						list<car> ags <- list<car>(ags_per_lanes[j]);
-						loop ag over: ags {
-							new_agents_on[new_number - 1][j] << ag;
-							ag.current_lane <- 0;
+		if new_number = 0{
+			to_display <- false;
+		}else {
+			to_display <- true;
+			int prev <- lanes;
+			if prev < new_number {
+				list<list<list<agent>>> new_agents_on;
+				int nb_seg <- length(agents_on[0]);
+				loop i from: 0 to: new_number - 1 {
+					if (i < prev) {
+						list<list<agent>> ags_per_lanes <- agents_on[i];
+						new_agents_on << ags_per_lanes;
+					} else {
+						list<list<agent>> ags_per_lanes <- [];
+						loop times: nb_seg {
+							ags_per_lanes << [];
 						}
-					} 	
+						new_agents_on << ags_per_lanes;
+					}	
 				}
+				agents_on <- new_agents_on;
+			//	lanes <- new_number;
+			} else if prev > new_number {
+				list<list<list<agent>>> new_agents_on;
+				int nb_seg <- length(shape.points) - 1;
+				loop i from: 0 to: prev - 1 {
+					list<list<agent>> ags_per_lanes <- agents_on[i];
+					if (i < new_number) {
+						new_agents_on << ags_per_lanes;
+					} else {
+						loop j from: 0 to: nb_seg -1 {
+							list<car> ags <- list<car>(ags_per_lanes[j]);
+							loop ag over: ags {
+								new_agents_on[new_number - 1][j] << ag;
+								ag.current_lane <- 0;
+							}
+						} 	
+					}
+				}
+			//	lanes <- new_number;
+				agents_on <- new_agents_on;		
 			}
-			lanes <- new_number;
-			agents_on <- new_agents_on;
-			
+			lanes <- new_number;		
 		}
 	}
 	float compute_offset(int current_lane){
