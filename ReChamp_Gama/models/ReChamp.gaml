@@ -65,6 +65,7 @@ global {
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-false;
 	int trajectoryLength <-5 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -79,7 +80,7 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	
-	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparecny' category: "Trajectory" min: 0.0 max: 1.0;
+	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
@@ -102,7 +103,7 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-2000;
-	float step <- 10 #sec;
+	float step <- 1 #sec;
 	map<string,float> mobilityRatio <-["people"::0.3, "car"::0.2,"bike"::0.1, "bus"::0.5];
 	
 	map<bikelane,float> weights_bikelane;
@@ -179,7 +180,6 @@ global {
 						is_tunnel <- myself.is_tunnel;
 						oneway <- myself.oneway;
 					}
-					//lanes <- int(lanes / 2.0 + 0.5);
 				}
 
 				match "-1" {
@@ -188,6 +188,7 @@ global {
 			}
 		}
 		
+
 		ask road{
 			loop i from: 0 to: length(shape.points) -2{
 				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
@@ -456,6 +457,7 @@ global {
 	reflex updateSimuState when:updateSim=true{
 		do updateSimuState;
 	}
+
 	
 action manage_waiting_line {
 		loop wl over: Waiting_line_shapefile.contents {
@@ -539,6 +541,7 @@ action manage_waiting_line {
 			write "intersection "+self+" from group "+self.group+" is an output intersection";
 		}
 	}
+	
 }
 
 species culture{
@@ -732,6 +735,10 @@ species road  skills: [skill_road]  {
 			agents_on <- new_agents_on;
 		}
 	}
+	float compute_offset(int current_lane){
+		return (oneway='no')?((lanes - min([current_lane,lanes -1]) - 0.5)*3 + 0.25):((0.5*lanes - min([current_lane, lanes - 1]) - 0.5)*3);
+	}
+	
 	aspect base {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
@@ -941,6 +948,10 @@ species bike skills:[moving]{
 
 
 species car skills:[advanced_driving]{	
+//	list<list<point>> segment_list <- [];
+//	list<road> lr <- [];
+	bool test_car <- false;
+	point current_offset <- {0,0};
 	rgb color;
 	point target;
 	intersection target_intersection;
@@ -951,6 +962,7 @@ species car skills:[advanced_driving]{
 	float speed;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
 	list<point> current_trajectory;
+
 		
 	reflex leave when: final_target = nil  {
 		if (target_intersection != nil and target_intersection in output_intersections) {
@@ -976,32 +988,103 @@ species car skills:[advanced_driving]{
         current_trajectory << location;
 	}
 	
+	
 	point calcul_loc {
 		if (current_road = nil) {
 			return location;
 		} else {
-			//float val <- (road(current_road).lanes - current_lane)*3 + 1.0;
-			float val <- road(current_road).oneway='no'?((road(current_road).lanes - current_lane - 0.5)*3 + 0.25):((0.5*road(current_road).lanes - current_lane - 0.5)*3);
-			point offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
-			val <- on_linked_road ? -val : val;
-			if (val = 0) {
-				return location;
-			} else {
-			//	return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
-			return (location + offset);
-			}
-
+			if smoothTrajectory{
+				current_offset  <- current_offset + (compute_offset(3) - current_offset) * min([1,real_speed/100*step]);
+			}else{
+				float val <- road(current_road).compute_offset(current_lane);
+				val <- on_linked_road ? -val : val;
+				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+			}			
+			return (location + current_offset);
 		}
-
 	} 
+	
+	
 	aspect base {
-	  if(showCar){
-	    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+		if(showCar){
+		    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+	  	}
+	  	if (test_car){
+	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
+	  		loop p over: targets{
+	  			draw circle(0.5#m) at: p color: #green; 
+	  		}
 	  }
 	  if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
 	  }
 	}	
+	
+	
+	point compute_offset(int s){
+		if current_road = nil or current_path = nil{
+			return current_offset;
+		}else{
+			int ci <- current_index;
+			int cs <- segment_index_on_road;
+			list<list<point>> segment_list <- [];
+			list<road> lr <- [];
+			list<list<point>> tmp_vec_ref <- [];
+			int count <- 0;
+			loop while: (count < s) and ci < length(current_path.edges){
+				segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
+				tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
+				lr << road(current_path.edges[ci]);
+				count <- count + 1;
+				cs <- cs + 1;
+				if (cs > length(road(current_path.edges[ci]).shape.points)-2){
+					cs <- 0;
+					ci <- ci + 1;
+				}
+			}
+			list<point> offset_list <- [tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane)];
+			list<float> weight_list <- [1.0];
+			loop i from: 0 to: length(segment_list) - 2 step: 1{		
+				float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
+				if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+					a <- 180.0;
+				}
+				weight_list << 1+abs(a-180);
+				if abs(abs(a-90)-90)<5{
+					offset_list << tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
+				}else{
+					offset_list << (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
+				}
+			}
+			if (test_car){
+				loop i from: 0 to: length(segment_list) - 2 step: 1{
+					draw circle(1#m) at: last(segment_list[i]) color: rgb(255 - i *100,255 - i*100,255); 
+					draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
+				}	
+			}
+			point offset <- {0,0};
+			loop i from: 0 to: length(offset_list)-1{
+				offset <- offset + offset_list[i]*weight_list[i];
+			}
+			// ne pas effacer ce qui suit, peut servir pour des tests et ameliorer le smooth 
+//			if norm(offset/sum(weight_list)) > 100 {
+//				write "car: "+int(self)+ " "+ norm(offset/sum(weight_list))+" offset "+ offset/sum(weight_list);//+" angle "+a;
+//				write "offset list "+offset_list;
+//				write "angles "+angles;
+//				write angles accumulate (abs(abs(a-90)-90));
+//				loop i from: 0 to: length(offset_list)-1{
+//					write "offset "+i+": "+tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
+//				}
+////				write "vec_ref "+tmp_vec_ref[i][0]+"/"+tmp_vec_ref[i+1][0]+" "+lr[i].compute_offset(current_lane)+"/"+lr[i+1].compute_offset(current_lane);
+////				write tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane);
+////				write tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane);
+////				write sin(a);
+////				write tmp_offset;
+//				ask world {do pause;}
+//			}
+			return offset / sum(weight_list);
+		}
+	}
 }
 
 species graphicWorld{
