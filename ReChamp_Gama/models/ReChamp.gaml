@@ -105,7 +105,7 @@ global {
 	int nbAgent<-2000;
 
 
-	float step <- 5 #sec;
+	float step <- 2 #sec;
 	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
 
 	
@@ -464,6 +464,12 @@ global {
 		do updateSimuState;
 	}
 
+	reflex update_cars{
+		ask first(100,shuffle(car where(each.to_update))){
+			do update;
+		}
+		//write car count(each.to_update);
+	}
 	
 	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
 		
@@ -505,10 +511,6 @@ global {
 			ask tf_can_be_desactivated {
 				active <- true;
 			}		
-//			if (driving_road_network != nil) {
-//				map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
-//				driving_road_network <- driving_road_network with_weights general_speed_map;
-//			}	
 		}
 		if (currentSimuState = 1){	
 			currentSimuState_str <- "future";
@@ -518,9 +520,10 @@ global {
 				active <- false;
 			}
 		}
+		ask car {self.to_update <- true;}
 		updateSim<-false;
 		if (driving_road_network != nil) {
-			map general_speed_map <- road as_map (each:: each.lanes = 0 ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
+			map general_speed_map <- road as_map (each:: !each.to_display ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
 			driving_road_network <- driving_road_network with_weights general_speed_map;	
 		}
 		activated_parks <- park where (currentSimuState_str in each.state);
@@ -1004,9 +1007,9 @@ species bike skills:[moving]{
 
 
 species car skills:[advanced_driving]{	
-//	list<list<point>> segment_list <- [];
-//	list<road> lr <- [];
+	bool to_update <- false;
 	bool test_car <- false;
+	int fade_count <- 0;
 	point current_offset <- {0,0};
 	rgb color;
 	point target;
@@ -1046,6 +1049,43 @@ species car skills:[advanced_driving]{
         current_trajectory << location+current_offset;
 	}
 	
+
+	
+	action update{
+		if current_road != nil{
+			if !road(current_road).to_display 
+			{
+				fade_count <- 15;
+//				ask current_road as road {
+//					do unregister(myself);
+//				}
+//				current_intersection <- one_of(intersection - output_intersections);
+//				location <-current_intersection.location;
+//				target_intersection <- one_of(possible_targets);
+//				current_lane <- 0;
+			}else{
+				current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+			}
+			to_update <- false;
+		}
+//		write "car "+int(self);
+	}
+	
+	reflex fade when: (fade_count > 0){
+		fade_count <- fade_count - 1;
+		if fade_count = 0{
+			if current_road != nil{
+				ask current_road as road {
+					do unregister(myself);
+				}
+			}
+			current_intersection <- one_of(intersection - output_intersections);
+			location <-current_intersection.location;
+			target_intersection <- one_of(possible_targets);
+			current_lane <- 0;
+			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+		}	
+	}
 	
 	point calcul_loc {
 		if (current_road = nil) {
@@ -1065,7 +1105,7 @@ species car skills:[advanced_driving]{
 	
 	aspect base {
 		if(showCar){
-		    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):type_colors[type];	   
+		    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
 	  	if (test_car){
 	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
@@ -1327,7 +1367,7 @@ experiment ReChamp type: gui autorun:true{
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
 			//event[" "] action: {showBackground<-!showBackground;};				
-			event[" "] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
+			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
