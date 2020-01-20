@@ -105,7 +105,7 @@ global {
 	int nbAgent<-2000;
 
 
-	float step <- 10 #sec;
+	float step <- 1 #sec;
 	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
 
 	
@@ -1032,7 +1032,6 @@ species car skills:[advanced_driving]{
 	float speed;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
 	list<point> current_trajectory;
-
 	intersection current_intersection;
 	
 
@@ -1043,7 +1042,6 @@ species car skills:[advanced_driving]{
 					do unregister(myself);
 				}
 			}
-			
 			current_intersection <- one_of(input_intersections);
 			location <-current_intersection.location;
 		}
@@ -1059,7 +1057,7 @@ species car skills:[advanced_driving]{
   	    {
         current_trajectory >> first(current_trajectory);
         }
-        current_trajectory << location;
+        current_trajectory << location+current_offset;
 	}
 	
 	
