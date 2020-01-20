@@ -65,6 +65,7 @@ global {
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
 	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
@@ -81,7 +82,7 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	
-	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
+	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
@@ -983,7 +984,7 @@ species pedestrian skills:[moving] control: fsm{
 			 draw square(2#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  	}	
 	}
 }
@@ -1010,7 +1011,7 @@ species bike skills:[moving]{
 		 draw square(2#m) color:type_colors[type] rotate: angle;	
 		}	
 		if(showBikeTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  }
 	}
 }
@@ -1145,7 +1146,7 @@ species car skills:[advanced_driving]{
 	  		}
 	  	}
 	  	if(showCarTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,0.2);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  	}
 	}	
 	
@@ -1349,7 +1350,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:true autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
@@ -1398,6 +1399,17 @@ experiment ReChamp type: gui autorun:true{
 			event[" "] action: {showBackground<-!showBackground;};				
 			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
+		}
+	}
+}
+
+
+experiment ReChamp2Proj parent:ReChamp{	
+	output {
+		display indicator type:opengl background:#black draw_env:false fullscreen:2{
+			graphics "state" {
+				draw "Paris: " + ((currentSimuState = 0) ? "2020" :" 2024") color: # white font: font("Helvetica", 25, #italic) at: {0,0};
+			}
 		}
 	}
 }
