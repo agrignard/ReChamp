@@ -68,9 +68,12 @@ global {
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	
-	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
+	int trajectoryLength <-25 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 50;
+	
+	
+	
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
+	float trajectoryTransparency <-0.5 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -85,6 +88,7 @@ global {
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
+	float dotPoint <-2.0#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
@@ -102,7 +106,7 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(115,212,0),"pro"::rgb(173,255,77)];
-	map<string, rgb> usage_colors <- ["exi"::rgb(120,120,120),"pro"::rgb(255,0,0)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(75,75,75),"pro"::rgb(175,175,175)];
 	
 	float angle<-26.25;
 
@@ -110,8 +114,8 @@ global {
 	string currentSimuState_str <- "present" among: ["present", "future"];
 	int currentSimuState<-0;
 	bool updateSim<-true;
-	int nbAgent<-2000;
-	float step <- 2 #sec;
+	int nbAgent<-1000;
+	float step <- 1 #sec;
 	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
 	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
@@ -1045,7 +1049,7 @@ species pedestrian skills:[moving] control: fsm{
 	
 	aspect base{
 		if(showPedestrian){
-			 draw square(2#m) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
@@ -1072,7 +1076,7 @@ species bike skills:[moving]{
 	}
 	aspect base{
 		if(showBike){
-		 draw square(2#m) color:type_colors[type] rotate: angle;	
+		 draw square(dotPoint) color:type_colors[type] rotate: angle;	
 		}	
 		if(showBikeTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
@@ -1100,7 +1104,7 @@ species bus skills:[moving]{
 	}
 	aspect base{
 		if(showSharedMobility){
-		 draw rectangle(3#m,7#m) color:type_colors[type] rotate:heading-90;	
+		 draw rectangle(dotPoint*2,dotPoint*3) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showSharedMobilityTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
@@ -1280,7 +1284,7 @@ species car skills:[advanced_driving]{
 	
 	aspect base {
 		if(showCar){
-		    draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
+		    draw rectangle(dotPoint,dotPoint*2) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
 	  	if (test_car){
 	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
@@ -1511,9 +1515,9 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-
-	   	camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		display champ type:opengl background:#black draw_env:false fullscreen:2  rotate:angle toolbar:false autosave:false synchronized:true
+camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
+	   	//camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
@@ -1561,7 +1565,7 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event[" "] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
+			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
@@ -1572,7 +1576,7 @@ experiment ReChamp2Proj parent:ReChamp{
 	
 	output {	
 		layout #split;
-		display indicator type:opengl background:#black draw_env:true fullscreen:false
+		display indicator type:opengl background:#black draw_env:true fullscreen:1
 		camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 			graphics 'dashboardbackground'{
