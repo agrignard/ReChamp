@@ -55,6 +55,7 @@ global {
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
 	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
 	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
+	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-true;
@@ -64,6 +65,9 @@ global {
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
+	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
+	
+	
 	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
@@ -107,7 +111,7 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-2000;
 	float step <- 2 #sec;
-	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
+	map<string,float> mobilityRatio <-["people"::0.45, "car"::0.3,"bike"::0.2, "bus"::0.05];
 
 	
 	map<bikelane,float> weights_bikelane;
@@ -243,6 +247,7 @@ global {
 		}
 		
 		//------------------- AGENT ---------------------------------------- //
+		
 		do create_cars(round(nbAgent*mobilityRatio["car"]));
 		
 		//Create Pedestrain
@@ -275,6 +280,14 @@ global {
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
+		
+		
+		 //Create Bus
+	    create bus number:nbAgent*mobilityRatio["bus"]{
+	      type <- "bus";
+		  location<-any_location_in(one_of(bus_line));	
+		}
+		bus_graph <- (as_edge_graph(bus_line)) ;
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -1013,6 +1026,34 @@ species bike skills:[moving]{
 }
 
 
+species bus skills:[moving]{
+	string type;
+	point my_target;
+	list<point> current_trajectory;
+	
+	reflex choose_target when: my_target = nil {
+		my_target <- any_location_in(one_of(bus_line));
+	}
+	reflex move{
+	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
+	  if (my_target = location) {my_target <- nil;}
+	  loop while:(length(current_trajectory) > trajectoryLength)
+  	    {
+        current_trajectory >> first(current_trajectory);
+        }
+        current_trajectory << location;
+	}
+	aspect base{
+		if(showSharedMobility){
+		 draw rectangle(3#m,7#m) color:type_colors[type] rotate:heading-90;	
+		}	
+		if(showSharedMobilityTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	  }
+	}
+}
+
+
 species car skills:[advanced_driving]{	
 	bool to_update <- false;
 	bool test_car <- false;
@@ -1416,6 +1457,7 @@ experiment ReChamp type: gui autorun:true{
 			species car aspect:base;
 			species pedestrian aspect:base;
 			species bike aspect:base;
+			species bus aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
@@ -1429,6 +1471,7 @@ experiment ReChamp type: gui autorun:true{
 			event["p"] action: {showPedestrian<-!showPedestrian;};
 			event["c"] action: {showCar<-!showCar;};
 			event["b"] action: {showBike<-!showBike;};
+			event["s"] action: {showSharedMobility<-!showSharedMobility;};
 			event["g"] action: {showGif<-!showGif;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
