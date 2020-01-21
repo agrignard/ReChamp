@@ -1440,8 +1440,8 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+	   	camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
@@ -1487,9 +1487,8 @@ experiment ReChamp type: gui autorun:true{
 			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
-			event[" "] action: {showBackground<-!showBackground;};				
-			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
+			event[" "] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
