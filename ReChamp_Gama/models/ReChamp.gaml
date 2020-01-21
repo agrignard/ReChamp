@@ -249,29 +249,14 @@ global {
 		
 		//------------------- AGENT ---------------------------------------- //
 		
-		do create_cars(round(nbAgent*mobilityRatioNow["car"]));
+		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
 		
 		//Create Pedestrain
-		create pedestrian number:nbAgent*mobilityRatioNow["people"]{
-		  val_f <- rnd(-max_dev,max_dev);
-		  current_trajectory <- [];
-		  type <- "people";
-			if flip(0.3) {
-				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-				target <- (any_location_in(target_place));
-				location<-copy(target);
-				state <- "stroll";
-				
-				
-			} else {
-				location<-any_location_in(one_of(road));
-			}
-		  	
-		}
+		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
 		
         //Create Bike
-	    create bike number:nbAgent*mobilityRatioNow["bike"]{
-	      type <- "bike";
+	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
+	       type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
 				
@@ -284,7 +269,7 @@ global {
 		
 		
 		 //Create Bus
-	    create bus number:nbAgent*mobilityRatioNow["bus"]{
+	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
 	      type <- "bus";
 		  location<-any_location_in(one_of(road));	
 		}
@@ -319,6 +304,29 @@ global {
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
+	map<string,float> get_mobility_ratio {
+		if (currentSimuState = 0) {
+			return mobilityRatioNow;
+		} else {
+			return mobilityRatioFuture;
+		}
+	}
+	
+	action create_pedestrian(int nb) {
+		create pedestrian number:nb{
+		  current_trajectory <- [];
+		  type <- "people";
+			if flip(0.3) {
+				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+				target <- (any_location_in(target_place));
+				location<-copy(target);
+				state <- "stroll";
+			} else {
+				location<-any_location_in(one_of(road));
+			}
+		  	
+		}
+	}
 	action create_cars(int nb) {
 		create car number:nb{
 		 	type <- "car";
@@ -546,8 +554,53 @@ global {
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
 		//proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
+
+		int nb_cars <- length(car);
+		int nb_cars_target <- round(nbAgent * get_mobility_ratio()["car"]);
+		if (nb_cars_target > nb_cars) {
+			do create_cars(nb_cars_target - nb_cars);
+		} else if (nb_cars_target < nb_cars) {
+			ask (nb_cars - nb_cars_target) among car {
+				do remove_and_die;
+			}
+		}
+		
+		int nb_people <- length(pedestrian);
+		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
+		if (nb_people_target > nb_people) {
+			do create_pedestrian(nb_people_target - nb_people);
+		} else if (nb_people_target < nb_people) {
+			ask (nb_people - nb_people_target) among pedestrian {
+				do die;
+			}
+		}
+		
+		int nb_bikes <- length(bike);
+		int nb_bikes_target <- round(nbAgent * get_mobility_ratio()["bike"]);
+		if (nb_bikes_target > nb_bikes) {
+			create bike number:nb_bikes_target - nb_bikes{
+	      		type <- "bike";
+		  		location<-any_location_in(one_of(building));	
+			}
+		} else if (nb_bikes_target < nb_bikes) {
+			ask (nb_bikes - nb_bikes_target) among bike {
+				do die;
+			}
+		}
+		
+		int nb_bus <- length(bus);
+		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
+		if (nb_bus_target > nb_bus) {
+			 create bus number:nb_bus_target - nb_bus{
+	      		type <- "bus";
+		  		location<-any_location_in(one_of(road));	
+			}
+		} else if (nb_bus_target < nb_bus) {
+			ask (nb_bus - nb_bus_target) among bus {
+				do die;
+			}
+		}
 	}
-	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
 	action check_signals_integrity {
 		if false{
@@ -869,7 +922,7 @@ species pedestrian skills:[moving] control: fsm{
 	bool visiting <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
-	float val_f ;
+	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
 	
 	action updatefuzzTrajectory{
@@ -1073,6 +1126,23 @@ species car skills:[advanced_driving]{
 	list<point> current_trajectory;
 	intersection current_intersection;
 	
+	action remove_and_die {
+		if (current_road != nil) {
+			ask road(current_road) {
+				do unregister(myself);
+				loop ag_l over: agents_on {
+					loop ag_s over: ag_l  {
+						if (myself in  list<agent>(ag_s)) {
+							 list<agent>(ag_s) >> myself;
+						}
+					}
+				}
+			}
+			
+		//	write name + " -> " + current_road + " road(current_road):" + road(current_road).agents_on + " : " + road(current_road).all_agents;
+		}
+		do die;
+	}
 	reflex smooth_curve{
 		//offset <- compute_offset(3);
 		if smoothTrajectory{
@@ -1087,15 +1157,15 @@ species car skills:[advanced_driving]{
 
 	bool use_blocked_road {
 		if currentSimuState = 0 {return false;}
-		if (current_path = nil) {write "reason nil path";
+		if (current_path = nil) {/*write "reason nil path";
 			write "car "+ int(self); 
-			write current_path;
+			write current_path;*/
 	//		ask world {do pause;}
 			return false;
 		}
 		loop rd over:current_path.edges {
 			if road(rd).lanes_nb[1] = 0 {
-				write "blocked road: "+road(rd);
+				//write "blocked road: "+road(rd);
 				return true;
 			}
 		}
