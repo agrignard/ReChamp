@@ -1184,6 +1184,7 @@ species car skills:[advanced_driving]{
 	}	
 	
 	
+	
 	point compute_offset(int s){
 		if current_road = nil or current_path = nil{
 			return current_offset;
@@ -1449,6 +1450,7 @@ experiment ReChamp type: gui autorun:true{
 		}
 	}
 }
+
 
 experiment ReChamp2Proj parent:ReChamp{	
 	output {
