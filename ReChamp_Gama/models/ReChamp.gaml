@@ -87,6 +87,7 @@ global {
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
+	file dashboardbackground <- file('../includes/PNG/dashboardtest.png');
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
@@ -1398,7 +1399,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
 	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
@@ -1453,11 +1454,22 @@ experiment ReChamp type: gui autorun:true{
 
 
 experiment ReChamp2Proj parent:ReChamp{	
-	output {
-		display indicator type:opengl background:#black draw_env:false fullscreen:2{
-			graphics "state" {
-				draw "Paris: " + ((currentSimuState = 0) ? "2020" :" 2024") color: # white font: font("Helvetica", 25, #italic) at: {0,0};
+	
+	output {	
+		layout #split;
+		display indicator type:opengl background:#black draw_env:true fullscreen:false
+		camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		{
+			graphics 'dashboardbackground'{
+				draw rectangle(1920,1080) texture:dashboardbackground.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+				
 			}
+			
+			graphics "state" {
+				draw ((currentSimuState = 0) ? "2020" :"2024") color: #white font: font("Helvetica", 50, #bold) at: {2407,1945};
+			}
+			
+
 		}
 	}
 }
