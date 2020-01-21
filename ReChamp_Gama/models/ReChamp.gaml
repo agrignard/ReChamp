@@ -166,7 +166,7 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::(read("tunnel")="yes"?true:false)] {
+		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 					
 			switch oneway {
@@ -211,12 +211,18 @@ global {
 			possible_targets[j] <- intersection - input_intersections[j];
 		}
 		
+		ask intersection where each.is_traffic_signal{
+			if empty(signals_zone overlapping self){
+				is_traffic_signal <- false;
+			}
+		}
 		do init_traffic_signal;
 		loop j from: 0 to: stateNumber - 1{
 			ask intersection where each.is_traffic_signal {
 				activityStates[j] <- (roads_in first_with (road(each).lanes_nb[j] > 0) != nil);	
 			}
 		}
+
 
 		do check_signals_integrity;
 		
@@ -292,11 +298,7 @@ global {
 				hot_spot <- true;
 			}
 		}	
-		ask intersection where each.is_traffic_signal{
-			if empty(signals_zone overlapping self){
-				is_traffic_signal <- false;
-			}
-		}
+
 		
 
 //		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
@@ -690,7 +692,7 @@ species road  skills: [skill_road]  {
 	bool test <- false;
 	
 	int id;
-	bool is_tunnel <- false;
+	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
 	string mode;
 	float proba_use <- 100.0;
@@ -758,7 +760,7 @@ species road  skills: [skill_road]  {
 	
 	aspect base {
 		if(showRoad and to_display){
-			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
+			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;	
 		}
 		if test{
 			draw 3 around(shape) color: #white;
@@ -1025,7 +1027,7 @@ species car skills:[advanced_driving]{
 	string aspect;
 	string type;
 	float speed;
-	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel;
+	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel[currentSimuState];
 	list<point> current_trajectory;
 	intersection current_intersection;
 	
@@ -1089,7 +1091,7 @@ species car skills:[advanced_driving]{
 	}
 	
 	
-	action update{
+	action update{// il reste du code pour debuguer a nettoyer, ne pas trop toucher aux trucs chelous
 		list<bool> trace;
 		list<road> road_trace;
 		if current_road != nil{
@@ -1125,10 +1127,10 @@ species car skills:[advanced_driving]{
 				if use_blocked_road(){
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
-					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[1]); // I left this block  to check is this happens sometimes...
-					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
-					write "road trace: "+road_trace;
-					write "trace "+ trace+"\n";
+//					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[1]); // I left this block  to check is this happens sometimes...
+//					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
+//					write "road trace: "+road_trace;
+//					write "trace "+ trace+"\n";
 		//			ask world {do pause;}
 				}
 			}
@@ -1336,7 +1338,6 @@ species intersection skills: [skill_road_node] {
 			}
 
 		}
-
 	}
 
 	action to_green {
