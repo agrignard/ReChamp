@@ -111,7 +111,8 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-2000;
 	float step <- 2 #sec;
-	map<string,float> mobilityRatio <-["people"::0.45, "car"::0.3,"bike"::0.2, "bus"::0.05];
+	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
+	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
 	
 	map<bikelane,float> weights_bikelane;
@@ -248,10 +249,10 @@ global {
 		
 		//------------------- AGENT ---------------------------------------- //
 		
-		do create_cars(round(nbAgent*mobilityRatio["car"]));
+		do create_cars(round(nbAgent*mobilityRatioNow["car"]));
 		
 		//Create Pedestrain
-		create pedestrian number:nbAgent*mobilityRatio["people"]{
+		create pedestrian number:nbAgent*mobilityRatioNow["people"]{
 		  val_f <- rnd(-max_dev,max_dev);
 		  current_trajectory <- [];
 		  type <- "people";
@@ -269,7 +270,7 @@ global {
 		}
 		
         //Create Bike
-	    create bike number:nbAgent*mobilityRatio["bike"]{
+	    create bike number:nbAgent*mobilityRatioNow["bike"]{
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
@@ -283,11 +284,11 @@ global {
 		
 		
 		 //Create Bus
-	    create bus number:nbAgent*mobilityRatio["bus"]{
+	    create bus number:nbAgent*mobilityRatioNow["bus"]{
 	      type <- "bus";
-		  location<-any_location_in(one_of(bus_line));	
+		  location<-any_location_in(one_of(road));	
 		}
-		bus_graph <- (as_edge_graph(bus_line)) ;
+		bus_graph <- (as_edge_graph(road)) ;
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -811,7 +812,7 @@ species station schedules: station where (each.type="metro") {
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
-	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatio["people"]) and every(delay){
+	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
 		create pedestrian number:rnd(0,10){
 			type<-"people";
 			location<-any_location_in(myself);
@@ -1032,7 +1033,7 @@ species bus skills:[moving]{
 	list<point> current_trajectory;
 	
 	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(bus_line));
+		my_target <- any_location_in(one_of(road));
 	}
 	reflex move{
 	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
