@@ -101,6 +101,7 @@ global {
 	
 	float angle<-26.25;
 
+	int stateNumber <- 2;
 	string currentSimuState_str <- "present" among: ["present", "future"];
 	int currentSimuState<-0;
 	bool updateSim<-true;
@@ -110,12 +111,14 @@ global {
 
 	
 	map<bikelane,float> weights_bikelane;
-	list<intersection> input_intersections;
-	list<intersection> output_intersections;
-	list<intersection> possible_targets; 
+	list<list<intersection>> input_intersections <-list_with(stateNumber, []);
+	list<list<intersection>> output_intersections <-list_with(stateNumber, []);
+	list<list<intersection>> possible_targets <-list_with(stateNumber, []);
+	
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
-	list<intersection> tf_can_be_desactivated;
+	//list<intersection> tf_can_be_desactivated;
+//	list<list<intersection>> active_traffic_lights <-list_with(stateNumber, []);
 	
 	list<park> activated_parks;
 	list<culture> activated_cultures;
@@ -163,16 +166,14 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes::int(read("lanes")), oneway::string(read("oneway")), is_tunnel::(read("tunnel")="yes"?true:false)] {
+		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::(read("tunnel")="yes"?true:false)] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
-				ref_lanes <- lanes;
 					
 			switch oneway {
 				match "no" {
 					create road {
 						lanes <- myself.lanes;
-						ref_lanes <- lanes;
-						pro_lanes <- myself.pro_lanes;
+						lanes_nb <- myself.lanes_nb;
 						shape <- polyline(reverse(myself.shape.points));
 						maxspeed <- myself.maxspeed;
 						is_tunnel <- myself.is_tunnel;
@@ -201,10 +202,22 @@ global {
 		loop i from: 0 to: length(vertices) - 1 {
 			vertices[i].id <- i; 
 		}
-		output_intersections <- intersection where (empty(each.roads_out));
-		input_intersections <- intersection where (empty(each.roads_in));
-		possible_targets <- intersection - input_intersections;
-//		proba_use_road <- road as_map (each::each.proba_use);
+		
+		loop j from: 0 to: stateNumber - 1{
+			loop i over: intersection{
+				if empty(i.roads_out where (road(each).lanes_nb[j] != 0)){output_intersections[j] << i;}
+				if empty(i.roads_in where (road(each).lanes_nb[j] != 0)){input_intersections[j] << i;}
+			}
+			possible_targets[j] <- intersection - input_intersections[j];
+		}
+		
+		do init_traffic_signal;
+		loop j from: 0 to: stateNumber - 1{
+			ask intersection where each.is_traffic_signal {
+				activityStates[j] <- (roads_in first_with (road(each).lanes_nb[j] > 0) != nil);	
+			}
+		}
+
 		do check_signals_integrity;
 		
 		do updateSimuState;
@@ -285,15 +298,9 @@ global {
 			}
 		}
 		
-		do init_traffic_signal;
-		ask intersection where each.is_traffic_signal {
-			if (roads_in first_with (road(each).pro_lanes > 0) = nil) {
-				tf_can_be_desactivated << self;
-			}
-		}
-		//map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * each.shape.perimeter / each.maxspeed));
-		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
-		driving_road_network <- driving_road_network with_weights general_speed_map; 
+
+//		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
+//		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
 	action create_cars(int nb) {
@@ -453,10 +460,9 @@ global {
 		do updateSimuState;
 	}
 
-	//j'ai vire car je sais pas a quoi cela sert
-	reflex update_cars when: false{
+	reflex update_cars {
 		ask first(100,shuffle(car where(each.to_update))){
-			//do update;
+			do update;
 		}
 		//write car count(each.to_update);
 	}
@@ -495,42 +501,17 @@ global {
 	}
 	
 	action updateSimuState {
-		if (currentSimuState = 0){
-			currentSimuState_str <- "present";
-			ask road {do change_number_of_lanes(ref_lanes);}
-			ask tf_can_be_desactivated {
-				active <- true;
-			}
-			possible_targets <- intersection - input_intersections;			
-		}
-		if (currentSimuState = 1){	
-			currentSimuState_str <- "future";
-			ask road {do change_number_of_lanes(pro_lanes);}
-			
-			list<car> car_to_update <- car where ((each.target_intersection in tf_can_be_desactivated) or each.use_blocked_road()) ;
-			ask car_to_update{
-				if (current_road != nil) {
-					ask current_road as road {
-						do unregister(myself);
-					}
-				}
-				final_target <- nil;
-				target_intersection <- nil;
-				fade_count <- rnd(5,30);
-			}
-			ask tf_can_be_desactivated {
-				stop[0] <- [];
-				active <- false;
-			}
-			possible_targets <- intersection - input_intersections - tf_can_be_desactivated;
-			
-		}
-//		ask car {self.to_update <- true;}
-		updateSim<-false;
+		if (currentSimuState = 0){currentSimuState_str <- "present";}
+		if (currentSimuState = 1){currentSimuState_str <- "future";}
+		ask road {do change_number_of_lanes(lanes_nb[currentSimuState]);}
+		ask intersection where(each.is_traffic_signal){do change_activity;}
+		
 		if (driving_road_network != nil) {
 			map general_speed_map <- road as_map (each:: !each.to_display ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
-			driving_road_network <- driving_road_network with_weights general_speed_map;	
+			driving_road_network <- driving_road_network with_weights general_speed_map;
 		}
+		ask car {self.to_update <- true;}
+		updateSim<-false;
 		
 		activated_parks <- park where (currentSimuState_str in each.state);
 		activated_cultures <- culture where (currentSimuState_str in each.state);
@@ -552,12 +533,22 @@ global {
 	}
 	
 	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
-	action check_signals_integrity{
-		ask input_intersections where(each.group != 0){
-			write "intersection "+self+" from group "+self.group+" is an input intersection";
-		}
-		ask output_intersections where(each.group != 0){
-			write "intersection "+self+" from group "+self.group+" is an output intersection";
+	action check_signals_integrity {
+		if false{
+			ask input_intersections[0] where(each.group != 0){
+				write "intersection "+self+" from group "+self.group+" is an input intersection for state 0";
+			}
+			ask output_intersections[0] where(each.group != 0){
+				write "intersection "+self+" from group "+self.group+" is an output intersection for state 0";
+			}
+			ask input_intersections[1] where(each.group != 0){
+				write "intersection "+self+" from group "+self.group+" is an input intersection for state 1";
+				color <- #blue;
+			}
+			ask output_intersections[1] where(each.group != 0){
+				write "intersection "+self+" from group "+self.group+" is an output intersection for state 1";
+				color <- #blue;
+			}
 		}
 	}
 	
@@ -696,6 +687,8 @@ species water {
 
 
 species road  skills: [skill_road]  {
+	bool test <- false;
+	
 	int id;
 	bool is_tunnel <- false;
 	rgb color;
@@ -709,9 +702,7 @@ species road  skills: [skill_road]  {
 	list<list<point>> vec_ref;
 	bool to_display <- true;
 	
-	int pro_lanes;
-	int ref_lanes;
-	
+	list<int> lanes_nb;
 
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
@@ -768,6 +759,9 @@ species road  skills: [skill_road]  {
 	aspect base {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel?rgb(50,0,0):type_colors["car"] width:1;	
+		}
+		if test{
+			draw 3 around(shape) color: #white;
 		}
 	}
 }
@@ -1020,6 +1014,7 @@ species bike skills:[moving]{
 species car skills:[advanced_driving]{	
 	bool to_update <- false;
 	bool test_car <- false;
+//	point offset <- {0,0};
 	int fade_count <- 0;
 	point current_offset <- {0,0};
 	rgb color;
@@ -1034,12 +1029,29 @@ species car skills:[advanced_driving]{
 	list<point> current_trajectory;
 	intersection current_intersection;
 	
+	reflex smooth_curve{
+		//offset <- compute_offset(3);
+		if smoothTrajectory{
+			current_offset  <- current_offset + (compute_offset(3) - current_offset) * min([1,real_speed/100*step]);
+		}else{
+			float val <- road(current_road).compute_offset(current_lane);
+			val <- on_linked_road ? -val : val;
+			current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+		}	
+	}
+
 
 	bool use_blocked_road {
 		if currentSimuState = 0 {return false;}
-		if (current_path = nil) {return false;}
+		if (current_path = nil) {write "reason nil path";
+			write "car "+ int(self); 
+			write current_path;
+	//		ask world {do pause;}
+			return false;
+		}
 		loop rd over:current_path.edges {
-			if road(rd).pro_lanes = 0 {
+			if road(rd).lanes_nb[1] = 0 {
+				write "blocked road: "+road(rd);
 				return true;
 			}
 		}
@@ -1047,26 +1059,23 @@ species car skills:[advanced_driving]{
 		
 	}
 	reflex leave when: final_target = nil  {
-		bool ok <- false;
-		if (fade_count > 0) {fade_count <- fade_count - 1;}
-		if (fade_count = 0) {
-			loop while: not ok {
-				if (target_intersection != nil and target_intersection in output_intersections) {
-					if current_road != nil {
-						ask current_road as road {
-							do unregister(myself);
-						}
-					}
-					current_intersection <- one_of(input_intersections);
-					location <-current_intersection.location;
+		do leave;
+	}
+	
+	action leave{
+		if (target_intersection != nil and target_intersection in output_intersections) {
+			if current_road != nil {
+				ask current_road as road {
+					do unregister(myself);
 				}
-				target_intersection <- one_of(possible_targets);
-				current_lane <- 0;
-				current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-				
-				ok <- current_path != nil and not(use_blocked_road());
 			}
-		 }
+			current_intersection <- one_of(input_intersections[currentSimuState]);
+			location <-current_intersection.location;
+		}
+		target_intersection <- one_of(possible_targets[currentSimuState]);
+		current_lane <- 0;
+		current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+		current_trajectory <- [];
 	}
 	
 	
@@ -1079,57 +1088,76 @@ species car skills:[advanced_driving]{
         current_trajectory << location+current_offset;
 	}
 	
-
 	
-	/*action update{
-		fade_count <- 15;
+	action update{
+		list<bool> trace;
+		list<road> road_trace;
 		if current_road != nil{
-			if !road(current_road).to_display 
-			{
+			trace << road(current_road).to_display;	
+			road_trace << road(current_road);
+			if not(road(current_road).to_display){//current road is not good
 				fade_count <- 15;
-//				ask current_road as road {
-//					do unregister(myself);
-//				}
-//				current_intersection <- one_of(intersection - output_intersections);
-//				location <-current_intersection.location;
-//				target_intersection <- one_of(possible_targets);
-//				current_lane <- 0;
-			}else{
-				current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+			}else{//current road is good
+				trace << road(current_road).to_display;
+				road_trace << road(current_road);
+				int truc <- 0;
+				if target_intersection in possible_targets[currentSimuState]{// target is good
+					truc <- 1;
+					target <- last(road(current_road).shape.points);
+//					graph driving_road_network2 <- driving_road_network with_weights general_speed_map;
+					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+					trace << road(current_road).to_display;
+					road_trace << road(current_road);
+					if (road(current_road).to_display){
+						
+					}
+				}else{//target is not good
+					truc <- 2;
+					trace << road(current_road).to_display;
+					road_trace << road(current_road);
+					target_intersection <- one_of(possible_targets[currentSimuState]);
+					current_lane <- 0;
+					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+					trace << road(current_road).to_display;
+					road_trace << road(current_road);
+				}
+				
+				if use_blocked_road(){
+					trace << road(current_road).to_display;
+					road_trace << road(current_road);
+					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[1]); // I left this block  to check is this happens sometimes...
+					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
+					write "road trace: "+road_trace;
+					write "trace "+ trace+"\n";
+		//			ask world {do pause;}
+				}
 			}
 			to_update <- false;
 		}
 //		write "car "+int(self);
-	}*/
-	
-	/*reflex fade when: (fade_count > 0){
+	}
+
+	reflex fade when: (fade_count > 0){
 		fade_count <- fade_count - 1;
 		if fade_count = 0{
-			if current_road != nil{
+			if current_road != nil {
 				ask current_road as road {
 					do unregister(myself);
 				}
 			}
-			current_intersection <- one_of(intersection - output_intersections);
+			current_intersection <- one_of(input_intersections[currentSimuState]);
 			location <-current_intersection.location;
-			target_intersection <- one_of(possible_targets);
+			target_intersection <- one_of(possible_targets[currentSimuState]);
 			current_lane <- 0;
 			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-			
+			current_trajectory <- [];
 		}	
-	}*/
+	}
 	
 	point calcul_loc {
 		if (current_road = nil) {
 			return location;
-		} else {
-			if smoothTrajectory{
-				current_offset  <- current_offset + (compute_offset(3) - current_offset) * min([1,real_speed/100*step]);
-			}else{
-				float val <- road(current_road).compute_offset(current_lane);
-				val <- on_linked_road ? -val : val;
-				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
-			}			
+		} else {		
 			return (location + current_offset);
 		}
 	} 
@@ -1142,8 +1170,11 @@ species car skills:[advanced_driving]{
 	  	if (test_car){
 	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
 	  		loop p over: targets{
-	  			draw circle(0.5#m) at: p color: #green; 
+	  			draw circle(1#m) at: p color: #green; 
 	  		}
+	  		draw circle(5#m) at: first(targets) color: #green;
+	  		draw circle(2#m) at: last(targets) color: #green;
+	  		draw circle (2#m) at: current_intersection.location color: #yellow;
 	  	}
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
@@ -1270,6 +1301,8 @@ species signals_zone{
 }
 
 species intersection skills: [skill_road_node] {
+	rgb color <- #white; //used for integrity tests
+	
 	int phase;
 	bool is_traffic_signal;
 	bool is_crossing;
@@ -1285,6 +1318,7 @@ species intersection skills: [skill_road_node] {
 	rgb color_fire;
 	rgb color_group;
 	bool active <- true;
+	list<bool> activityStates <- list_with(stateNumber, true);
 
 	action compute_crossing(float ref_angle) {
 		loop rd over: roads_in {
@@ -1316,6 +1350,15 @@ species intersection skills: [skill_road_node] {
 		color_fire <- #red;
 		is_green <- false;
 	}
+	
+	action change_activity{
+		if active != activityStates[currentSimuState]{
+			active <- activityStates[currentSimuState];
+			if not active {
+				stop[0] <- [];
+			}
+		}
+	}
 
 	reflex dynamic_node when: active and is_traffic_signal {
 		counter <- counter + 1;
@@ -1335,6 +1378,9 @@ species intersection skills: [skill_road_node] {
 		if (active and is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
 			//draw triangle(5) color: color_group border: #black;
+		}
+		if showTrafficSignal{
+			draw circle(3#m) color: color;
 		}
 	}
 }
@@ -1397,7 +1443,7 @@ experiment ReChamp type: gui autorun:true{
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
 			event[" "] action: {showBackground<-!showBackground;};				
-			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod 2;updateSim<-true;};
+			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
