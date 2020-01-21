@@ -55,6 +55,7 @@ global {
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
 	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
 	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
+	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-true;
@@ -64,6 +65,9 @@ global {
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
+	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
+	
+	
 	int trajectoryLength <-10 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 25;
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float trajectoryTransparency <-0.2 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
@@ -108,7 +112,8 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-2000;
 	float step <- 2 #sec;
-	map<string,float> mobilityRatio <-["people"::0.5, "car"::0.3,"bike"::0.2, "bus"::0];
+	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
+	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
 	
 	map<bikelane,float> weights_bikelane;
@@ -244,10 +249,11 @@ global {
 		}
 		
 		//------------------- AGENT ---------------------------------------- //
-		do create_cars(round(nbAgent*mobilityRatio["car"]));
+		
+		do create_cars(round(nbAgent*mobilityRatioNow["car"]));
 		
 		//Create Pedestrain
-		create pedestrian number:nbAgent*mobilityRatio["people"]{
+		create pedestrian number:nbAgent*mobilityRatioNow["people"]{
 		  val_f <- rnd(-max_dev,max_dev);
 		  current_trajectory <- [];
 		  type <- "people";
@@ -265,7 +271,7 @@ global {
 		}
 		
         //Create Bike
-	    create bike number:nbAgent*mobilityRatio["bike"]{
+	    create bike number:nbAgent*mobilityRatioNow["bike"]{
 	      type <- "bike";
 		  location<-any_location_in(one_of(building));	
 		}
@@ -276,6 +282,14 @@ global {
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
+		
+		
+		 //Create Bus
+	    create bus number:nbAgent*mobilityRatioNow["bus"]{
+	      type <- "bus";
+		  location<-any_location_in(one_of(road));	
+		}
+		bus_graph <- (as_edge_graph(road)) ;
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -799,7 +813,7 @@ species station schedules: station where (each.type="metro") {
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
-	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatio["people"]) and every(delay){
+	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
 		create pedestrian number:rnd(0,10){
 			type<-"people";
 			location<-any_location_in(myself);
@@ -1008,6 +1022,34 @@ species bike skills:[moving]{
 		 draw square(2#m) color:type_colors[type] rotate: angle;	
 		}	
 		if(showBikeTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	  }
+	}
+}
+
+
+species bus skills:[moving]{
+	string type;
+	point my_target;
+	list<point> current_trajectory;
+	
+	reflex choose_target when: my_target = nil {
+		my_target <- any_location_in(one_of(road));
+	}
+	reflex move{
+	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
+	  if (my_target = location) {my_target <- nil;}
+	  loop while:(length(current_trajectory) > trajectoryLength)
+  	    {
+        current_trajectory >> first(current_trajectory);
+        }
+        current_trajectory << location;
+	}
+	aspect base{
+		if(showSharedMobility){
+		 draw rectangle(3#m,7#m) color:type_colors[type] rotate:heading-90;	
+		}	
+		if(showSharedMobilityTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  }
 	}
@@ -1400,7 +1442,9 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-	   	camera_pos: {1770.4355,1602.6887,2837.8093} camera_look_pos: {1770.4355,1602.6392,-0.0014} camera_up_vector: {0.0,1.0,0.0}
+
+	   	camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+
 	   	{
 	   	    species graphicWorld aspect:base position:{0,0,0};	    	
 	    	species intervention aspect: base position:{0,0,0};
@@ -1417,6 +1461,7 @@ experiment ReChamp type: gui autorun:true{
 			species car aspect:base;
 			species pedestrian aspect:base;
 			species bike aspect:base;
+			species bus aspect:base;
 			species coldSpot aspect:base;
 			species station aspect: base;
 			species bikelane aspect:base;
@@ -1430,6 +1475,7 @@ experiment ReChamp type: gui autorun:true{
 			event["p"] action: {showPedestrian<-!showPedestrian;};
 			event["c"] action: {showCar<-!showCar;};
 			event["b"] action: {showBike<-!showBike;};
+			event["s"] action: {showSharedMobility<-!showSharedMobility;};
 			event["g"] action: {showGif<-!showGif;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
@@ -1444,9 +1490,8 @@ experiment ReChamp type: gui autorun:true{
 			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};
-			event[" "] action: {showBackground<-!showBackground;};				
-			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
+			event[" "] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
