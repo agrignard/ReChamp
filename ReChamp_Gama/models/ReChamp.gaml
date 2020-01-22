@@ -68,7 +68,10 @@ global {
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	
-	int trajectoryLength <-25 parameter: 'Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int peopleTrajectoryLength <-25 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int carTrajectoryLength <-25 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int bikeTrajectoryLength <-25 parameter: 'Bike Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int busTrajectoryLength <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	
 	
 	
@@ -103,9 +106,13 @@ global {
 	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
-	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	//OLD PCA
+	//map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	//NEW COLOR
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
-	map<string, rgb> nature_colors <- ["exi"::rgb(115,212,0),"pro"::rgb(173,255,77)];
+	map<string, rgb> nature_colors <- ["exi"::rgb(115,175,0),"pro"::rgb(183,255,97)];
 	map<string, rgb> usage_colors <- ["exi"::rgb(75,75,75),"pro"::rgb(175,175,175)];
 	
 	float angle<-26.25;
@@ -113,6 +120,8 @@ global {
 	int stateNumber <- 2;
 	string currentSimuState_str <- "present" among: ["present", "future"];
 	int currentSimuState<-0;
+	int currentStoryTellingState<-0;
+	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
 	int nbAgent<-1000;
 	float step <- 1 #sec;
@@ -315,6 +324,15 @@ global {
 		} else {
 			return mobilityRatioFuture;
 		}
+	}
+	
+	action updateStoryTelling (int n){
+			if(n=1){currentStoryTellingState<-1;currentSimuState<-0;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=2){currentStoryTellingState<-2;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=3){currentStoryTellingState<-3;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=4){currentStoryTellingState<-4;currentSimuState<-1;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=5){currentStoryTellingState<-5;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=6){currentStoryTellingState<-6;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
 	}
 	
 	action create_pedestrian(int nb) {
@@ -934,7 +952,7 @@ species pedestrian skills:[moving] control: fsm{
 		if(showPeopleTrajectory){
 			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
 		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
-		    loop while:(length(current_trajectory) > trajectoryLength)
+		    loop while:(length(current_trajectory) > peopleTrajectoryLength)
 	  	    {
 	        current_trajectory >> first(current_trajectory);
 	        }
@@ -1068,7 +1086,7 @@ species bike skills:[moving]{
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > trajectoryLength)
+	  loop while:(length(current_trajectory) > bikeTrajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1096,7 +1114,7 @@ species bus skills:[moving]{
 	reflex move{
 	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > trajectoryLength)
+	  loop while:(length(current_trajectory) > busTrajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1200,7 +1218,7 @@ species car skills:[advanced_driving]{
 	
 	reflex move when: final_target != nil{	
 	  	do drive;	
-	  	loop while:(length(current_trajectory) > trajectoryLength)
+	  	loop while:(length(current_trajectory) > carTrajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1515,19 +1533,19 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:2  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
 	   	//camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 
 	   	{
-	   	    species graphicWorld aspect:base position:{0,0,0};	    	
-	    	species intervention aspect: base position:{0,0,0};
+	   	    species graphicWorld aspect:base;	    	
+	    	species intervention aspect: base;
 		    species building aspect: base;
-			species park aspect: base ;
+			species park aspect: base transparency:0.1;
 			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
-			species vizuRoad aspect:base transparency:0.5;
+			species vizuRoad aspect:base transparency:0.8;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
@@ -1567,25 +1585,74 @@ camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
+			
+			
+			//STORY TELLING
+			event["1"] action: {ask world{do updateStoryTelling (1);}};
+			event["2"] action: {ask world{do updateStoryTelling (2);}};
+			event["3"] action: {ask world{do updateStoryTelling (3);}};
+			event["4"] action: {ask world{do updateStoryTelling (4);}};
+			event["5"] action: {ask world{do updateStoryTelling (5);}};
+			event["6"] action: {ask world{do updateStoryTelling (6);}};
+			
+
 		}
 	}
 }
 
 
-experiment ReChamp2Proj parent:ReChamp{	
+experiment ReChamp2Proj parent:ReChamp autorun:true{	
 	
 	output {	
 		layout #split;
-		display indicator type:opengl background:#black draw_env:true fullscreen:1
-		camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		display indicator type:opengl background:#black draw_env:true fullscreen:2 toolbar:false
+		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
-			graphics 'dashboardbackground'{
+			/*graphics 'dashboardbackground'{
 				draw rectangle(1920,1080) texture:dashboardbackground.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 				
-			}
+			}*/
 			
 			graphics "state" {
-				draw ((currentSimuState = 0) ? "2020" :"2024") color: #white font: font("Helvetica", 50, #bold) at: {2407,1945};
+				float textSize<-10#px;
+				float spacebetween<-200#px;
+				draw ((currentSimuState = 0) ? "Today" :"2024") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
+				if(currentStoryTellingState=1){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				}
+				if(currentStoryTellingState=2){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};	
+				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
+				}
+				if(currentStoryTellingState=3){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};	
+				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
+				  draw (catchPhrase[2]) color: #white font: font("Helvetica", textSize, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2};
+				}
+				if(currentStoryTellingState=4){
+				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				}
+				if(currentStoryTellingState=5){
+				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};	
+				  draw (catchPhrase[4]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
+				  draw ("20% more park") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*2};
+				  draw ("10% more biotopy") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*4};
+				}
+				if(currentStoryTellingState=6){
+				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};	
+				  draw (catchPhrase[4]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
+				  draw ("20% more park") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*2};
+				  draw ("10% more biotopy") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*4};
+				  draw (catchPhrase[5]) color: #white font: font("Helvetica", textSize, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2};
+				  draw ("15% less is more ") color: #white font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2+textSize*2};
+				  draw ("10% more restaurant") color: #white font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2+textSize*4};
+				}
 			}
 			
 
