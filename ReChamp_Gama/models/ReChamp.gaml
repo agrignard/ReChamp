@@ -124,7 +124,7 @@ global {
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
 	int nbAgent<-1000;
-	float step <- 1 #sec;
+	float step <- 10 #sec;
 	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
 	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
@@ -1727,7 +1727,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #split;
-		display indicator type:opengl background:#black draw_env:true fullscreen:2 toolbar:false
+		display indicator type:opengl background:#black draw_env:true fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 			/*graphics 'dashboardbackground'{
