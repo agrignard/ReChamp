@@ -587,6 +587,17 @@ global {
 				do remove_and_die;
 			}
 		}
+		ask road {
+		  	loop i from: 0 to:length(agents_on) - 1 {
+		  		list<list<agent>> ag_l <- agents_on[i];
+				loop j from: 0 to: length(ag_l) - 1  {
+					list<agent> ag_s <- ag_l[j];
+					ag_s <- list<agent>(ag_s) where (each != nil and not dead(each));
+					agents_on[i][j] <- ag_s;
+				}
+			}
+		}
+	  	
 		
 		int nb_people <- length(pedestrian);
 		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
@@ -1149,17 +1160,18 @@ species car skills:[advanced_driving]{
 	list<point> current_trajectory;
 	intersection current_intersection;
 	
+	
 	action remove_and_die {
 		if (current_road != nil) {
 			ask road(current_road) {
 				do unregister(myself);
-				loop ag_l over: agents_on {
+				/*loop ag_l over: agents_on {
 					loop ag_s over: ag_l  {
 						if (myself in  list<agent>(ag_s)) {
 							 list<agent>(ag_s) >> myself;
 						}
 					}
-				}
+				}*/
 			}
 			
 		//	write name + " -> " + current_road + " road(current_road):" + road(current_road).agents_on + " : " + road(current_road).all_agents;
@@ -1173,7 +1185,10 @@ species car skills:[advanced_driving]{
 		}else{
 			float val <- road(current_road).compute_offset(current_lane);
 			val <- on_linked_road ? -val : val;
-			current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+			if (current_road != nil){
+				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+			}
+			
 		}	
 	}
 
@@ -1218,6 +1233,7 @@ species car skills:[advanced_driving]{
 	
 	reflex move when: final_target != nil{	
 	  	do drive;	
+	  	//on tente le tout pour le tout
 	  	loop while:(length(current_trajectory) > carTrajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
@@ -1533,7 +1549,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false /*fullscreen:1*/  rotate:angle toolbar:false autosave:false synchronized:true
 camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
 	   	//camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 
