@@ -8,6 +8,12 @@
 model ReChamp
 
 global {
+	
+	int chrono_size <- 30;
+	bool fps_monitor <- true;
+	float m_time;
+	list<float> chrono <- list_with(chrono_size,0.0);
+	
 	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
@@ -53,20 +59,18 @@ global {
 
 	
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
-	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
-	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
-	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
-	
 
+	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
+		
+	bool precomp parameter: 'Precomp' category: "Agent" <-false;
+	bool precompv parameter: 'Precomp version 2' category: "Agent" <-true;
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-true;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
-	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
+	bool showGreen  <-true;
+	bool showUsage <-true;
 
-	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
-	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
-	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
-	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
+	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
+		
 	
 	int peopleTrajectoryLength <-25 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int carTrajectoryLength <-25 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 50;
@@ -78,13 +82,6 @@ global {
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float trajectoryTransparency <-0.5 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	
-	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
-	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
-	bool showMetroLane parameter: 'Metro Lane (q)' category: "Parameters" <-false;
-	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
-	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Parameters" <-false;
-	bool showBuilding parameter: 'Building (b)' category: "Parameters" <-false;
-	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
 	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
@@ -104,6 +101,7 @@ global {
     
 	bool right_side_driving <- true;
 	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
+	
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	//OLD PCA
@@ -129,7 +127,7 @@ global {
 	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
 	
-	map<bikelane,float> weights_bikelane;
+
 	list<list<intersection>> input_intersections <-list_with(stateNumber, []);
 	list<list<intersection>> output_intersections <-list_with(stateNumber, []);
 	list<list<intersection>> possible_targets <-list_with(stateNumber, []);
@@ -139,45 +137,15 @@ global {
 	//list<intersection> tf_can_be_desactivated;
 //	list<list<intersection>> active_traffic_lights <-list_with(stateNumber, []);
 	
-	list<park> activated_parks;
-	list<culture> activated_cultures;
+	
 	list<intersection> vertices;
-	
-	
-	int chrono_size <- 30;
-	bool fps_monitor <- true;
-	float m_time;
-	list<float> chrono <- list_with(chrono_size,0.0);
 	
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
-			create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
-			state<<"future";
-			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
-				do die;
-			}
+
 			
-		}
-		loop g over: Nature_Now_shapefile {
-			
-			if (g != nil and not empty(g)) and (g overlaps world) {
-				park p <- (park first_with(each.shape.area = g.area));
-				if (p = nil) {p <- park first_with (each.location = g.location);}
-				if (p != nil){p.state << "present";}
-			}
-		}
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity"))]{
-			state<<"future";
-			if (shape = nil or shape.area = 0) {
-				do die;
-			}
-		}
-		loop g over: Usage_Now_shapefile where (each != nil and each.area > 0) {
-			culture p <- (culture first_with(each.shape.area = g.area));
-			if (p = nil) {p <- culture first_with (each.location = g.location);}
-			if (p != nil){p.state << "present";}
-		}
+
 		
 		create vizuRoad from: Mobility_Now_shapefile with: [type:string(read ("type"))] {
 			state<<"present";
@@ -185,8 +153,7 @@ global {
 		create vizuRoad from: Mobility_Future_shapefile with: [type:string(read ("type"))] {
 			state<<"future";
 		}
-		
-		do manage_waiting_line;
+
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
@@ -219,7 +186,7 @@ global {
 				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
 				vec_ref << [vec_dir,vec_ortho];
 			}
-			loop i from: 0 to: max(lanes_nb)-1{
+			loop i from: 0 to: lanes-1{
 				offset_list << (oneway='no')?((lanes - i - 0.5)*3 + 0.25):((0.5*lanes - i - 0.5)*3);
 			}
 			loop i from: 0 to: length(shape.points) - 3 step: 1{		
@@ -229,9 +196,7 @@ global {
 				}
 				angles << a;
 			}
-			
 		}
-		
 
 		//creation of the road network using the road and intersection agents
 		driving_road_network <- (as_driving_graph(road, intersection)) use_cache false ;
@@ -266,46 +231,22 @@ global {
 		do updateSimuState;
 		
 		create water from: water_shapefile ;
-		create station from: station_shapefile with: [type:string(read ("type"))];
+	
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		//do manage_cycle_network;
-		create bikelane from:bikelane_shapefile{
-			color<-type_colors["bike"];
-		}
-		create bus_line from: bus_shapefile{
-			color<-type_colors["bus"];
-		}
+	
 		
 		//------------------- AGENT ---------------------------------------- //
 		
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
 		
 		//Create Pedestrain
-		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
 		
-        //Create Bike
-	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
-	       type <- "bike";
-		  location<-any_location_in(one_of(building));	
-		}
-				
-		people_graph <- as_edge_graph(road);
-			
-		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
-		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
-		
-		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
 		
 		
 		 //Create Bus
-	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
-	      type <- "bus";
-		  location<-any_location_in(one_of(road));	
-		}
-		bus_graph <- (as_edge_graph(road)) ;
+	
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -349,7 +290,7 @@ global {
 		float new_m_time <- machine_time;
 		chrono << new_m_time - m_time;
 		if cycle mod 5 = 0 {
-			write "fps: "+round((1/mean(chrono))*10000)/10+"    ("+round(mean(chrono))+"ms per frame)";
+			write "fps: "+round((1/mean(chrono))*10000)/10+"    ("+mean(chrono)+"ms per frame)";
 			}
 		m_time <- new_m_time;
 	}
@@ -363,21 +304,7 @@ global {
 			if(n=6){currentStoryTellingState<-6;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
 	}
 	
-	action create_pedestrian(int nb) {
-		create pedestrian number:nb{
-		  current_trajectory <- [];
-		  type <- "people";
-			if flip(0.3) {
-				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-				target <- (any_location_in(target_place));
-				location<-copy(target);
-				state <- "stroll";
-			} else {
-				location<-any_location_in(one_of(road));
-			}
-		  	
-		}
-	}
+	
 	action create_cars(int nb) {
 		create car number:nb{
 		 	type <- "car";
@@ -497,39 +424,7 @@ global {
 	
 	
 	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
-	action manage_cycle_network {
 
-		list<geometry> lines <- copy(bikelane_shapefile.contents);
-		list<geometry> lines2 <- (roads_shapefile.contents);
-		graph g <- as_edge_graph(lines);
-		loop v over: g.vertices {
-			if (g degree_of v) = 1{
-				geometry r <- lines2 closest_to v;
-				if (v distance_to r) < 20.0 {
-					point pt <- (v closest_points_with r)[1];
-					if (pt != first(r.points) and pt != last(r.points)) {
-						lines2 >> r;
-						list<geometry> sl <- r split_at pt;
-						lines2 <- lines2 + sl;
-					}
-					lines2 << line([v,pt]);
-				} 
-			}
-		}
-		lines2 <- lines2 where (each != nil  and each.perimeter > 0);
-		
-		lines <- lines + lines2;
-		lines <- clean_network(lines,3.0, true,true);
-		
-		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
-		create bikelane from:lines{
-			from_road <- not (shape.perimeter in ref) ;
-			color<-from_road ? #red : type_colors["bike"];
-		}
-		create bikelane from:list(road);
-		save bikelane type: shp to: "../includes/GIS/reseau-cyclable_reconnected.shp" with: [from_road::"from_road"];
-		
-	}
 	
 	reflex updateSimuState when:updateSim=true{
 		do updateSimuState;
@@ -560,20 +455,7 @@ global {
 		return nodes;
 	}
 	
-	action manage_waiting_line {
-		loop wl over: Waiting_line_shapefile.contents {
-			culture cult <- culture closest_to wl;
-			
-			ask cult {
-				queue <- wl;
-				do manage_queue;
-			}
-			
-		}
-		ask culture where (each.queue = nil) {
-			do default_queue;
-		}
-	}
+
 	
 	action updateSimuState {
 		if (currentSimuState = 0){currentSimuState_str <- "present";}
@@ -588,24 +470,8 @@ global {
 		ask car {self.to_update <- true;}
 		updateSim<-false;
 		
-		activated_parks <- park where (currentSimuState_str in each.state);
-		activated_cultures <- culture where (currentSimuState_str in each.state);
-		ask  (culture - activated_cultures) {
-			ask waiting_tourists {
-				do die;
-			}
-			waiting_tourists <- [];
-		}
-		list<agent> to_remove <- (park - activated_parks) + (culture - activated_cultures);
-		ask pedestrian {
-			if (target_place in to_remove) {
-				do die;
-			}
-		}
-		proba_choose_park <- activated_parks as_map (each::each.shape.area);
-		//proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
-		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
-
+	
+	
 		int nb_cars <- length(car);
 		int nb_cars_target <- round(nbAgent * get_mobility_ratio()["car"]);
 		if (nb_cars_target > nb_cars) {
@@ -623,43 +489,6 @@ global {
 					ag_s <- list<agent>(ag_s) where (each != nil and not dead(each));
 					agents_on[i][j] <- ag_s;
 				}
-			}
-		}
-	  	
-		
-		int nb_people <- length(pedestrian);
-		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
-		if (nb_people_target > nb_people) {
-			do create_pedestrian(nb_people_target - nb_people);
-		} else if (nb_people_target < nb_people) {
-			ask (nb_people - nb_people_target) among pedestrian {
-				do die;
-			}
-		}
-		
-		int nb_bikes <- length(bike);
-		int nb_bikes_target <- round(nbAgent * get_mobility_ratio()["bike"]);
-		if (nb_bikes_target > nb_bikes) {
-			create bike number:nb_bikes_target - nb_bikes{
-	      		type <- "bike";
-		  		location<-any_location_in(one_of(building));	
-			}
-		} else if (nb_bikes_target < nb_bikes) {
-			ask (nb_bikes - nb_bikes_target) among bike {
-				do die;
-			}
-		}
-		
-		int nb_bus <- length(bus);
-		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
-		if (nb_bus_target > nb_bus) {
-			 create bus number:nb_bus_target - nb_bus{
-	      		type <- "bus";
-		  		location<-any_location_in(one_of(road));	
-			}
-		} else if (nb_bus_target < nb_bus) {
-			ask (nb_bus - nb_bus_target) among bus {
-				do die;
 			}
 		}
 	}
@@ -685,67 +514,6 @@ global {
 	
 }
 
-species culture{
-	list<string> state;
-	string type;
-	string style;
-	float capacity;
-	float capacity_per_min <- 1.0;
-	geometry queue;
-	list<pedestrian> people_waiting;
-	list<pedestrian> waiting_tourists;
-	list<point> positions;
-	geometry waiting_area;
-	
-	//float queue_length <- 10.0;
-	
-	action default_queue {
-		point pt <- any_location_in(shape.contour);
-	 	float vect_x <- (location.x - pt.x) ; 
-		float vect_y <- (location.y - pt.y) ; 
-		
-		queue <- line([pt, pt - {vect_x,vect_y}]);
-		do manage_queue();
-		
-	}
-	
-	action manage_queue {
-		positions <- queue points_on (2.0); 
-		waiting_area <- (last(positions) + 10.0)  - (queue + 1.0);
-	}
-	action add_people(pedestrian the_tourist) {
-		if (length(waiting_tourists) < length(positions)) {
-			the_tourist.location <- positions[length(waiting_tourists)];
-		} else {
-			the_tourist.location  <- any_location_in(waiting_area);
-		}
-		waiting_tourists << the_tourist;
-	}
-	
-	reflex manage_visitor when: not empty(waiting_tourists) and every(60 / capacity_per_min) {
-		pedestrian the_tourist <- first(waiting_tourists);
-		waiting_tourists >> the_tourist;
-		the_tourist.ready_to_visit<-true;
-		if (not empty(waiting_tourists)) {
-			loop i from: 0 to: length(waiting_tourists) - 1 {
-				if (i < length(positions)) {
-					waiting_tourists[i].location <- positions[i];
-				}
-			}
-		
-		}
-		
-	}
-	
-	aspect base {
-		if(showUsage and (currentSimuState_str in state)){
-		  draw shape color: usage_colors[type];	
-		  if(showWaitingLine){
-		    draw queue color: #white;	
-		  }
-		}  	
-	}
-}
 
 species vizuRoad{
 	list<string> state;
@@ -762,9 +530,9 @@ species building {
 	float depth;
 	rgb color <- rgb(75,75,75);
 	aspect base {
-		if(showBuilding){
-		  draw shape color:rgb(75,75,75) empty:true;	
-		}
+		
+	//	  draw shape color:rgb(75,75,75) empty:true;	
+		
 	}
 }
 
@@ -778,29 +546,6 @@ species ilots {
 }
 
 
-species park {
-	list<string> state;
-	string type; 
-	rgb color <- #darkgreen  ;
-	
-	aspect base {
-		if(showGreen and (currentSimuState_str in state)){
-		  draw shape color: nature_colors[type]-100 border:nature_colors[type];	
-		}	
-	}
-
-}
-
-species amenities{
-	string type; 
-	rgb color <- #darkgray  ;
-	
-	aspect base {
-		if(showAmenities){
-		  draw square(5) color: color ;	
-		}	
-	}
-}
 
 
 
@@ -819,6 +564,9 @@ species water {
 
 species road  skills: [skill_road]  {
 	bool test <- false;
+	list<float> offset_list;
+	list<float> angles;
+	
 	
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
@@ -829,11 +577,11 @@ species road  skills: [skill_road]  {
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
-	bool to_display <- true;
-	list<int> lanes_nb;
+
 	list<list<point>> vec_ref;
-	list<float> offset_list;
-	list<float> angles;
+	bool to_display <- true;
+	
+	list<int> lanes_nb;
 
 	
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
@@ -884,14 +632,16 @@ species road  skills: [skill_road]  {
 		}
 	}
 	
+	
 	float compute_offset(int current_lane){
-		return offset_list[min(current_lane,max(0,lanes_nb[currentSimuState] -1))];
+		if precomp{
+			return offset_list[min([current_lane,lanes -1])];
+		}else{
+			return (oneway='no')?((lanes - min([current_lane,lanes -1]) - 0.5)*3 + 0.25):((0.5*lanes - min([current_lane, lanes - 1]) - 0.5)*3);
+		}
+			
 	}
 	
-//	float compute_offset(int current_lane){
-//		return (oneway='no')?((lanes - min([current_lane,lanes -1]) - 0.5)*3 + 0.25):((0.5*lanes - min([current_lane, lanes - 1]) - 0.5)*3);
-//	}
-//	
 	aspect base {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;	
@@ -902,277 +652,18 @@ species road  skills: [skill_road]  {
 	}
 }
 
-species bikelane{
-	bool from_road <- true;
-	int lanes;
-	aspect base {
-		if(showBikeLane and not from_road){
-		  draw shape color: color width:1;	
-		}	
-	}
-}
 
 
-species bus_line{
-	rgb color;
-	float capacity;
-	float capacity_pca;
-	aspect base {
-		if(showBusLane){
-		  draw shape color: color;	
-		}
-	}
-}
-
-species station schedules: station where (each.type="metro") {
-	rgb color;
-	string type;
-	float capacity;
-	float capacity_pca;
-	float delay <- rnd(2.0,8.0) #mn ;
-	
-	//Create people going in and out of metro station
-	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
-		create pedestrian number:rnd(0,10){
-			type<-"people";
-			location<-any_location_in(myself);
-		}
-	}
-	aspect base {
-		if(showStation){
-		  if(showMetroLane){
-		  	if(type="metro"){
-		  	  draw circle(20) - circle(16) color:#blue;	
-		  	  draw circle(16) color:#white;	
-		  	}
-		  }
-		  if(showBusLane){
-		  	if(type="bus"){
-		  	  draw circle(20) - circle(16) color:#yellow;	
-		  	  draw circle(16) color:#white;		
-		  	}
-		  }
-		}	
-	}
-}
-
-species metro_line{
-	rgb color;
-	float capacity;
-	float capacity_pca;
-	string number;
-	string nature;
-	aspect base {
-		if(showMetroLane){
-		  draw shape color: metro_colors[number] width:3;	
-		}
-		
-	}
-}
 
 
-species pedestrian skills:[moving] control: fsm{
-	string type;
-	agent target_place;
-	point target;
-	int stroll_time;
-	int visiting_time;
-	float speed_walk <- rnd(3,6) #km/#h;
-	bool to_exit <- false;
-	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.5;
-	float proba_culture <- 0.7;
-	float offset <- rnd(0.0,2.0);
-	
-	bool wandering <- false;
-	bool to_culture <- false;
-	bool visiting <- false;
-	bool ready_to_visit <- false;
-	bool walking <- false;
-	float val_f <- rnd(-max_dev,max_dev);
-	list<point> current_trajectory;
-	
-	action updatefuzzTrajectory{
-		if(showPeopleTrajectory){
-			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
-		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
-		    loop while:(length(current_trajectory) > peopleTrajectoryLength)
-	  	    {
-	        current_trajectory >> first(current_trajectory);
-	        }
-	        current_trajectory << pt;	
-		}
-	}
-	state walk_to_objective initial: true{
-		enter {
-			walking <- true;
-			wandering <- false;
-			to_culture <- false;
-			float speed_walk_current <- speed_walk;
-			if flip(proba_sortie) {
-				target <- (station where (each.type="metro") closest_to self).location;
-				to_exit <- true;
-			} else {
-				if flip(proba_wandering) {
-					target <- any_location_in(agent(one_of(people_graph.edges)));
-					wandering <- true;
-					speed_walk_current <- speed_walk_current/ 3.0;
-				} else {
-					if flip(proba_culture) {
-						target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
-						to_culture <- true;
-						target <- first(culture(target_place).positions);
-					} else {
-						target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-						target <- (target_place closest_points_with self) [0] ;
-					}
-				}
-			}
-		}
-		do goto target: target on:people_graph speed: speed_walk_current;
-		transition to: stroll_in_city when: not to_exit and wandering and location = target;
-		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
-		transition to: queueing when: not to_exit and to_culture and location = target;
-		transition to: outside_sim when:to_exit and location = target;
-		do updatefuzzTrajectory;		
-		exit {
-			walking <- false;
-		}	
-	}
-	
-	
-	state stroll_in_city {
-		enter {
-			stroll_time <- rnd(1, 10) *60;
-		}
-		stroll_time <- stroll_time - 1;
-		do wander amplitude:10.0 speed:2.0#km/#h;
-		do updatefuzzTrajectory;
-		transition to: walk_to_objective when: stroll_time = 0;
-	}
-	
-	
-	state stroll_in_park {
-		enter {
-			stroll_time <- rnd(1, 10) * 60;
-		}
-		stroll_time <- stroll_time - 1;
-		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
-		do updatefuzzTrajectory;
-		transition to: walk_to_objective when: stroll_time = 0;
-	}
-	
-	state outside_sim {
-		do updatefuzzTrajectory;
-		do die;
-	}
-	
-	//ce mot existe ?
-	state queueing {
-		enter {
-			ask culture(target_place) {
-				do add_people(myself);
-			}
-		}
-		transition to: visiting_place when: ready_to_visit;
-		do updatefuzzTrajectory;
-		exit {
-			visiting <- false;
-			ready_to_visit <- false;
-		}
-	}
-	
-	state visiting_place {
-		enter {
-			visiting <- true;
-			visiting_time <- rnd(1,10) * 60;
-		}
-		visiting_time <- visiting_time - 1;
-		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
-		do updatefuzzTrajectory;
-		transition to: walk_to_objective when: visiting_time = 0;
-		exit {
-			visiting <- false;
-		}
-	}
-	
-	point calcul_loc {
-		if (current_edge = nil) {
-			return location;
-		} else {
-			float val <- (road(current_edge).lanes +1)*3 +offset;
-			if (val = 0) {
-				return location;
-			} else {
-				return (location + {cos(heading + 90) * val, sin(heading + 90) * val});
-			}
-		}
-	} 
-	
-	aspect base{
-		if(showPedestrian){
-			 draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-		}
-		if(showPeopleTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
-	  	}	
-	}
-}
-
-species bike skills:[moving]{
-	string type;
-	point my_target;
-	list<point> current_trajectory;
-	
-	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(bikelane));
-	}
-	reflex move{
-	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
-	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > bikeTrajectoryLength)
-  	    {
-        current_trajectory >> first(current_trajectory);
-        }
-        current_trajectory << location;
-	}
-	aspect base{
-		if(showBike){
-		 draw square(dotPoint) color:type_colors[type] rotate: angle;	
-		}	
-		if(showBikeTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
-	  }
-	}
-}
 
 
-species bus skills:[moving]{
-	string type;
-	point my_target;
-	list<point> current_trajectory;
-	
-	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(road));
-	}
-	reflex move{
-	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
-	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > busTrajectoryLength)
-  	    {
-        current_trajectory >> first(current_trajectory);
-        }
-        current_trajectory << location;
-	}
-	aspect base{
-		if(showSharedMobility){
-		 draw rectangle(dotPoint*2,dotPoint*3) color:type_colors[type] rotate:heading-90;	
-		}	
-		if(showSharedMobilityTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
-	  }
-	}
-}
+
+
+
+
+
+
 
 
 species car skills:[advanced_driving]{	
@@ -1181,6 +672,8 @@ species car skills:[advanced_driving]{
 	point target_offset <- {0,0};
 	int old_index <- 0;
 	int old_segment_index;
+
+	
 	int fade_count <- 0;
 	point current_offset <- {0,0};
 	rgb color;
@@ -1214,20 +707,35 @@ species car skills:[advanced_driving]{
 		do die;
 	}
 	reflex smooth_curve{
-		if smoothTrajectory{
-			if (old_segment_index != segment_index_on_road) or (old_index != current_index){
-				target_offset <- compute_offset(3);
-				old_segment_index <- segment_index_on_road;
-				old_index <- current_index;
-			}
-			current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
+		if precomp{
+			if smoothTrajectory{
+				if (old_segment_index != segment_index_on_road) or (old_index != current_index){
+					target_offset <- compute_offset_optim(3);
+					old_segment_index <- segment_index_on_road;
+					old_index <- current_index;
+				}
+				current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
+			}else{
+				float val <- road(current_road).compute_offset(current_lane);
+				val <- on_linked_road ? -val : val;
+				if (current_road != nil){
+					current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+				}
+				
+			}	
 		}else{
-			float val <- road(current_road).compute_offset(current_lane);
-			val <- on_linked_road ? -val : val;
-			if (current_road != nil){
-				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
-			}		
-		}	
+			if smoothTrajectory{
+				current_offset  <- current_offset + (compute_offset(3) - current_offset) * min([1,real_speed/100*step]);
+			}else{
+				float val <- road(current_road).compute_offset(current_lane);
+				val <- on_linked_road ? -val : val;
+				if (current_road != nil){
+					current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+				}
+				
+			}	
+		}
+		
 	}
 
 
@@ -1364,62 +872,157 @@ species car skills:[advanced_driving]{
 	  			draw circle(1#m) at: p color: #green; 
 	  		}
 	  		draw circle(5#m) at: first(targets) color: #green;
-	  		draw circle(2#m) at: last(targets) color: #green;
-	  		draw circle (2#m) at: current_intersection.location color: #yellow;
+	  		draw circle(3#m) at: last(targets) color: #green;
 	  	}
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  	}
 	}	
 	
-	point compute_offset(int s){	
-		if current_road = nil or current_path = nil{
-			return current_offset;
-		}else{
-			int ci <- current_index;
-			int cs <- segment_index_on_road;
-			int count <- 0;
-			point offset_comp <- road(current_road).vec_ref[0][1]*road(current_road).compute_offset(current_lane);
-			float weight <- 1.0;
-			loop while: (count < s - 1) and ci < length(current_path.edges){
-				count <- count + 1;
-				road cr <- road(current_path.edges[ci]);
-				if cs < length(cr.angles) {
-					float a <- cr.angles[cs];
-					float w <- 1+abs(a-180);
-					weight <- weight + w;
-					if abs(abs(a-90)-90)<5{
-						offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
-					}else{
-						offset_comp <- offset_comp + (cr.vec_ref[cs][0]-cr.vec_ref[cs+1][0])*cr.compute_offset(current_lane)/sin(a)*w;
-					}
-					cs <- cs + 1;
-				}else {
-					if ci + 1 < length(current_path.edges){
-						road cr2 <- road(current_path.edges[ci+1]);
-						float a <- angle_between(last(cr.shape.points),cr.shape.points[length(cr.shape.points)-2],cr2.shape.points[1]);
-						if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
-							a <- 180.0;
-						}
+	point compute_offset_optim(int s){
+		if precompv{
+			if current_road = nil or current_path = nil{
+				return current_offset;
+			}else{
+				int ci <- current_index;
+				int cs <- segment_index_on_road;
+				int count <- 0;
+				point offset_comp <- road(current_road).vec_ref[0][1]*road(current_road).compute_offset(current_lane);
+				float weight <- 1.0;
+				loop while: (count < s - 1) and ci < length(current_path.edges){
+					count <- count + 1;
+					road cr <- road(current_path.edges[ci]);
+					if cs < length(cr.angles) {
+						float a <- cr.angles[cs];
 						float w <- 1+abs(a-180);
-						weight <- weight + w;
+						weight <- weight + 1+w;
 						if abs(abs(a-90)-90)<5{
 							offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
 						}else{
-							offset_comp <- offset_comp + (cr.vec_ref[cs][0]*cr2.compute_offset(current_lane)-cr2.vec_ref[0][0]*cr.compute_offset(current_lane))/sin(a)*(1+abs(a-180));
+							offset_comp <- offset_comp + (cr.vec_ref[cs][0]-cr.vec_ref[cs+1][0])*cr.compute_offset(current_lane)/sin(a)*w;
 						}
+						cs <- cs + 1;
+					}else {
+						if ci + 1 < length(current_path.edges){
+							road cr2 <- road(current_path.edges[ci+1]);
+							float a <- angle_between(last(cr.shape.points),cr.shape.points[length(cr.shape.points)-2],cr2.shape.points[1]);
+							if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+								a <- 180.0;
+							}
+							float w <- 1+abs(a-180);
+							weight <- weight + w;
+							if abs(abs(a-90)-90)<5{
+								offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
+							}else{
+								offset_comp <- offset_comp + (cr.vec_ref[cs][0]*cr2.compute_offset(current_lane)-cr2.vec_ref[0][0]*cr.compute_offset(current_lane))/sin(a)*(1+abs(a-180));
+							}
+						}
+						ci <- ci + 1;	
+						cs <- 0;
 					}
-					ci <- ci + 1;	
-					cs <- 0;
 				}
+//				if (test_car){
+//					list<list<point>> segment_list <- [];
+//					list<road> lr <- [];
+//					list<list<point>> tmp_vec_ref <- [];
+//					int ci <- current_index;
+//					int cs <- segment_index_on_road;
+//					int count <- 0;
+//					loop while: (count < s) and ci < length(current_path.edges){
+//						segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
+//						tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
+//						lr << road(current_path.edges[ci]);
+//						count <- count + 1;
+//						cs <- cs + 1;
+//						if (cs > length(road(current_path.edges[ci]).shape.points)-2){
+//							cs <- 0;
+//							ci <- ci + 1;
+//						}
+//					}
+//					list<point> offset_list <- [tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane)];
+//					list<float> weight_list <- [1.0];
+//					loop i from: 0 to: length(segment_list) - 2 step: 1{		
+//						float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
+//						if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+//							a <- 180.0;
+//						}
+//						weight_list << 1+abs(a-180);
+//						if abs(abs(a-90)-90)<5{
+//							offset_list << tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
+//						}else{
+//							offset_list << (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
+//						}
+//					}
+//					loop i from: 0 to: length(segment_list) - 2 step: 1{
+//						draw circle(2#m) at: last(segment_list[i]) color: #white;//rgb(255 - i *100,255 - i*100,255); 
+//						draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
+//					}	
+//				}
+				return offset_comp / weight;
 			}
-		return offset_comp / weight;
-		}	
+			
+			
+		}else{
+
+			if current_road = nil or current_path = nil{
+				return current_offset;
+			}else{
+				int ci <- current_index;
+				int cs <- segment_index_on_road;
+				list<list<point>> segment_list <- [];
+				list<road> lr <- [];
+				list<list<point>> tmp_vec_ref <- [];
+				int count <- 0;
+				loop while: (count < s) and ci < length(current_path.edges){
+					segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
+					tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
+					lr << road(current_path.edges[ci]);
+					count <- count + 1;
+					cs <- cs + 1;
+					if (cs > length(road(current_path.edges[ci]).shape.points)-2){
+						cs <- 0;
+						ci <- ci + 1;
+					}
+				}
+				point offset_comp <- tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane);
+				float weight <- 1.0;
+				loop i from: 0 to: length(segment_list) - 2 step: 1{		
+					float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
+					if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+						a <- 180.0;
+					}
+					weight <- weight + 1+abs(a-180);
+					if abs(abs(a-90)-90)<5{
+						offset_comp <- offset_comp + tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane)*(1+abs(a-180));
+					}else{
+						offset_comp <- offset_comp + (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a)*(1+abs(a-180));
+					}
+				}
+				if (test_car){
+					loop i from: 0 to: length(segment_list) - 2 step: 1{
+						draw circle(1#m) at: last(segment_list[i]) color: rgb(255 - i *100,255 - i*100,255); 
+			//			draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
+					}	
+				}
+	//			point offset <- {0,0};
+	//			loop i from: 0 to: length(offset_list)-1{
+	//				offset <- offset + offset_list[i]*weight_list[i];
+	//			}
+				return offset_comp / weight;
+			}
+
+
+
+
+
+
+		}
+		
 	}
 	
 	
 	
-//	point compute_offset(int s){
+//	point compute_offset_optim(int s){
 //		if current_road = nil or current_path = nil{
 //			return current_offset;
 //		}else{
@@ -1429,6 +1032,7 @@ species car skills:[advanced_driving]{
 //			list<road> lr <- [];
 //			list<list<point>> tmp_vec_ref <- [];
 //			int count <- 0;
+//			float weight <- 1.0;
 //			loop while: (count < s) and ci < length(current_path.edges){
 //				segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
 //				tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
@@ -1440,50 +1044,89 @@ species car skills:[advanced_driving]{
 //					ci <- ci + 1;
 //				}
 //			}
-//			list<point> offset_list <- [tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane)];
-//			list<float> weight_list <- [1.0];
+//			point offset_comp <- tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane);
 //			loop i from: 0 to: length(segment_list) - 2 step: 1{		
 //				float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
 //				if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
 //					a <- 180.0;
 //				}
-//				weight_list << 1+abs(a-180);
+//				weight <- weight + 1+abs(a-180);
 //				if abs(abs(a-90)-90)<5{
-//					offset_list << tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
+//					offset_comp <- offset_comp + tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
 //				}else{
-//					offset_list << (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
+//					offset_comp <- offset_comp + (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
 //				}
 //			}
 //			if (test_car){
 //				loop i from: 0 to: length(segment_list) - 2 step: 1{
 //					draw circle(1#m) at: last(segment_list[i]) color: rgb(255 - i *100,255 - i*100,255); 
-//					draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
+//		//			draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
 //				}	
 //			}
-//			point offset <- {0,0};
-//			loop i from: 0 to: length(offset_list)-1{
-//				offset <- offset + offset_list[i]*weight_list[i];
-//			}
-//			// ne pas effacer ce qui suit, peut servir pour des tests et ameliorer le smooth 
-////			if norm(offset/sum(weight_list)) > 100 {
-////				write "car: "+int(self)+ " "+ norm(offset/sum(weight_list))+" offset "+ offset/sum(weight_list);//+" angle "+a;
-////				write "offset list "+offset_list;
-////				write "angles "+angles;
-////				write angles accumulate (abs(abs(a-90)-90));
-////				loop i from: 0 to: length(offset_list)-1{
-////					write "offset "+i+": "+tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
-////				}
-//////				write "vec_ref "+tmp_vec_ref[i][0]+"/"+tmp_vec_ref[i+1][0]+" "+lr[i].compute_offset(current_lane)+"/"+lr[i+1].compute_offset(current_lane);
-//////				write tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane);
-//////				write tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane);
-//////				write sin(a);
-//////				write tmp_offset;
-////				ask world {do pause;}
+////			point offset <- {0,0};
+////			loop i from: 0 to: length(offset_list)-1{
+////				offset <- offset + offset_list[i]*weight_list[i];
 ////			}
-//			return offset / sum(weight_list);
+//			return offset_comp / weight;
 //		}
 //	}
-
+	
+	
+	//
+	//
+	//
+	//
+	
+	
+	point compute_offset(int s){
+		if current_road = nil or current_path = nil{
+			return current_offset;
+		}else{
+			int ci <- current_index;
+			int cs <- segment_index_on_road;
+			list<list<point>> segment_list <- [];
+			list<road> lr <- [];
+			list<list<point>> tmp_vec_ref <- [];
+			int count <- 0;
+			loop while: (count < s) and ci < length(current_path.edges){
+				segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
+				tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
+				lr << road(current_path.edges[ci]);
+				count <- count + 1;
+				cs <- cs + 1;
+				if (cs > length(road(current_path.edges[ci]).shape.points)-2){
+					cs <- 0;
+					ci <- ci + 1;
+				}
+			}
+			list<point> offset_list <- [tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane)];
+			list<float> weight_list <- [1.0];
+			loop i from: 0 to: length(segment_list) - 2 step: 1{		
+				float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
+				if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+					a <- 180.0;
+				}
+				weight_list << 1+abs(a-180);
+				if abs(abs(a-90)-90)<5{
+					offset_list << tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
+				}else{
+					offset_list << (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
+				}
+			}
+			if (test_car){
+				write segment_list;
+				loop i from: 0 to: length(segment_list) - 1 step: 1{
+					draw circle(2#m) at: last(segment_list[i]) color: rgb(255 - i *100,255 - i*100,255); 
+					draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
+				}	
+			}
+			point offset <- {0,0};
+			loop i from: 0 to: length(offset_list)-1{
+				offset <- offset + offset_list[i]*weight_list[i];
+			}
+			return offset / sum(weight_list);
+		}
+	}
 }
 
 species graphicWorld{
@@ -1612,13 +1255,7 @@ species intersection skills: [skill_road_node] {
 	}
 
 	aspect default {
-		if (active and is_traffic_signal and showTrafficSignal) {
-			draw circle(5) color: color_fire;
-			//draw triangle(5) color: color_group border: #black;
-		}
-		if showTrafficSignal{
-			draw circle(3#m) color: color;
-		}
+	
 	}
 }
 
@@ -1641,48 +1278,30 @@ camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
 		    species building aspect: base;
-			species park aspect: base transparency:0.1;
-			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
 			species vizuRoad aspect:base transparency:0.8;
-			species bus_line aspect: base;
-			species metro_line aspect: base;
-			species amenities aspect:base;
 			species intersection;
 			species car aspect:base;
-			species pedestrian aspect:base;
-			species bike aspect:base;
-			species bus aspect:base;
 			species coldSpot aspect:base;
-			species station aspect: base;
-			species bikelane aspect:base;
-
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
-			event["p"] action: {showPedestrian<-!showPedestrian;};
-			event["c"] action: {showCar<-!showCar;};
-			event["b"] action: {showBike<-!showBike;};
-			event["s"] action: {showSharedMobility<-!showSharedMobility;};
+			
 			event["g"] action: {showGif<-!showGif;};
-			event["l"] action: {showBuilding<-!showBuilding;};
-			event["r"] action: {showRoad<-!showRoad;};
+			
 			event["m"] action: {showVizuRoad<-!showVizuRoad;};
-			event["v"] action: {showBikeLane<-!showBikeLane;};
-			event["i"] action: {showIntervention<-!showIntervention;};
-			event["q"] action: {showMetroLane<-!showMetroLane;};
-			event["j"] action: {showBusLane<-!showBusLane;};
-			event["s"] action: {showStation<-!showStation;};
+		event["i"] action: {showIntervention<-!showIntervention;};
+			
 			event["a"] action: {showAmenities<-!showAmenities;};
 			event["n"] action: {showGreen<-!showGreen;};
 			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
+			event["r"] action: {showRoad<-!showRoad;};						
 			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
