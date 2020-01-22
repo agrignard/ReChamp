@@ -53,7 +53,7 @@ global {
 
 	
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
-	bool showPedestrian parameter: 'Pedestrain (p)' category: "Agent" <-true;
+	bool showPeople parameter: 'Pedestrain (p)' category: "Agent" <-true;
 	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
 	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
 	
@@ -76,7 +76,7 @@ global {
 	
 	
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	float trajectoryTransparency <-0.5 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
+	float trajectoryTransparency <-0.25 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -327,12 +327,36 @@ global {
 	}
 	
 	action updateStoryTelling (int n){
-			if(n=1){currentStoryTellingState<-1;currentSimuState<-0;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
-			if(n=2){currentStoryTellingState<-2;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
-			if(n=3){currentStoryTellingState<-3;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
-			if(n=4){currentStoryTellingState<-4;currentSimuState<-1;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
-			if(n=5){currentStoryTellingState<-5;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
-			if(n=6){currentStoryTellingState<-6;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;}
+			if(n=1){
+				currentStoryTellingState<-1;currentSimuState<-0;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+			    showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
+			    showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
+			if(n=2){
+				currentStoryTellingState<-2;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
+				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
+			if(n=3){
+				currentStoryTellingState<-3;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
+				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
+			if(n=4){
+				currentStoryTellingState<-4;currentSimuState<-1;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
+				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
+			if(n=5){
+				currentStoryTellingState<-5;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
+				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
+			if(n=6){
+				currentStoryTellingState<-6;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
+				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
+			}
 	}
 	
 	action create_pedestrian(int nb) {
@@ -1077,7 +1101,7 @@ species pedestrian skills:[moving] control: fsm{
 	} 
 	
 	aspect base{
-		if(showPedestrian){
+		if(showPeople){
 			 draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
@@ -1549,19 +1573,17 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false /*fullscreen:1*/  rotate:angle toolbar:false autosave:false synchronized:true
-camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
-	   	//camera_pos: {1812.4353,1521.601,3039.7286} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
-
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+        camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
 		    species building aspect: base;
-			species park aspect: base transparency:0.1;
+			species park aspect: base transparency:0.25;
 			species culture aspect: base ;
 			species water aspect: base;
 			species road aspect: base;
-			species vizuRoad aspect:base transparency:0.8;
+			species vizuRoad aspect:base transparency:0.5;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
 			species amenities aspect:base;
@@ -1580,7 +1602,7 @@ camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
-			event["p"] action: {showPedestrian<-!showPedestrian;};
+			event["p"] action: {showPeople<-!showPeople;};
 			event["c"] action: {showCar<-!showCar;};
 			event["b"] action: {showBike<-!showBike;};
 			event["s"] action: {showSharedMobility<-!showSharedMobility;};
