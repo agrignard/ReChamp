@@ -58,9 +58,9 @@ global {
 	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
 	
 
-	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-true;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
-	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
+	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
+	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-false;
+	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-false;
 
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
@@ -125,7 +125,7 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-1000;
 	float step <- 10 #sec;
-	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
+	map<string,float> mobilityRatioNow <-["people"::0.1, "car"::0.6,"bike"::0.2, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
 	
@@ -355,8 +355,18 @@ global {
 	}
 	
 	action updateStoryTelling (int n){
+			if (n=1 or n=2 or n=3){
+				if(currentSimuState=1){
+					currentSimuState<-0;updateSim<-true;
+				}
+			}
+			if(n=4 or n=5 or n=6){
+			  if(currentSimuState=0){
+					currentSimuState<-1;updateSim<-true;
+				}
+			}
 			if(n=1){
-				currentStoryTellingState<-1;currentSimuState<-0;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				currentStoryTellingState<-1;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
 			    showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
 			    showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
 			}
@@ -371,7 +381,7 @@ global {
 				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
 			}
 			if(n=4){
-				currentStoryTellingState<-4;currentSimuState<-1;updateSim<-true;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
+				currentStoryTellingState<-4;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
 				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
 				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
 			}
@@ -1013,6 +1023,8 @@ species pedestrian skills:[moving] control: fsm{
 	bool visiting <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
+	bool stroling_in_city<-false;
+	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
 	
@@ -1068,22 +1080,30 @@ species pedestrian skills:[moving] control: fsm{
 	state stroll_in_city {
 		enter {
 			stroll_time <- rnd(1, 10) *60;
+			stroling_in_city<-true;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander amplitude:10.0 speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
+		exit{
+			stroling_in_city<-false;
+		}
 	}
 	
 	
 	state stroll_in_park {
 		enter {
 			stroll_time <- rnd(1, 10) * 60;
+			stroling_in_park<-true;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
+		exit{
+		  stroling_in_park<-false;	
+		}
 	}
 	
 	state outside_sim {
@@ -1140,6 +1160,19 @@ species pedestrian skills:[moving] control: fsm{
 		if(showPeopleTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  	}	
+	}
+	
+	aspect storyTelling{
+		
+		if(showPeople){
+			if(((currentStoryTellingState=1 or currentStoryTellingState=4) and walking=true) or ((currentStoryTellingState=2 or currentStoryTellingState=5) and (walking=true or stroling_in_park=true)) or ((currentStoryTellingState=3 or currentStoryTellingState=6)) ){
+			  draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			}
+			 	
+		}
+		if(showPeopleTrajectory){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	  	}
 	}
 }
 
@@ -1394,8 +1427,8 @@ species car skills:[advanced_driving]{
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
 	  	}
-	}	
-	
+	}
+		
 	point compute_offset(int s){	
 		if current_road = nil or current_path = nil{
 			return current_offset;
@@ -1638,7 +1671,6 @@ species intersection skills: [skill_road_node] {
 	aspect default {
 		if (active and is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
-			//draw triangle(5) color: color_group border: #black;
 		}
 		if showTrafficSignal{
 			draw circle(3#m) color: color;
@@ -1657,8 +1689,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-        camera_pos: {1577.7317,1416.6484,2491.6749} camera_look_pos: {1577.7317,1416.605,0.0019} camera_up_vector: {0.0,1.0,0.0}
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 	   	{
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
@@ -1727,7 +1758,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #split;
-		display indicator type:opengl background:#black draw_env:true fullscreen:false toolbar:false
+		display indicator type:opengl background:#black draw_env:false fullscreen:1 toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 			/*graphics 'dashboardbackground'{
@@ -1738,42 +1769,84 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 			graphics "state" {
 				float textSize<-10#px;
 				float spacebetween<-200#px;
-				draw ((currentSimuState = 0) ? "Today" :"2024") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
-				if(currentStoryTellingState=1){
+				float spacebetweenSame<-250#px;
+				draw ((currentSimuState = 0 ) ? "Today" :"2024") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
+				if(currentStoryTellingState=1 or currentStoryTellingState=4){
 				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
+				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
+				  
+				  draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
+				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
+				  
+				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
+				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};			
 				}
-				if(currentStoryTellingState=2){
-				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};	
+				if(currentStoryTellingState=2 or currentStoryTellingState=5){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
+				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
+				  
+				  /*draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
+				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
+				  
+				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
+				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};	*/	
+				  
+				  
 				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
+				  draw ("Pleine Terre 30 000 m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Strate Arbustrive 30 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*4+spacebetween};
+				  draw ("Sol Perméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*6+spacebetween};
+				  draw ("Sol Imperméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*8+spacebetween};	
+				  
+				  draw ("Coefficient de Biotope: 5%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Nombre d'arbes: 55 000") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*4+spacebetween};
+				  
+				  draw ("Volume Evapo-Transpiré: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Abbatement sur pluie 12mm: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*4+spacebetween};
 				}
-				if(currentStoryTellingState=3){
-				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};	
+				if(currentStoryTellingState=3 or currentStoryTellingState=6){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
+				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
+				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
+				  
+				  /*draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
+				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
+				  
+				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
+				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};	*/	
+				  
+				  
 				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
-				  draw (catchPhrase[2]) color: #white font: font("Helvetica", textSize, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2};
-				}
-				if(currentStoryTellingState=4){
-				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				}
-				if(currentStoryTellingState=5){
-				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};	
-				  draw (catchPhrase[4]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
-				  draw ("20% more park") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*2};
-				  draw ("10% more biotopy") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*4};
-				}
-				if(currentStoryTellingState=6){
-				  draw (catchPhrase[3]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("15% less car") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("1O% more sharing mobility") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};	
-				  draw (catchPhrase[4]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
-				  draw ("20% more park") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*2};
-				  draw ("10% more biotopy") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween+textSize*4};
-				  draw (catchPhrase[5]) color: #white font: font("Helvetica", textSize, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2};
-				  draw ("15% less is more ") color: #white font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2+textSize*2};
-				  draw ("10% more restaurant") color: #white font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*2,world.shape.height/4+spacebetween*2+textSize*4};
+				  draw ("Pleine Terre 30 000 m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Strate Arbustrive 30 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*4+spacebetween};
+				  draw ("Sol Perméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*6+spacebetween};
+				  draw ("Sol Imperméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*8+spacebetween};	
+				  
+				  /*draw ("Coefficient de Biotope: 5%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Nombre d'arbes: 55 000") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*4+spacebetween};
+				  
+				  draw ("Volume Evapo-Transpiré: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*2+spacebetween};
+				  draw ("Abbatement sur pluie 12mm: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*4+spacebetween};*/
+				  
+				  draw (catchPhrase[2]) color: #yellow font: font("Helvetica", textSize, #bold) at: {0+spacebetween*1.5,world.shape.height/4+spacebetween*2};
+				  draw ("Offre Gastronomiques: 20") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
+				  draw ("Surface Pique-Nique 3 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
+				  draw ("Surface Pietonne 30 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*6+spacebetween*2};
+				  draw ("Surface Ombragée 30 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*8+spacebetween*2};	
+				  
+				  draw ("Espaces de rencontre :55 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
+				  draw ("Equipement Sportifs: 55 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
+				  
+				  draw ("Volume Evapo-Transpiré: 55%") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
+				  draw ("Abbatement sur pluie 12mm: 55%") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
 				}
 			}
 			
