@@ -59,8 +59,8 @@ global {
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-false;
-	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-false;
+	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
+	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
@@ -147,10 +147,18 @@ global {
 	float m_time;
 	list<float> chrono <- list_with(chrono_size,0.0);
 	
+	float meanSpeedCar<-15 #km/#h;
+	float deviationSpeedCar<-10 #km/#h;
+	
+	float minSpeedPeople<-2 #km/#h;
+	float maxSpeedPeople<-5 #km/#h;
+	
+	
+	
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
-			create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
+		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
@@ -291,11 +299,13 @@ global {
 		}
 				
 		people_graph <- as_edge_graph(road);
+		//people_graph<- people_graph use_cache false;
 			
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
+		//bike_graph<- bike_graph use_cache false;
 		
 		
 		 //Create Bus
@@ -304,6 +314,7 @@ global {
 		  location<-any_location_in(one_of(road));	
 		}
 		bus_graph <- (as_edge_graph(road)) ;
+		//bus_graph<- bus_graph use_cache false;
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -414,7 +425,7 @@ global {
 		create car number:nb{
 		 	type <- "car";
 		  	max_speed <- 160 #km / #h;
-		  	speed<-15 #km/#h + rnd(10 #km/#h);
+		  	speed<-meanSpeedCar + rnd(deviationSpeedCar);
 			vehicle_length <- 10.0 #m;
 			right_side_driving <- myself.right_side_driving;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
@@ -1007,7 +1018,7 @@ species pedestrian skills:[moving] control: fsm{
 	point target;
 	int stroll_time;
 	int visiting_time;
-	float speed_walk <- rnd(3,6) #km/#h;
+	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople) #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
 	float proba_wandering <- 0.5;
@@ -1023,11 +1034,12 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
+	bool applyFuzzyness<-false;
 	
 	action updatefuzzTrajectory{
 		if(showPeopleTrajectory){
 			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
-		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
+		  	point pt <- applyFuzzyness ? location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt} : location ;  
 		    loop while:(length(current_trajectory) > peopleTrajectoryLength)
 	  	    {
 	        current_trajectory >> first(current_trajectory);
@@ -1229,9 +1241,8 @@ species bus skills:[moving]{
 
 
 species car skills:[advanced_driving]{	
-	bool test_car_2 <- false;
-	
-	
+
+		
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -1249,19 +1260,10 @@ species car skills:[advanced_driving]{
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel[currentSimuState];
 	list<point> current_trajectory;
 	intersection current_intersection;
+	point target;
 	
 	
-	reflex essai when: test_car_2{
-		test_car <- true;
-		target_intersection <- one_of(possible_targets[currentSimuState]);
-		point save_location <- location;
-		location <- last(road(current_road).shape.points);
-		path new_path <- compute_path(graph: driving_road_network, target: target_intersection);
-		current_path <- ([road(current_road)]+list<road> (new_path.edges)) as_path driving_road_network;
-		targets <- [location]+targets;
-		location <- save_location;
-		test_car_2 <- false;	
-	}
+
 	
 	
 	action remove_and_die {
@@ -1363,25 +1365,9 @@ species car skills:[advanced_driving]{
 				int truc <- 0;
 				if target_intersection in possible_targets[currentSimuState]{// target is good
 					truc <- 1; // current_road is good, target is good
-					point save_location <- location;
-					location <- last(road(current_road).shape.points);
-					list<intersection> li <-[first(intersection where(each.location = location)),target_intersection];
-					path old_path;
-					path new_path <- compute_path(graph: driving_road_network, target: target_intersection);
-					if first(intersection where(each.location = location)) != target_intersection{// car is already arriving to its destination
-						if new_path = nil{
-							write "car "+int(self);
-							write "origin: "+location+" "+intersection where(each.location = location);
-							write "dest: "+target_intersection;
-							write li;
-							write old_path;
-							ask world {do pause;}
-						}
-						current_path <- ([road(current_road)]+list<road> (new_path.edges)) as_path driving_road_network;
-						targets <- [location]+targets;	
-					}
-					
-					location <- save_location;
+					target <- last(road(current_road).shape.points);
+//					graph driving_road_network2 <- driving_road_network with_weights general_speed_map;
+					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
 					if (road(current_road).to_display){
@@ -1391,10 +1377,9 @@ species car skills:[advanced_driving]{
 					truc <- 2; // current_road is good, target is not good
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
-					current_path <- [road(current_road)] as_path driving_road_network;
-					final_target <- last(road(current_road).shape.points);
-					int j <- targets index_of final_target;
-					targets <- [final_target];//first(j+1,targets);
+					target_intersection <- one_of(possible_targets[currentSimuState]);
+					current_lane <- 0;
+					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
 				}
