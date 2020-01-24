@@ -405,7 +405,6 @@ global {
 
 
 species road  skills: [skill_road]  {
-	bool test <- false;
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
@@ -425,9 +424,6 @@ species road  skills: [skill_road]  {
 		if(showRoad and lanes_nb[currentSimuState]){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;	
 		}
-		if test{
-			draw 3 around(shape) color: #white;
-		}
 	}
 }
 
@@ -442,17 +438,10 @@ species road  skills: [skill_road]  {
 species car skills:[advanced_driving]{
 	//path old_path;
 	//intersection old_target;
-	list<string> change_log;
-	
-	intersection input;
-	intersection output;
-	
-	
+	list<string> change_log;	
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
-	int old_index <- 0;
-	int old_segment_index;
 	int fade_count <- 0;
 	rgb color;
 	intersection target_intersection;
@@ -530,23 +519,6 @@ species car skills:[advanced_driving]{
 //		change_log << "leave at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
 	}
 	
-//	action leave{
-//		if (target_intersection != nil and target_intersection in output_intersections[currentSimuState]) {
-//			if current_road != nil {
-//				ask current_road as road {
-//					do unregister(myself);
-//				}
-//			}
-//			current_intersection <- one_of(possible_sources[currentSimuState]);
-//			location <-current_intersection.location;
-//		}
-//		target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
-//		current_lane <- 0;
-//		current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
-////		change_log << "leave at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
-//		current_trajectory <- [];
-//	}
-	
 	
 	reflex move when: final_target != nil{	
 		do drive;	  	
@@ -600,8 +572,7 @@ species car skills:[advanced_driving]{
 							targets <- [final_target];
 							current_index <- 0;
 							final_target <- target_intersection.location;
-							current_target <- final_target;
-							
+							current_target <- final_target;				
 								//	change_log << "update 12 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
 						}
 						
@@ -612,20 +583,14 @@ species car skills:[advanced_driving]{
 						current_index <- 0;
 						final_target <- target_intersection.location;
 						current_target <- final_target;
-						int j <- targets index_of final_target;
-						targets <- [final_target];//first(j+1,targets);
+						targets <- [final_target];
 						//change_log << "update 2 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
 					}
 					
 				}
-				to_update <- false;
-			
-			}
-			
+				to_update <- false;		
+			}			
 		}
-		
-		
-//		write "car "+int(self);
 	}
 
 	reflex fade when: (fade_count > 0){
@@ -718,7 +683,6 @@ species signals_zone{
 
 species intersection skills: [skill_road_node] {
 	rgb color <- #white; //used for integrity tests
-	
 	list<bool> reachable_by_all <- list_with(stateNumber,false);
 	list<bool> can_reach_all <- list_with(stateNumber,false);
 	list<intersection> exit <- list_with(stateNumber, nil);
@@ -756,14 +720,6 @@ species intersection skills: [skill_road_node] {
 
 		}
 	}
-	
-//	list<intersection> next_intersections{
-//		return list<intersection>(roads_out accumulate (driving_road_network target_of each));//intersection where (not empty(each.roads_in inter each.roads_out));
-//	}
-//	
-//	list<intersection> previous_intersections{
-//		return list<intersection>(roads_in accumulate (driving_road_network source_of each));//intersection where (not empty(each.roads_in inter each.roads_out));
-//	}
 
 	action to_green {
 		stop[0] <- ways2;
