@@ -72,8 +72,8 @@ global {
 	int carTrajectoryLength <-25 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int bikeTrajectoryLength <-25 parameter: 'Bike Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLength <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
-	
-	
+
+	float step <-1#sec parameter: 'Simulation Step' category: "AAAA" min: 1#sec max: 30#sec;
 	
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float trajectoryTransparency <-0.25 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
@@ -124,7 +124,7 @@ global {
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
 	int nbAgent<-1000;
-	float step <- 10 #sec;
+	
 	map<string,float> mobilityRatioNow <-["people"::0.1, "car"::0.6,"bike"::0.2, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
 
