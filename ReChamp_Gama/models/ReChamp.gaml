@@ -68,15 +68,27 @@ global {
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	
-	int peopleTrajectoryLength <-25 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max: 50;
-	int carTrajectoryLength <-25 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 50;
-	int bikeTrajectoryLength <-25 parameter: 'Bike Trajectory length' category: "Trajectory" min: 0 max: 50;
-	int busTrajectoryLength <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int peopleTrajectoryLengthBefore <-25 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max: 50;
+	int peopleTrajectoryLengthAfter <-25 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max: 50;
+	int carTrajectoryLengthBefore <-25 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 50;
+	int carTrajectoryLengthAfter <-25 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 50;
+	int bikeTrajectoryLengthBefore <-25 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 50;
+	int bikeTrajectoryLengthAfter <-25 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 50;
+	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 
 	float step <-1#sec parameter: 'Simulation Step' category: "AAAA" min: 1#sec max: 30#sec;
 	
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	float trajectoryTransparency <-0.25 parameter: 'Trajectory transparency' category: "Trajectory" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyBefore <-0.25 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyAfter <-0.25 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyBefore <-0.25 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyAfter <-0.25 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyBefore <-0.25 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyAfter <-0.25 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyBefore <-0.25 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyAfter <-0.25 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
@@ -112,8 +124,8 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
-	map<string, rgb> nature_colors <- ["exi"::rgb(115,175,0),"pro"::rgb(183,255,97)];
-	map<string, rgb> usage_colors <- ["exi"::rgb(75,75,75),"pro"::rgb(175,175,175)];
+	map<string, rgb> nature_colors <- ["exi"::rgb(183,255,97),"pro"::rgb(183,255,97)];
+	map<string, rgb> usage_colors <- ["exi"::rgb(175,175,175),"pro"::rgb(175,175,175)];
 	
 	float angle<-26.25;
 
@@ -363,48 +375,6 @@ global {
 		m_time <- new_m_time;
 	}
 	
-	action updateStoryTelling (int n){
-			if (n=1 or n=2 or n=3){
-				if(currentSimuState=1){
-					currentSimuState<-0;updateSim<-true;
-				}
-			}
-			if(n=4 or n=5 or n=6){
-			  if(currentSimuState=0){
-					currentSimuState<-1;updateSim<-true;
-				}
-			}
-			if(n=1){
-				currentStoryTellingState<-1;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-			    showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
-			    showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-			if(n=2){
-				currentStoryTellingState<-2;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
-				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-			if(n=3){
-				currentStoryTellingState<-3;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-25;carTrajectoryLength<-50;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-false;
-				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-			if(n=4){
-				currentStoryTellingState<-4;showVizuRoad<-true;showGreen<-false;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
-				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-			if(n=5){
-				currentStoryTellingState<-5;showVizuRoad<-true;showGreen<-true;showUsage<-false;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
-				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-			if(n=6){
-				currentStoryTellingState<-6;showVizuRoad<-true;showGreen<-true;showUsage<-true;peopleTrajectoryLength<-50;carTrajectoryLength<-25;bikeTrajectoryLength<-25;busTrajectoryLength<-25;
-				showPeopleTrajectory<-false;showCarTrajectory<-true;showBikeTrajectory<-false;showSharedMobilityTrajectory<-true;
-				showPeople<-true;showCar<-true;showBike<-true;showSharedMobility<-true;
-			}
-	}
 	
 	action create_pedestrian(int nb) {
 		create pedestrian number:nb{
@@ -1040,7 +1010,7 @@ species pedestrian skills:[moving] control: fsm{
 		if(showPeopleTrajectory){
 			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
 		  	point pt <- applyFuzzyness ? location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt} : location ;  
-		    loop while:(length(current_trajectory) > peopleTrajectoryLength)
+		    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
 	  	    {
 	        current_trajectory >> first(current_trajectory);
 	        }
@@ -1166,21 +1136,8 @@ species pedestrian skills:[moving] control: fsm{
 			 draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
 	  	}	
-	}
-	
-	aspect storyTelling{
-		
-		if(showPeople){
-			if(((currentStoryTellingState=1 or currentStoryTellingState=4) and walking=true) or ((currentStoryTellingState=2 or currentStoryTellingState=5) and (walking=true or stroling_in_park=true)) or ((currentStoryTellingState=3 or currentStoryTellingState=6)) ){
-			  draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-			}
-			 	
-		}
-		if(showPeopleTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
-	  	}
 	}
 }
 
@@ -1195,7 +1152,7 @@ species bike skills:[moving]{
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > bikeTrajectoryLength)
+	  loop while:(length(current_trajectory) > ((currentSimuState=0) ? bikeTrajectoryLengthBefore : bikeTrajectoryLengthAfter))
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1206,7 +1163,7 @@ species bike skills:[moving]{
 		 draw square(dotPoint) color:type_colors[type] rotate: angle;	
 		}	
 		if(showBikeTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? bikeTrajectoryTransparencyBefore : bikeTrajectoryTransparencyAfter);	
 	  }
 	}
 }
@@ -1223,7 +1180,7 @@ species bus skills:[moving]{
 	reflex move{
 	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > busTrajectoryLength)
+	  loop while:(length(current_trajectory) > ((currentSimuState=0) ? busTrajectoryLengthBefore : busTrajectoryLengthAfter))
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1234,7 +1191,7 @@ species bus skills:[moving]{
 		 draw rectangle(dotPoint*2,dotPoint*3) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showSharedMobilityTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? busTrajectoryTransparencyBefore : busTrajectoryTransparencyAfter);	
 	  }
 	}
 }
@@ -1343,7 +1300,7 @@ species car skills:[advanced_driving]{
 	reflex move when: final_target != nil{	
 	  	do drive;	
 	  	//on tente le tout pour le tout
-	  	loop while:(length(current_trajectory) > carTrajectoryLength)
+	  	loop while:(length(current_trajectory) > ((currentSimuState =0) ? carTrajectoryLengthBefore : carTrajectoryLengthAfter))
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1387,10 +1344,10 @@ species car skills:[advanced_driving]{
 				if use_blocked_road(){
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
-					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[currentSimuState]); // I left this block  to check is this happens sometimes...
+					/*write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[currentSimuState]); // I left this block  to check is this happens sometimes...
 					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
 					write "road trace: "+road_trace;
-					write "trace "+ trace+"\n";
+					write "trace "+ trace+"\n";*/
 					//ask world {do pause;}
 				}
 			}
@@ -1439,7 +1396,7 @@ species car skills:[advanced_driving]{
 	  		draw circle (2#m) at: current_intersection.location color: #yellow;
 	  	}
 	  	if(showCarTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,trajectoryTransparency);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
 	}
 		
@@ -1704,6 +1661,7 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
@@ -1752,17 +1710,6 @@ experiment ReChamp type: gui autorun:true{
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
-			
-			
-			//STORY TELLING
-			event["1"] action: {ask world{do updateStoryTelling (1);}};
-			event["2"] action: {ask world{do updateStoryTelling (2);}};
-			event["3"] action: {ask world{do updateStoryTelling (3);}};
-			event["4"] action: {ask world{do updateStoryTelling (4);}};
-			event["5"] action: {ask world{do updateStoryTelling (5);}};
-			event["6"] action: {ask world{do updateStoryTelling (6);}};
-			
-
 		}
 	}
 }
