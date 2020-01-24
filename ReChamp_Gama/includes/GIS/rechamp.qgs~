@@ -73,10 +73,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>650306.68202277400996536</xmin>
-      <ymin>6863064.60103689134120941</ymin>
-      <xmax>650423.81144782283809036</xmax>
-      <ymax>6863162.57228933274745941</ymax>
+      <xmin>648484.06627752096392214</xmin>
+      <ymin>6862674.88827002979815006</ymin>
+      <xmax>648952.58397771627642214</xmax>
+      <ymax>6863066.77327979542315006</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -3606,7 +3606,7 @@ def my_form_open(dialog, layer, feature):
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;pro_lanes&quot;" sortOrder="0">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;lanes&quot;" sortOrder="1">
         <columns>
           <column width="-1" hidden="0" type="field" name="lanes"/>
           <column width="-1" hidden="0" type="field" name="maxspeed"/>

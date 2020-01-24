@@ -136,8 +136,6 @@ global {
 	
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
-	//list<intersection> tf_can_be_desactivated;
-//	list<list<intersection>> active_traffic_lights <-list_with(stateNumber, []);
 	
 	list<park> activated_parks;
 	list<culture> activated_cultures;
@@ -145,7 +143,7 @@ global {
 	
 	
 	int chrono_size <- 30;
-	bool fps_monitor <- true;
+	bool fps_monitor <- false;
 	float m_time;
 	list<float> chrono <- list_with(chrono_size,0.0);
 	
@@ -866,8 +864,6 @@ species road  skills: [skill_road]  {
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
 	string mode;
-	float proba_use <- 100.0;
-
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
@@ -1242,6 +1238,9 @@ species bus skills:[moving]{
 
 
 species car skills:[advanced_driving]{	
+	bool test_car_2 <- false;
+	
+	
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -1250,7 +1249,6 @@ species car skills:[advanced_driving]{
 	int fade_count <- 0;
 	point current_offset <- {0,0};
 	rgb color;
-	point target;
 	intersection target_intersection;
 	string nationality;
 	string profile;
@@ -1260,6 +1258,19 @@ species car skills:[advanced_driving]{
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel[currentSimuState];
 	list<point> current_trajectory;
 	intersection current_intersection;
+	
+	
+	reflex essai when: test_car_2{
+		test_car <- true;
+		target_intersection <- one_of(possible_targets[currentSimuState]);
+		point save_location <- location;
+		location <- last(road(current_road).shape.points);
+		path new_path <- compute_path(graph: driving_road_network, target: target_intersection);
+		current_path <- ([road(current_road)]+list<road> (new_path.edges)) as_path driving_road_network;
+		targets <- [location]+targets;
+		location <- save_location;
+		test_car_2 <- false;	
+	}
 	
 	
 	action remove_and_die {
@@ -1295,6 +1306,7 @@ species car skills:[advanced_driving]{
 			}		
 		}	
 	}
+	
 
 
 	bool use_blocked_road {
@@ -1359,22 +1371,39 @@ species car skills:[advanced_driving]{
 				road_trace << road(current_road);
 				int truc <- 0;
 				if target_intersection in possible_targets[currentSimuState]{// target is good
-					truc <- 1;
-					target <- last(road(current_road).shape.points);
-//					graph driving_road_network2 <- driving_road_network with_weights general_speed_map;
-					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+					truc <- 1; // current_road is good, target is good
+					point save_location <- location;
+					location <- last(road(current_road).shape.points);
+					list<intersection> li <-[first(intersection where(each.location = location)),target_intersection];
+					path old_path;
+					path new_path <- compute_path(graph: driving_road_network, target: target_intersection);
+					if first(intersection where(each.location = location)) != target_intersection{// car is already arriving to its destination
+						if new_path = nil{
+							write "car "+int(self);
+							write "origin: "+location+" "+intersection where(each.location = location);
+							write "dest: "+target_intersection;
+							write li;
+							write old_path;
+							ask world {do pause;}
+						}
+						current_path <- ([road(current_road)]+list<road> (new_path.edges)) as_path driving_road_network;
+						targets <- [location]+targets;	
+					}
+					
+					location <- save_location;
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
 					if (road(current_road).to_display){
 						
 					}
 				}else{//target is not good
-					truc <- 2;
+					truc <- 2; // current_road is good, target is not good
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
-					target_intersection <- one_of(possible_targets[currentSimuState]);
-					current_lane <- 0;
-					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
+					current_path <- [road(current_road)] as_path driving_road_network;
+					final_target <- last(road(current_road).shape.points);
+					int j <- targets index_of final_target;
+					targets <- [final_target];//first(j+1,targets);
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
 				}
@@ -1382,11 +1411,11 @@ species car skills:[advanced_driving]{
 				if use_blocked_road(){
 					trace << road(current_road).to_display;
 					road_trace << road(current_road);
-//					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[1]); // I left this block  to check is this happens sometimes...
-//					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
-//					write "road trace: "+road_trace;
-//					write "trace "+ trace+"\n";
-		//			ask world {do pause;}
+					write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[currentSimuState]); // I left this block  to check is this happens sometimes...
+					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
+					write "road trace: "+road_trace;
+					write "trace "+ trace+"\n";
+					//ask world {do pause;}
 				}
 			}
 			to_update <- false;
