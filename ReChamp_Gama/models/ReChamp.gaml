@@ -149,10 +149,18 @@ global {
 	float m_time;
 	list<float> chrono <- list_with(chrono_size,0.0);
 	
+	float meanSpeedCar<-15 #km/#h;
+	float deviationSpeedCar<-10 #km/#h;
+	
+	float minSpeedPeople<-2 #km/#h;
+	float maxSpeedPeople<-5 #km/#h;
+	
+	
+	
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
-			create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
+		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
@@ -416,7 +424,7 @@ global {
 		create car number:nb{
 		 	type <- "car";
 		  	max_speed <- 160 #km / #h;
-		  	speed<-15 #km/#h + rnd(10 #km/#h);
+		  	speed<-meanSpeedCar + rnd(deviationSpeedCar);
 			vehicle_length <- 10.0 #m;
 			right_side_driving <- myself.right_side_driving;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
@@ -1011,7 +1019,7 @@ species pedestrian skills:[moving] control: fsm{
 	point target;
 	int stroll_time;
 	int visiting_time;
-	float speed_walk <- rnd(3,6) #km/#h;
+	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople) #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
 	float proba_wandering <- 0.5;
@@ -1027,11 +1035,12 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
+	bool applyFuzzyness<-false;
 	
 	action updatefuzzTrajectory{
 		if(showPeopleTrajectory){
 			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
-		  	point pt <- location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt};  
+		  	point pt <- applyFuzzyness ? location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt} : location ;  
 		    loop while:(length(current_trajectory) > peopleTrajectoryLength)
 	  	    {
 	        current_trajectory >> first(current_trajectory);
