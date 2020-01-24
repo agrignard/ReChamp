@@ -436,9 +436,6 @@ species road  skills: [skill_road]  {
 
 
 species car skills:[advanced_driving]{
-	//path old_path;
-	//intersection old_target;
-	list<string> change_log;	
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -653,7 +650,6 @@ species car skills:[advanced_driving]{
 			final_target <- target_intersection.location;
 			current_lane <- 0;
 			current_trajectory <- [];
-					change_log << "fade at "+cycle+" new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
 		}	
 	}
 	
