@@ -299,11 +299,13 @@ global {
 		}
 				
 		people_graph <- as_edge_graph(road);
+		people_graph<- people_graph use_cache false;
 			
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
+		bike_graph<- bike_graph use_cache false;
 		
 		
 		 //Create Bus
@@ -312,6 +314,7 @@ global {
 		  location<-any_location_in(one_of(road));	
 		}
 		bus_graph <- (as_edge_graph(road)) ;
+		bus_graph<- bus_graph use_cache false;
 		
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
