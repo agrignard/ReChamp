@@ -436,9 +436,6 @@ species road  skills: [skill_road]  {
 
 
 species car skills:[advanced_driving]{
-	//path old_path;
-	//intersection old_target;
-	list<string> change_log;	
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -537,61 +534,106 @@ species car skills:[advanced_driving]{
 			if road(current_road).lanes_nb[currentSimuState] = 0{//current road is not good. Fading
 				fade_count <- 15;
 			}else{//current road is good
-				if true{
-					if target_intersection in possible_targets[currentSimuState]{// target is good. Computing a new path				
-						point save_location <- location;
-						road cr <- road(current_road);
-						location <- last(cr.shape.points);
-						intersection ci <- driving_road_network[currentSimuState] target_of current_road;
-						if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
-							target_intersection<- ci.exit[currentSimuState];
-						}
-						new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
-						if ci != target_intersection{// car is not already arriving to its destination
-							current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
-							ask current_road as road {
-								do unregister(myself);
-							}
-							current_road <- cr;
-							ask cr{
-								do register(myself, 0);// remplacer 0 par lane
-							}
-							current_index <- 0;
-							final_target <- target_intersection.location;
-							targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
-							current_target <- first(targets);
-//							change_log << "update 11 at "+cycle+" new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
-//							change_log << "old "+old_current_target+" index "+old_current_index+" seg ind "+old_segment_index+" path "+old_path;
-//							change_log <<  "old "+length(old_targets)+" "+length(old_path.edges);
-//							change_log << "new "+current_target+" index "+current_index+" seg ind "+segment_index_on_road+" path "+current_path;
-//							change_log <<  "new "+length(targets)+" "+length(current_path.edges);
-						}else{
-							current_path <- [cr] as_path driving_road_network[currentSimuState];
-							current_road <- cr;
-							target_intersection <- driving_road_network[currentSimuState] target_of cr;
-							targets <- [final_target];
-							current_index <- 0;
-							final_target <- target_intersection.location;
-							current_target <- final_target;				
-								//	change_log << "update 12 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
-						}
-						
-						location <- save_location;
-					}else{//target is not good
-						current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
-						target_intersection <- driving_road_network[currentSimuState] target_of current_road;
-						current_index <- 0;
-						final_target <- target_intersection.location;
-						current_target <- final_target;
-						targets <- [final_target];
-						//change_log << "update 2 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
+				intersection ci <- driving_road_network[currentSimuState] target_of current_road;
+				if (target_intersection in possible_targets[currentSimuState]) and (ci != target_intersection) {// target is good. Computing a new path				
+					point save_location <- location;
+					road cr <- road(current_road);
+					location <- last(cr.shape.points);			
+					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
+						target_intersection<- ci.exit[currentSimuState];
+					}		
+					new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+//					if new_path = nil{
+//						write "Error";
+//					}
+					current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
+					ask current_road as road {
+						do unregister(myself);
 					}
-					
+					current_road <- cr;
+					ask cr{
+						do register(myself, 0);// remplacer 0 par lane
+					}
+					current_index <- 0;
+					final_target <- target_intersection.location;
+					targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
+					current_target <- first(targets);					
+					location <- save_location;
+				}else{//target is not good or car in last road of path
+					current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
+					target_intersection <- driving_road_network[currentSimuState] target_of current_road;
+					current_index <- 0;
+					final_target <- target_intersection.location;
+					current_target <- final_target;
+					targets <- [final_target];
 				}
 				to_update <- false;		
 			}			
 		}
 	}
+	
+	
+//	action update{// il reste du code pour debuguer a nettoyer, ne pas trop toucher aux trucs chelous
+//		path new_path;
+//		if current_road != nil{
+//			if road(current_road).lanes_nb[currentSimuState] = 0{//current road is not good. Fading
+//				fade_count <- 15;
+//			}else{//current road is good
+//				if true{
+//					if target_intersection in possible_targets[currentSimuState]{// target is good. Computing a new path				
+//						point save_location <- location;
+//						road cr <- road(current_road);
+//						location <- last(cr.shape.points);
+//						intersection ci <- driving_road_network[currentSimuState] target_of current_road;
+//						if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
+//							target_intersection<- ci.exit[currentSimuState];
+//						}
+//						new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+//						if ci != target_intersection{// car is not already arriving to its destination
+//							current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
+//							ask current_road as road {
+//								do unregister(myself);
+//							}
+//							current_road <- cr;
+//							ask cr{
+//								do register(myself, 0);// remplacer 0 par lane
+//							}
+//							current_index <- 0;
+//							final_target <- target_intersection.location;
+//							targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
+//							current_target <- first(targets);
+////							change_log << "update 11 at "+cycle+" new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
+////							change_log << "old "+old_current_target+" index "+old_current_index+" seg ind "+old_segment_index+" path "+old_path;
+////							change_log <<  "old "+length(old_targets)+" "+length(old_path.edges);
+////							change_log << "new "+current_target+" index "+current_index+" seg ind "+segment_index_on_road+" path "+current_path;
+////							change_log <<  "new "+length(targets)+" "+length(current_path.edges);
+//						}else{
+//							current_path <- [cr] as_path driving_road_network[currentSimuState];
+//							current_road <- cr;
+//							target_intersection <- driving_road_network[currentSimuState] target_of cr;
+//							targets <- [final_target];
+//							current_index <- 0;
+//							final_target <- target_intersection.location;
+//							current_target <- final_target;				
+//								//	change_log << "update 12 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
+//						}
+//						
+//						location <- save_location;
+//					}else{//target is not good
+//						current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
+//						target_intersection <- driving_road_network[currentSimuState] target_of current_road;
+//						current_index <- 0;
+//						final_target <- target_intersection.location;
+//						current_target <- final_target;
+//						targets <- [final_target];
+//						//change_log << "update 2 at "+cycle+"  new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
+//					}
+//					
+//				}
+//				to_update <- false;		
+//			}			
+//		}
+//	}
 
 	reflex fade when: (fade_count > 0){
 		fade_count <- fade_count - 1;
@@ -608,7 +650,6 @@ species car skills:[advanced_driving]{
 			final_target <- target_intersection.location;
 			current_lane <- 0;
 			current_trajectory <- [];
-					change_log << "fade at "+cycle+" new origin: "+first(intersection where(each.location = location))+" new dest: "+target_intersection+"target loc: "+target_intersection.location+" final_dest: "+final_target+"\n";
 		}	
 	}
 	

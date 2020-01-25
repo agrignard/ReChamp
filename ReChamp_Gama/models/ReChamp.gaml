@@ -45,7 +45,7 @@ global {
 	graph bike_graph;
 	graph bus_graph;
 	
-	graph driving_road_network;
+	list<graph> driving_road_network;
 	
 	float max_dev <- 10.0;
 	float fuzzyness <- 1.0;
@@ -149,6 +149,7 @@ global {
 	list<list<intersection>> input_intersections <-list_with(stateNumber, []);
 	list<list<intersection>> output_intersections <-list_with(stateNumber, []);
 	list<list<intersection>> possible_targets <-list_with(stateNumber, []);
+	list<list<intersection>> possible_sources <-list_with(stateNumber, []);
 	
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
@@ -256,19 +257,21 @@ global {
 		
 
 		//creation of the road network using the road and intersection agents
-		driving_road_network <- (as_driving_graph(road, intersection)) use_cache false ;
-		vertices <- list<intersection>(driving_road_network.vertices);
+//		driving_road_network <- (as_driving_graph(road, intersection)) use_cache false ;
+		graph tmp <- as_driving_graph(road, intersection) use_cache false;
+		vertices <- list<intersection>(tmp.vertices);
 		loop i from: 0 to: length(vertices) - 1 {
 			vertices[i].id <- i; 
 		}
 		
-		loop j from: 0 to: stateNumber - 1{
-			loop i over: intersection{
-				if empty(i.roads_out where (road(each).lanes_nb[j] != 0)){output_intersections[j] << i;}
-				if empty(i.roads_in where (road(each).lanes_nb[j] != 0)){input_intersections[j] << i;}
-			}
-			possible_targets[j] <- intersection - input_intersections[j];
-		}
+		
+//		loop j from: 0 to: stateNumber - 1{
+//			loop i over: intersection{
+//				if empty(i.roads_out where (road(each).lanes_nb[j] != 0)){output_intersections[j] << i;}
+//				if empty(i.roads_in where (road(each).lanes_nb[j] != 0)){input_intersections[j] << i;}
+//			}
+//			possible_targets[j] <- intersection - input_intersections[j];
+//		}
 		
 		ask intersection where each.is_traffic_signal{
 			if empty(signals_zone overlapping self){
@@ -281,9 +284,62 @@ global {
 				activityStates[j] <- (roads_in first_with (road(each).lanes_nb[j] > 0) != nil);	
 			}
 		}
+		
+		loop j from: 0 to:  stateNumber-1{
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map;
+		}
+		
+		loop i over: intersection{
+			i.roads_in <- remove_duplicates(i.roads_in);
+			i.roads_out <- remove_duplicates(i.roads_out);
+		}
+		
+		loop j from: 0 to:  stateNumber-1{
+			ask intersection{
+				self.reachable_by_all[j] <- false;
+				self.can_reach_all[j] <- false;
+			}
 
+			list<list<intersection>> il <- find_connection(intersection[4], j);
+			ask il[0]{
+				self.reachable_by_all[j] <- true;
+			}
+			ask il[1]{
+				self.can_reach_all[j] <- true;
+			}	
+		}
 
-		do check_signals_integrity;
+		loop j from: 0 to: stateNumber - 1{
+			loop i over: intersection{
+				if not(i.can_reach_all[j]) {output_intersections[j] << i;}
+				if not(i.reachable_by_all[j]){input_intersections[j] << i;}
+			}
+			possible_targets[j] <- intersection - input_intersections[j];
+			possible_sources[j] <- intersection - output_intersections[j];
+		}
+		
+		loop j from: 0 to: stateNumber - 1{
+			loop i over: intersection where not(each.can_reach_all[j]) {
+				if empty(i.roads_out where (road(each).lanes_nb[j] != 0)){
+					i.exit[j] <- i;
+				}else{
+					road o <- one_of(i.roads_out) as road;
+					intersection i2 <- one_of(intersection where (each.roads_in contains o));
+					if i2.exit[j] = nil{
+						i.exit[j] <- i2;
+					}else{
+						i.exit[j] <- i2.exit[j];
+					}
+					ask intersection where(each.exit[j] = i){
+						exit[j] <- i.exit[j];
+					}
+				}
+			}
+			possible_targets[j] <- intersection - input_intersections[j];
+		}	
+
+	//	do check_signals_integrity;
 		
 		do updateSimuState;
 		
@@ -549,6 +605,7 @@ global {
 	}
 	
 	reflex updateSimuState when:updateSim=true{
+		currentSimuState <- (currentSimuState + 1) mod stateNumber;
 		do updateSimuState;
 	}
 
@@ -597,14 +654,8 @@ global {
 		if (currentSimuState = 1){currentSimuState_str <- "future";}
 		ask road {do change_number_of_lanes(lanes_nb[currentSimuState]);}
 		ask intersection where(each.is_traffic_signal){do change_activity;}
-		
-		if (driving_road_network != nil) {
-			map general_speed_map <- road as_map (each:: !each.to_display ? 1000000000.0 : ((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
-			driving_road_network <- driving_road_network with_weights general_speed_map;
-		}
 		ask car {self.to_update <- true;}
 		updateSim<-false;
-		
 		activated_parks <- park where (currentSimuState_str in each.state);
 		activated_cultures <- culture where (currentSimuState_str in each.state);
 		ask  (culture - activated_cultures) {
@@ -680,26 +731,18 @@ global {
 			}
 		}
 	}
-	// ne pas effacer ce qui suit, c'est pour des tests tant qu'on risque de modifier les shapefiles
-	action check_signals_integrity {
-		if false{
-			ask input_intersections[0] where(each.group != 0){
-				write "intersection "+self+" from group "+self.group+" is an input intersection for state 0";
-			}
-			ask output_intersections[0] where(each.group != 0){
-				write "intersection "+self+" from group "+self.group+" is an output intersection for state 0";
-			}
-			ask input_intersections[1] where(each.group != 0){
-				write "intersection "+self+" from group "+self.group+" is an input intersection for state 1";
-				color <- #blue;
-			}
-			ask output_intersections[1] where(each.group != 0){
-				write "intersection "+self+" from group "+self.group+" is an output intersection for state 1";
-				color <- #blue;
-			}
-		}
-	}
 	
+	
+	list<list<intersection>> find_connection(intersection i1, int state){
+		list<intersection> reachable <-[];
+		list<intersection> can_reach <-[];
+		loop i over: driving_road_network[state].vertices - i1{
+			if not(empty(path_between(driving_road_network[state],i1,intersection(i)).edges)){reachable <<i;}
+			if not(empty(path_between(driving_road_network[state],intersection(i),i1).edges)){can_reach <<i;}
+		}
+		return [reachable, can_reach];
+	}
+		
 }
 
 species culture{
@@ -835,8 +878,6 @@ species water {
 
 
 species road  skills: [skill_road]  {
-	bool test <- false;
-	
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
@@ -910,9 +951,6 @@ species road  skills: [skill_road]  {
 	aspect base {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;	
-		}
-		if test{
-			draw 3 around(shape) color: #white;
 		}
 	}
 }
@@ -1202,9 +1240,7 @@ species bus skills:[moving]{
 }
 
 
-species car skills:[advanced_driving]{	
-
-		
+species car skills:[advanced_driving]{			
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -1264,41 +1300,43 @@ species car skills:[advanced_driving]{
 	
 
 
-	bool use_blocked_road {
-		if currentSimuState = 0 {return false;}
-		if (current_path = nil) {/*write "reason nil path";
-			write "car "+ int(self); 
-			write current_path;*/
-	//		ask world {do pause;}
-			return false;
-		}
-		loop rd over:current_path.edges {
-			if road(rd).lanes_nb[1] = 0 {
-				//write "blocked road: "+road(rd);
-				return true;
-			}
-		}
-		return false;
-		
-	}
-	reflex leave when: final_target = nil  {
-		do leave;
-	}
+//	bool use_blocked_road {
+//		if currentSimuState = 0 {return false;}
+//		if (current_path = nil) {/*write "reason nil path";
+//			write "car "+ int(self); 
+//			write current_path;*/
+//	//		ask world {do pause;}
+//			return false;
+//		}
+//		loop rd over:current_path.edges {
+//			if road(rd).lanes_nb[1] = 0 {
+//				//write "blocked road: "+road(rd);
+//				return true;
+//			}
+//		}
+//		return false;	
+//	}
 	
-	action leave{
-		if (target_intersection != nil and target_intersection in output_intersections) {
+	
+	reflex leave when: final_target = nil  {
+		if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
 			if current_road != nil {
 				ask current_road as road {
 					do unregister(myself);
 				}
 			}
-			current_intersection <- one_of(input_intersections[currentSimuState]);
+			current_lane <- 0;
+			current_intersection <- one_of(possible_sources[currentSimuState]);
 			location <-current_intersection.location;
+			target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+			current_trajectory <- [];
+			current_offset <- {0,0};
+		}else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
+			target_intersection <- target_intersection.exit[currentSimuState];
+		}else{ // reached a generic target
+			target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
 		}
-		target_intersection <- one_of(possible_targets[currentSimuState]);
-		current_lane <- 0;
-		current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-		current_trajectory <- [];
+		current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 	}
 	
 	
@@ -1314,51 +1352,47 @@ species car skills:[advanced_driving]{
 	
 	
 	action update{// il reste du code pour debuguer a nettoyer, ne pas trop toucher aux trucs chelous
-		list<bool> trace;
-		list<road> road_trace;
+		path new_path;
 		if current_road != nil{
-			trace << road(current_road).to_display;	
-			road_trace << road(current_road);
-			if not(road(current_road).to_display){//current road is not good
+			if road(current_road).lanes_nb[currentSimuState] = 0{//current road is not good. Fading
 				fade_count <- 15;
 			}else{//current road is good
-				trace << road(current_road).to_display;
-				road_trace << road(current_road);
-				int truc <- 0;
-				if target_intersection in possible_targets[currentSimuState]{// target is good
-					truc <- 1; // current_road is good, target is good
-					target <- last(road(current_road).shape.points);
-//					graph driving_road_network2 <- driving_road_network with_weights general_speed_map;
-					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-					trace << road(current_road).to_display;
-					road_trace << road(current_road);
-					if (road(current_road).to_display){
-						
+				intersection ci <- driving_road_network[currentSimuState] target_of current_road;
+				if (target_intersection in possible_targets[currentSimuState]) and (ci != target_intersection) {// target is good. Computing a new path				
+					point save_location <- location;
+					road cr <- road(current_road);
+					location <- last(cr.shape.points);			
+					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
+						target_intersection<- ci.exit[currentSimuState];
+					}		
+					new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+//					if new_path = nil{
+//						write "Error";
+//					}
+					current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
+					ask current_road as road {
+						do unregister(myself);
 					}
-				}else{//target is not good
-					truc <- 2; // current_road is good, target is not good
-					trace << road(current_road).to_display;
-					road_trace << road(current_road);
-					target_intersection <- one_of(possible_targets[currentSimuState]);
-					current_lane <- 0;
-					current_path <- compute_path(graph: driving_road_network, target: target_intersection);
-					trace << road(current_road).to_display;
-					road_trace << road(current_road);
-				}
-				
-				if use_blocked_road(){
-					trace << road(current_road).to_display;
-					road_trace << road(current_road);
-					/*write ""+int(self)+" is updating at step "+cycle+" target possible "+(target_intersection in possible_targets[currentSimuState]); // I left this block  to check is this happens sometimes...
-					write "current road "+current_road+" to display? "+road(current_road).to_display+" choice "+truc+" target "+target_intersection;
-					write "road trace: "+road_trace;
-					write "trace "+ trace+"\n";*/
-					//ask world {do pause;}
-				}
-			}
-			to_update <- false;
+					current_road <- cr;
+					ask cr{
+						do register(myself, 0);// remplacer 0 par lane
+					}
+					current_index <- 0;
+					final_target <- target_intersection.location;
+					targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
+					current_target <- first(targets);					
+					location <- save_location;
+				}else{//target is not good or car in last road of path
+					current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
+					target_intersection <- driving_road_network[currentSimuState] target_of current_road;
+					current_index <- 0;
+					final_target <- target_intersection.location;
+					current_target <- final_target;
+					targets <- [final_target];
+				}	
+			}			
 		}
-//		write "car "+int(self);
+		to_update <- false;	
 	}
 
 	reflex fade when: (fade_count > 0){
@@ -1368,13 +1402,15 @@ species car skills:[advanced_driving]{
 				ask current_road as road {
 					do unregister(myself);
 				}
-			}
-			current_intersection <- one_of(input_intersections[currentSimuState]);
+			}			
+			current_intersection <- one_of(possible_sources[currentSimuState]);
 			location <-current_intersection.location;
 			target_intersection <- one_of(possible_targets[currentSimuState]);
+			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			final_target <- target_intersection.location;
 			current_lane <- 0;
-			current_path <- compute_path(graph: driving_road_network, target: target_intersection);
 			current_trajectory <- [];
+			current_offset <- {0,0};
 		}	
 	}
 	
@@ -1391,19 +1427,29 @@ species car skills:[advanced_driving]{
 		if(showCar){
 		    draw rectangle(carSize,carSize*3) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
-	  	if (test_car){
-	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
-	  		loop p over: targets{
-	  			draw circle(1#m) at: p color: #green; 
-	  		}
-	  		draw circle(5#m) at: first(targets) color: #green;
-	  		draw circle(2#m) at: last(targets) color: #green;
-	  		draw circle (2#m) at: current_intersection.location color: #yellow;
-	  	}
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
-	}
+	  	if (test_car){
+	  		
+	  		if current_path != nil{
+	  			loop e over: current_path.edges{
+	  				draw 1 around(road(e).shape) color: #white;
+	  			}
+	  		}
+	  		loop p over: targets{
+	  			draw circle(2#m) at: p color: #black; 
+	  		}
+	  		draw circle(2#m) at: first(targets) color: #yellow; 
+	  		draw circle(2#m) at: last(targets) color: #yellow; 
+	  		draw circle(2#m) at: current_target color: #blue;
+	  		draw circle(5#m) at: location color:#blue; 
+	  	}
+	}	
+	
+
+	
+
 		
 	point compute_offset(int s){	
 		if current_road = nil or current_path = nil{
@@ -1573,7 +1619,9 @@ species signals_zone{
 
 species intersection skills: [skill_road_node] {
 	rgb color <- #white; //used for integrity tests
-	
+	list<bool> reachable_by_all <- list_with(stateNumber,false);
+	list<bool> can_reach_all <- list_with(stateNumber,false);
+	list<intersection> exit <- list_with(stateNumber, nil);
 	int phase;
 	bool is_traffic_signal;
 	bool is_crossing;
@@ -1713,7 +1761,7 @@ experiment ReChamp type: gui autorun:true{
 			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {currentSimuState <- (currentSimuState + 1) mod stateNumber;updateSim<-true;};
+			event["z"] action: {updateSim<-true;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
