@@ -62,7 +62,7 @@ global {
 	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 
-	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-true;
+	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
@@ -1178,7 +1178,7 @@ species pedestrian skills:[moving] control: fsm{
 		if(showPeople){
 			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
-		if(showPeopleTrajectory){
+		if(showPeopleTrajectory ){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
 	  	}	
 	}
@@ -1729,7 +1729,7 @@ experiment ReChamp type: gui autorun:true{
 			species amenities aspect:base;
 			species intersection;
 			species car aspect:base transparency:0.5;
-			species pedestrian aspect:base;
+			species pedestrian aspect:base transparency:0.2;
 			species bike aspect:base transparency:0.5;
 			species bus aspect:base transparency:0.5;
 			species coldSpot aspect:base transparency:0.5;
