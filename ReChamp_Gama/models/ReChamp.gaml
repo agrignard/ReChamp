@@ -1325,6 +1325,7 @@ species car skills:[advanced_driving]{
 			location <-current_intersection.location;
 			target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
 			current_trajectory <- [];
+			current_offset <- {0,0};
 		}else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
 			target_intersection <- target_intersection.exit[currentSimuState];
 		}else{ // reached a generic target
@@ -1404,6 +1405,7 @@ species car skills:[advanced_driving]{
 			final_target <- target_intersection.location;
 			current_lane <- 0;
 			current_trajectory <- [];
+			current_offset <- {0,0};
 		}	
 	}
 	
@@ -1418,7 +1420,7 @@ species car skills:[advanced_driving]{
 	
 	aspect base {
 		if(showCar){
-		    draw rectangle(dotPoint,dotPoint*2) at: location rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
+		    draw rectangle(dotPoint,dotPoint*2) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
