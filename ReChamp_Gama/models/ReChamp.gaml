@@ -1732,7 +1732,7 @@ experiment ReChamp type: gui autorun:true{
 			species pedestrian aspect:base;
 			species bike aspect:base transparency:0.5;
 			species bus aspect:base transparency:0.5;
-			species coldSpot aspect:base transparency:0.5;
+			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
 
