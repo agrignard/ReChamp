@@ -19,7 +19,7 @@ global {
 	
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
-	file station_shapefile <- file("../includes/GIS/stations_metro_bus_RER.shp");
+	file station_shapefile <- file("../includes/GIS/stations_metro.shp");
 	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
 	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
@@ -67,9 +67,9 @@ global {
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
-	
-	int peopleTrajectoryLengthBefore <-25 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max: 50;
-	int peopleTrajectoryLengthAfter <-25 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max: 50;
+	int trajectorySizeMax<-100;
+	int peopleTrajectoryLengthBefore <-25 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:50;
+	int peopleTrajectoryLengthAfter <-25 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:50;
 	int carTrajectoryLengthBefore <-25 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 50;
 	int carTrajectoryLengthAfter <-25 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 50;
 	int bikeTrajectoryLengthBefore <-25 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 50;
@@ -77,7 +77,7 @@ global {
 	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 
-	float step <-1#sec parameter: 'Simulation Step' category: "AAAA" min: 1#sec max: 30#sec;
+	float step <-5#sec parameter: 'Simulation Step' category: "AAAA" min: 1#sec max: 30#sec;
 	
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float peopleTrajectoryTransparencyBefore <-0.25 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
@@ -103,11 +103,15 @@ global {
 	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
-	float dotPoint <-2.0#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float factor<-0.8;
+	float peopleSize <-(8.0)#m parameter: 'Peoplesize' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float carSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float bikeSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
-	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
+	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-true;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	file dashboardbackground <- file('../includes/PNG/dashboardtest.png');
@@ -124,7 +128,7 @@ global {
 	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
-	map<string, rgb> nature_colors <- ["exi"::rgb(183,255,97),"pro"::rgb(183,255,97)];
+	map<string, rgb> nature_colors <- ["exi"::rgb(140,200,135),"pro"::rgb(140,200,135)];
 	map<string, rgb> usage_colors <- ["exi"::rgb(175,175,175),"pro"::rgb(175,175,175)];
 	
 	float angle<-26.25;
@@ -137,8 +141,8 @@ global {
 	bool updateSim<-true;
 	int nbAgent<-1000;
 	
-	map<string,float> mobilityRatioNow <-["people"::0.1, "car"::0.6,"bike"::0.2, "bus"::0];
-	map<string,float> mobilityRatioFuture <-["people"::0.6, "car"::0.2,"bike"::0.3, "bus"::0.1];
+	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
+	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
 
 	
 	map<bikelane,float> weights_bikelane;
@@ -284,7 +288,7 @@ global {
 		do updateSimuState;
 		
 		create water from: water_shapefile ;
-		create station from: station_shapefile with: [type:string(read ("type"))];
+		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))];
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -938,13 +942,14 @@ species bus_line{
 species station schedules: station where (each.type="metro") {
 	rgb color;
 	string type;
-	float capacity;
+	int capacity;
 	float capacity_pca;
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
 	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
-		create pedestrian number:rnd(0,10){
+		
+		create pedestrian number:rnd(0,10)*int(capacity){
 			type<-"people";
 			location<-any_location_in(myself);
 		}
@@ -1133,7 +1138,7 @@ species pedestrian skills:[moving] control: fsm{
 	
 	aspect base{
 		if(showPeople){
-			 draw square(dotPoint) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
@@ -1160,7 +1165,7 @@ species bike skills:[moving]{
 	}
 	aspect base{
 		if(showBike){
-		 draw square(dotPoint) color:type_colors[type] rotate: angle;	
+		 draw rectangle(bikeSize,bikeSize*2) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showBikeTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? bikeTrajectoryTransparencyBefore : bikeTrajectoryTransparencyAfter);	
@@ -1188,7 +1193,7 @@ species bus skills:[moving]{
 	}
 	aspect base{
 		if(showSharedMobility){
-		 draw rectangle(dotPoint*2,dotPoint*3) color:type_colors[type] rotate:heading-90;	
+		 draw rectangle(busSize,busSize*3) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showSharedMobilityTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? busTrajectoryTransparencyBefore : busTrajectoryTransparencyAfter);	
@@ -1384,7 +1389,7 @@ species car skills:[advanced_driving]{
 	
 	aspect base {
 		if(showCar){
-		    draw rectangle(dotPoint,dotPoint*2) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
+		    draw rectangle(carSize,carSize*3) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
 	  	if (test_car){
 	  		draw rectangle(2.5#m,5#m) at: calcul_loc() rotate:heading-90 color:#green;
@@ -1652,7 +1657,7 @@ species intersection skills: [skill_road_node] {
 species coldSpot{
 		aspect base {
 			if(showHotSpot){
-			  draw shape color:rgb(0,0,0,200);	
+			  draw shape color:rgb(0,0,0);	
 			}	
 		}
 }
@@ -1666,8 +1671,8 @@ experiment ReChamp type: gui autorun:true{
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
 		    species building aspect: base;
-			species park aspect: base transparency:0.25;
-			species culture aspect: base ;
+			species park aspect: base transparency:0.5;
+			species culture aspect: base transparency:0.5;
 			species water aspect: base;
 			species road aspect: base;
 			species vizuRoad aspect:base transparency:0.5;
@@ -1675,11 +1680,11 @@ experiment ReChamp type: gui autorun:true{
 			species metro_line aspect: base;
 			species amenities aspect:base;
 			species intersection;
-			species car aspect:base;
+			species car aspect:base transparency:0.5;
 			species pedestrian aspect:base;
-			species bike aspect:base;
-			species bus aspect:base;
-			species coldSpot aspect:base;
+			species bike aspect:base transparency:0.5;
+			species bus aspect:base transparency:0.5;
+			species coldSpot aspect:base transparency:0.5;
 			species station aspect: base;
 			species bikelane aspect:base;
 
