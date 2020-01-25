@@ -1384,10 +1384,10 @@ species car skills:[advanced_driving]{
 					final_target <- target_intersection.location;
 					current_target <- final_target;
 					targets <- [final_target];
-				}
-				to_update <- false;		
+				}	
 			}			
 		}
+		to_update <- false;	
 	}
 
 	reflex fade when: (fade_count > 0){
