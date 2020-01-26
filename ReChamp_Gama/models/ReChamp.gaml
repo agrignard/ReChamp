@@ -290,7 +290,7 @@ global {
 		
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
-			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map;
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false;
 		}
 		
 		loop i over: intersection{
@@ -373,13 +373,13 @@ global {
 		  location<-any_location_in(one_of(building));	
 		}
 				
-		people_graph <- as_edge_graph(road);
+		people_graph <- as_edge_graph(road) use_cache false;
 		//people_graph<- people_graph use_cache false;
 			
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
-		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) ;
+		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
 		//bike_graph<- bike_graph use_cache false;
 		
 		
@@ -388,7 +388,7 @@ global {
 	      type <- "bus";
 		  location<-any_location_in(one_of(road));	
 		}
-		bus_graph <- (as_edge_graph(road)) ;
+		bus_graph <- (as_edge_graph(road)) use_cache false;
 		//bus_graph<- bus_graph use_cache false;
 		
 			//Graphical Species (gif loader)
@@ -569,6 +569,10 @@ global {
 				}
 			}
 		} 
+	}
+	
+	reflex memory_management when: every(100 #cycle) {
+		ask experiment {do compact_memory;}
 	}
 	
 	
