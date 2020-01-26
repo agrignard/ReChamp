@@ -20,8 +20,6 @@ global {
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro.shp");
-	file amenities_shapefile <- file("../includes/GIS/COMMERCE_RESTAURATION_HOTELLERIE.shp");
-	file amenities_shop_shapefile <- file("../includes/GIS/COMMERCE_NON_ALIMENTAIRE.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	//GENERATED SHAPEFILE (FROM QGIS)
@@ -77,8 +75,14 @@ global {
 	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 
-	float step <-5#sec parameter: 'Simulation Step' category: "AAAA" min: 1#sec max: 30#sec;
 	
+	float speedUpSpeedMax <-100#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max:200#sec;
+	float speedUpSpeedMin <-5#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max: 20#sec;
+	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
+	float step <-5#sec parameter: 'Simulation Step' category: "SpeedUp" min: 1#sec max: 1000#sec;
+	bool speedUpSim parameter: 'PspeedUpSim' category: "SpeedUp" <-true;
+	
+
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	float peopleTrajectoryTransparencyBefore <-0.25 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 	float peopleTrajectoryTransparencyAfter <-0.25 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
@@ -100,7 +104,6 @@ global {
 	
 	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
-	bool showAmenities parameter: 'Amenities (a)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	float factor<-0.8;
@@ -613,7 +616,6 @@ global {
 		ask first(100,shuffle(car where(each.to_update))){
 			do update;
 		}
-		//write car count(each.to_update);
 	}
 	
 	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
@@ -650,6 +652,9 @@ global {
 	}
 	
 	action updateSimuState {
+		if(speedUpSim){
+			step<-speedUpSpeedMax;
+		}
 		if (currentSimuState = 0){currentSimuState_str <- "present";}
 		if (currentSimuState = 1){currentSimuState_str <- "future";}
 		ask road {do change_number_of_lanes(lanes_nb[currentSimuState]);}
@@ -742,6 +747,14 @@ global {
 		}
 		return [reachable, can_reach];
 	}
+	reflex globalUpadte{
+		if(speedUpSim){
+			if(step>speedUpSpeedMin){
+			 write "yo" + step;
+			 step<-step-speedUpSpeedDecrease;	
+			}
+		}
+	}
 		
 }
 
@@ -828,15 +841,6 @@ species building {
 	}
 }
 
-species ilots {
-	string type; 
-	rgb color <- rgb(175,175,175)  ;
-	
-	aspect base {
-		draw shape color: color ;
-	}
-}
-
 
 species park {
 	list<string> state;
@@ -850,19 +854,6 @@ species park {
 	}
 
 }
-
-species amenities{
-	string type; 
-	rgb color <- #darkgray  ;
-	
-	aspect base {
-		if(showAmenities){
-		  draw square(5) color: color ;	
-		}	
-	}
-}
-
-
 
 species water {
 	string type; 
@@ -1300,22 +1291,6 @@ species car skills:[advanced_driving]{
 	
 
 
-//	bool use_blocked_road {
-//		if currentSimuState = 0 {return false;}
-//		if (current_path = nil) {/*write "reason nil path";
-//			write "car "+ int(self); 
-//			write current_path;*/
-//	//		ask world {do pause;}
-//			return false;
-//		}
-//		loop rd over:current_path.edges {
-//			if road(rd).lanes_nb[1] = 0 {
-//				//write "blocked road: "+road(rd);
-//				return true;
-//			}
-//		}
-//		return false;	
-//	}
 	
 	
 	reflex leave when: final_target = nil  {
@@ -1495,74 +1470,6 @@ species car skills:[advanced_driving]{
 		return offset_comp / weight;
 		}	
 	}
-	
-	
-	
-//	point compute_offset(int s){
-//		if current_road = nil or current_path = nil{
-//			return current_offset;
-//		}else{
-//			int ci <- current_index;
-//			int cs <- segment_index_on_road;
-//			list<list<point>> segment_list <- [];
-//			list<road> lr <- [];
-//			list<list<point>> tmp_vec_ref <- [];
-//			int count <- 0;
-//			loop while: (count < s) and ci < length(current_path.edges){
-//				segment_list << copy_between(road(current_path.edges[ci]).shape.points,cs,cs+2);
-//				tmp_vec_ref << road(current_path.edges[ci]).vec_ref[cs];
-//				lr << road(current_path.edges[ci]);
-//				count <- count + 1;
-//				cs <- cs + 1;
-//				if (cs > length(road(current_path.edges[ci]).shape.points)-2){
-//					cs <- 0;
-//					ci <- ci + 1;
-//				}
-//			}
-//			list<point> offset_list <- [tmp_vec_ref[0][1]*lr[0].compute_offset(current_lane)];
-//			list<float> weight_list <- [1.0];
-//			loop i from: 0 to: length(segment_list) - 2 step: 1{		
-//				float a <- angle_between(last(segment_list[i]),first(segment_list[i]),last(segment_list[i+1]));
-//				if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
-//					a <- 180.0;
-//				}
-//				weight_list << 1+abs(a-180);
-//				if abs(abs(a-90)-90)<5{
-//					offset_list << tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
-//				}else{
-//					offset_list << (tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane)-tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane))/sin(a);
-//				}
-//			}
-//			if (test_car){
-//				loop i from: 0 to: length(segment_list) - 2 step: 1{
-//					draw circle(1#m) at: last(segment_list[i]) color: rgb(255 - i *100,255 - i*100,255); 
-//					draw circle(0.5#m) at:  last(segment_list[i])+offset_list[i+1] color: rgb(255 - i *100,255 - i*100,255); 
-//				}	
-//			}
-//			point offset <- {0,0};
-//			loop i from: 0 to: length(offset_list)-1{
-//				offset <- offset + offset_list[i]*weight_list[i];
-//			}
-//			// ne pas effacer ce qui suit, peut servir pour des tests et ameliorer le smooth 
-////			if norm(offset/sum(weight_list)) > 100 {
-////				write "car: "+int(self)+ " "+ norm(offset/sum(weight_list))+" offset "+ offset/sum(weight_list);//+" angle "+a;
-////				write "offset list "+offset_list;
-////				write "angles "+angles;
-////				write angles accumulate (abs(abs(a-90)-90));
-////				loop i from: 0 to: length(offset_list)-1{
-////					write "offset "+i+": "+tmp_vec_ref[i][1]*lr[i].compute_offset(current_lane);
-////				}
-//////				write "vec_ref "+tmp_vec_ref[i][0]+"/"+tmp_vec_ref[i+1][0]+" "+lr[i].compute_offset(current_lane)+"/"+lr[i+1].compute_offset(current_lane);
-//////				write tmp_vec_ref[i][0]*lr[i+1].compute_offset(current_lane);
-//////				write tmp_vec_ref[i+1][0]*lr[i].compute_offset(current_lane);
-//////				write sin(a);
-//////				write tmp_offset;
-////				ask world {do pause;}
-////			}
-//			return offset / sum(weight_list);
-//		}
-//	}
-
 }
 
 species graphicWorld{
@@ -1713,7 +1620,7 @@ species coldSpot{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
@@ -1726,7 +1633,6 @@ experiment ReChamp type: gui autorun:true{
 			species vizuRoad aspect:base transparency:0.5;
 			species bus_line aspect: base;
 			species metro_line aspect: base;
-			species amenities aspect:base;
 			species intersection;
 			species car aspect:base transparency:0.5;
 			species pedestrian aspect:base transparency:0.2;
@@ -1755,7 +1661,6 @@ experiment ReChamp type: gui autorun:true{
 			event["q"] action: {showMetroLane<-!showMetroLane;};
 			event["j"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
-			event["a"] action: {showAmenities<-!showAmenities;};
 			event["n"] action: {showGreen<-!showGreen;};
 			event["u"] action: {showUsage<-!showUsage;};
 			event["w"] action: {showWater<-!showWater;};
@@ -1772,7 +1677,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #split;
-		display indicator type:opengl background:#black draw_env:false fullscreen:1 toolbar:false
+		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 			/*graphics 'dashboardbackground'{
