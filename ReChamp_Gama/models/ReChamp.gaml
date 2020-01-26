@@ -449,7 +449,7 @@ global {
 				location<-copy(target);
 				state <- "stroll";
 			} else {
-				location<-any_location_in(one_of(road));
+				location<-any_location_in(one_of(station where (each.capacity=5)));
 			}
 		  	
 		}
@@ -702,6 +702,7 @@ global {
 		
 		int nb_people <- length(pedestrian);
 		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
+		//FIXME see issue #59 
 		if (nb_people_target > nb_people) {
 			do create_pedestrian(nb_people_target - nb_people);
 		} else if (nb_people_target < nb_people) {
@@ -750,7 +751,6 @@ global {
 	reflex globalUpadte{
 		if(speedUpSim){
 			if(step>speedUpSpeedMin){
-			 write "yo" + step;
 			 step<-step-speedUpSpeedDecrease;	
 			}
 		}
