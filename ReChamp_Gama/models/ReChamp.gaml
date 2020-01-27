@@ -1835,29 +1835,26 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 				draw ((currentSimuState = 0 ) ? "Today" :"2024") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
 				if(currentStoryTellingState=1 or currentStoryTellingState=4){
 				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
-				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
+				  draw ("Véhicules Individuels 33%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("Véhicules Partagés 5%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				  draw ("Mobilités Douces 2%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
+				  draw ("Piéton 60%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
 				  
 				  draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
-				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
+				  draw ("Vehicule/heure: 10 250 Vehicule/heure") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
 				  
-				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
-				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};			
+				  draw ("Place de l'Etoile: 11") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
+				  draw ("Ave Champs Elysées:6") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};
+				  draw ("Ave Winston Churchill:4") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*6};
+				  draw ("Place de la concorde:12") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*8};			
 				}
 				if(currentStoryTellingState=2 or currentStoryTellingState=5){
 				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
-				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
+				  draw ("Véhicules Individuels 33%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
+				  draw ("Véhicules Partagés 5%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
+				  draw ("Mobilités Douces 2%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
+				  draw ("Piéton 60%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
 				  
-				  /*draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
-				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
-				  
-				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
-				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};	*/	
 				  
 				  
 				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
