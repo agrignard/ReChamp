@@ -471,7 +471,7 @@ global {
 				location<-copy(target);
 				state <- "stroll";
 			} else {
-				location<-any_location_in(one_of(station where (each.capacity=5)));
+				location<-any_location_in(one_of(station where (each.capacity=5)));//capacity 5 = stations on Champs Elysees
 			}
 			if flip(0.5){
 				side<-1;
