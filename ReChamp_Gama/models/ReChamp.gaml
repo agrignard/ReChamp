@@ -145,7 +145,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-1000;
+	int nbAgent<-500;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
@@ -168,7 +168,7 @@ global {
 	
 	
 	int chrono_size <- 30;
-	bool fps_monitor <- false;
+	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
 	float m_time;
 	list<float> chrono <- list_with(chrono_size,0.0);
 	
@@ -224,7 +224,7 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 //			if int(self) = 2499 or int(self)=2492 {
 //				write "essai "+int(self);
@@ -241,6 +241,7 @@ global {
 						maxspeed <- myself.maxspeed;
 						is_tunnel <- myself.is_tunnel;
 						oneway <- myself.oneway;
+						sidewalk_size<-myself.sidewalk_size;
 					}
 				}
 
@@ -468,6 +469,11 @@ global {
 				state <- "stroll";
 			} else {
 				location<-any_location_in(one_of(station where (each.capacity=5)));//capacity 5 = stations on Champs Elysees
+			}
+			if flip(0.5){
+				side<-1;
+			}else{
+				side<--1;
 			}
 		  	
 		}
@@ -921,6 +927,7 @@ species road  skills: [skill_road]  {
 	int cpt_cycle;
 	int time_accept <- 100;
 	int cpt_accept;
+	float sidewalk_size;
 	
 	reflex compute_mean_real_speed {
 		cpt_cycle <- cpt_cycle + 1;
@@ -1087,7 +1094,7 @@ species pedestrian skills:[moving] control: fsm{
 	float proba_sortie <- 0.3;
 	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
-	float offset <- rnd(0.0,2.0);
+	float offset <- rnd(0.0,1.0);
 	
 	bool wandering <- false;
 	bool to_culture <- false;
@@ -1098,18 +1105,11 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
-	bool applyFuzzyness<-false;
+	bool applyFuzzyness<-true;
+	int side;
 	
 	action updatefuzzTrajectory{
-		if(showPeopleTrajectory){
-			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
-		  	point pt <- applyFuzzyness ? location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt} : location ;  
-		    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
-	  	    {
-	        current_trajectory >> first(current_trajectory);
-	        }
-	        current_trajectory << pt;	
-		}
+	
 	}
 	state walk_to_objective initial: true{
 		enter {
@@ -1216,7 +1216,21 @@ species pedestrian skills:[moving] control: fsm{
 		if (current_edge = nil) {
 			return location;
 		} else {
-			float val <- (road(current_edge).lanes +1)*3 +offset;
+			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2))) + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
+			
+			
+			
+			if(showPeopleTrajectory){
+			    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
+		  	    {
+		        current_trajectory >> first(current_trajectory);
+		        }
+		        current_trajectory << location + {cos(heading + 90) * val, sin(heading + 90) * val};	
+			}
+			
+			//float val <- ((road(current_edge).oneway='no')? ((road(current_edge).lanes - 0.5)*3 + 2.25):((0.5*road(current_edge).lanes - 0.5)*3 +2.0)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
+			
+	
 			if (val = 0) {
 				return location;
 			} else {
