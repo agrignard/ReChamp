@@ -224,7 +224,7 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 //			if int(self) = 2499 or int(self)=2492 {
 //				write "essai "+int(self);
@@ -241,6 +241,7 @@ global {
 						maxspeed <- myself.maxspeed;
 						is_tunnel <- myself.is_tunnel;
 						oneway <- myself.oneway;
+						sidewalk_size<-myself.sidewalk_size;
 					}
 				}
 
@@ -921,6 +922,7 @@ species road  skills: [skill_road]  {
 	int cpt_cycle;
 	int time_accept <- 100;
 	int cpt_accept;
+	float sidewalk_size;
 	
 	reflex compute_mean_real_speed {
 		cpt_cycle <- cpt_cycle + 1;
@@ -1087,7 +1089,7 @@ species pedestrian skills:[moving] control: fsm{
 	float proba_sortie <- 0.3;
 	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
-	float offset <- rnd(0.0,2.0);
+	float offset <- rnd(0.0,1.0);
 	
 	bool wandering <- false;
 	bool to_culture <- false;
@@ -1216,7 +1218,12 @@ species pedestrian skills:[moving] control: fsm{
 		if (current_edge = nil) {
 			return location;
 		} else {
-			float val <- (road(current_edge).lanes +1)*3 +offset;
+			float val <- (road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
+			
+			
+			//float val <- ((road(current_edge).oneway='no')? ((road(current_edge).lanes - 0.5)*3 + 2.25):((0.5*road(current_edge).lanes - 0.5)*3 +2.0)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
+			
+	
 			if (val = 0) {
 				return location;
 			} else {
