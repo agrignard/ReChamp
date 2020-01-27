@@ -145,7 +145,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-1000;
+	int nbAgent<-500;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
@@ -168,7 +168,7 @@ global {
 	
 	
 	int chrono_size <- 30;
-	bool fps_monitor <- false;
+	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
 	float m_time;
 	list<float> chrono <- list_with(chrono_size,0.0);
 	
@@ -469,6 +469,11 @@ global {
 				state <- "stroll";
 			} else {
 				location<-any_location_in(one_of(station where (each.capacity=5)));
+			}
+			if flip(0.5){
+				side<-1;
+			}else{
+				side<--1;
 			}
 		  	
 		}
@@ -1100,18 +1105,11 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
-	bool applyFuzzyness<-false;
+	bool applyFuzzyness<-true;
+	int side;
 	
 	action updatefuzzTrajectory{
-		if(showPeopleTrajectory){
-			float val_pt <- val_f + rnd(-fuzzyness, fuzzyness);
-		  	point pt <- applyFuzzyness ? location + {cos(heading + 90) * val_pt, sin(heading + 90) * val_pt} : location ;  
-		    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
-	  	    {
-	        current_trajectory >> first(current_trajectory);
-	        }
-	        current_trajectory << pt;	
-		}
+	
 	}
 	state walk_to_objective initial: true{
 		enter {
@@ -1218,8 +1216,17 @@ species pedestrian skills:[moving] control: fsm{
 		if (current_edge = nil) {
 			return location;
 		} else {
-			float val <- (road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
+			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2))) + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
 			
+			
+			
+			if(showPeopleTrajectory){
+			    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
+		  	    {
+		        current_trajectory >> first(current_trajectory);
+		        }
+		        current_trajectory << location + {cos(heading + 90) * val, sin(heading + 90) * val};	
+			}
 			
 			//float val <- ((road(current_edge).oneway='no')? ((road(current_edge).lanes - 0.5)*3 + 2.25):((0.5*road(current_edge).lanes - 0.5)*3 +2.0)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
 			
