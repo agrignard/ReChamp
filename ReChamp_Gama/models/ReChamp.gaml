@@ -12,14 +12,12 @@ global {
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
 	
-	file water_shapefile <- file("../includes/GIS/water.shp");
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
 	file nodes_shapefile <- file("../includes/GIS/nodes_OSM.shp");
 	file signals_zone_shapefile <- file("../includes/GIS/signals_zone.shp");
 	
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
-	file metro_shapefile <- file("../includes/GIS/lignes_metro_RER.shp");
-	file station_shapefile <- file("../includes/GIS/stations_metro.shp");
+	file station_shapefile <- file("../includes/GIS/stations_metro_simple.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination.shp");
@@ -102,13 +100,11 @@ global {
 	
 	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
-	bool showMetroLane parameter: 'Metro Lane (q)' category: "Parameters" <-false;
 	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
 	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Parameters" <-false;
 	bool showBuilding parameter: 'Building (b)' category: "Parameters" <-false;
 	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
 	
-	bool showWater parameter: 'Water (w)' category: "Parameters" <-false;
 	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
@@ -369,14 +365,10 @@ global {
 	//	do check_signals_integrity;
 		
 		do updateSimuState;
-		
-		create water from: water_shapefile ;
 		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))];
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-		create metro_line from: metro_shapefile with: [number:string(read ("c_ligne")),nature:string(read ("c_nature"))];
-		//do manage_cycle_network;
 		create bikelane from:bikelane_shapefile{
 			color<-type_colors["bike"];
 		}
@@ -907,19 +899,6 @@ species park {
 
 }
 
-species water {
-	string type; 
-	rgb color <- rgb(25,25,25)  ;
-	
-	aspect base {
-		if(showWater){
-		  draw shape color:color ;	
-		}	
-	}
-}
-
-
-
 species road  skills: [skill_road]  {
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
@@ -967,7 +946,7 @@ species road  skills: [skill_road]  {
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
 		if new_number = 0{
-			to_display <- false;
+			to_display <- true;
 		}else {
 			to_display <- true;
 			int prev <- lanes;
@@ -1066,36 +1045,17 @@ species station schedules: station where (each.type="metro") {
 	}
 	aspect base {
 		if(showStation){
-		  if(showMetroLane){
 		  	if(type="metro"){
 		  	  draw circle(20) - circle(16) color:#blue;	
 		  	  draw circle(16) color:#white;	
 		  	}
-		  }
-		  if(showBusLane){
 		  	if(type="bus"){
 		  	  draw circle(20) - circle(16) color:#yellow;	
 		  	  draw circle(16) color:#white;		
 		  	}
-		  }
-		}	
+		  }	
 	}
 }
-
-species metro_line{
-	rgb color;
-	float capacity;
-	float capacity_pca;
-	string number;
-	string nature;
-	aspect base {
-		if(showMetroLane){
-		  draw shape color: metro_colors[number] width:3;	
-		}
-		
-	}
-}
-
 
 species pedestrian skills:[moving] control: fsm{
 	string type;
@@ -1342,22 +1302,6 @@ species car skills:[advanced_driving]{
 	int cpt_blocked;
 	int max_cpt_blocked <- 100;
 
-
-// this function has no use anymore
-//	bool use_blocked_road {	//	bool use_blocked_road {
-//		if currentSimuState = 0 {return false;}	//		if currentSimuState = 0 {return false;}
-//		if (current_path = nil) {
-//			return false;	//			return false;
-//		}	//		}
-//		loop rd over:current_path.edges {	//		loop rd over:current_path.edges {
-//			if road(rd).lanes_nb[1] = 0 {	//			if road(rd).lanes_nb[1] = 0 {
-//				//write "blocked road: "+road(rd);	//				//write "blocked road: "+road(rd);
-//				return true;	//				return true;
-//			}	//			}
-//		}	//		}
-//		return false;	//		return false;	
-//	}
-//	
 	reflex manage_cpt_blocked {
 		if real_speed = 0 {
 			cpt_blocked <- cpt_blocked +1 ;
@@ -1379,13 +1323,6 @@ species car skills:[advanced_driving]{
 		if (current_road != nil) {
 			ask road(current_road) {
 				do unregister(myself);
-				/*loop ag_l over: agents_on {
-					loop ag_s over: ag_l  {
-						if (myself in  list<agent>(ag_s)) {
-							 list<agent>(ag_s) >> myself;
-						}
-					}
-				}*/
 			}
 			
 		//	write name + " -> " + current_road + " road(current_road):" + road(current_road).agents_on + " : " + road(current_road).all_agents;
@@ -1448,7 +1385,7 @@ species car skills:[advanced_driving]{
 	}
 	
 	
-	action update{// il reste du code pour debuguer a nettoyer, ne pas trop toucher aux trucs chelous
+	action update{
 		path new_path;
 		if current_road != nil{
 			if road(current_road).lanes_nb[currentSimuState] = 0{//current road is not good. Fading
@@ -1500,9 +1437,6 @@ species car skills:[advanced_driving]{
 					do unregister(myself);
 				}
 			}			
-			/*current_intersection <- one_of(possible_sources[currentSimuState]);
-			location <-current_intersection.location;
-			target_intersection <- one_of(possible_targets[currentSimuState]);*/
 			if flip(proba_used_od) {
 				current_intersection <- one_of(origin_intersections[currentSimuState]);
 				target_intersection <- one_of(destination_intersections[currentSimuState] - current_intersection);
@@ -1531,7 +1465,7 @@ species car skills:[advanced_driving]{
 	
 	aspect base {
 		if(showCar){
-		    draw rectangle(carSize,carSize*3) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
+		    draw rectangle(carSize,carSize*2.5) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
@@ -1783,7 +1717,6 @@ experiment debug_xp type: gui autorun:true{
 			species culture aspect: base transparency:0.5;
 			species road aspect: base;
 			species bus_line aspect: base;
-			species metro_line aspect: base;
 			species intersection;
 			species car aspect:base transparency:0.5;
 			species pedestrian aspect:base transparency:0.2;
@@ -1822,11 +1755,9 @@ experiment ReChamp type: gui autorun:true{
 		    species building aspect: base;
 			species park aspect: base transparency:0.5;
 			species culture aspect: base transparency:0.5;
-			species water aspect: base;
 			species road aspect: base;
 			species vizuRoad aspect:base transparency:0.5;
 			species bus_line aspect: base;
-			species metro_line aspect: base;
 			species intersection;
 			species car aspect:base transparency:0.5;
 			species pedestrian aspect:base transparency:0.2;
@@ -1852,12 +1783,10 @@ experiment ReChamp type: gui autorun:true{
 			event["m"] action: {showVizuRoad<-!showVizuRoad;};
 			event["v"] action: {showBikeLane<-!showBikeLane;};
 			event["i"] action: {showIntervention<-!showIntervention;};
-			event["q"] action: {showMetroLane<-!showMetroLane;};
 			event["j"] action: {showBusLane<-!showBusLane;};
 			event["s"] action: {showStation<-!showStation;};
 			event["n"] action: {showGreen<-!showGreen;};
 			event["u"] action: {showUsage<-!showUsage;};
-			event["w"] action: {showWater<-!showWater;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {updateSim<-true;};
