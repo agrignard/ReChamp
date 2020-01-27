@@ -753,6 +753,13 @@ global {
 				do die;
 			}
 		}
+		if(currentSimuState=0){
+			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
+		}
+		if(currentSimuState=1){
+			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
+		}
+		
 		
 		int nb_bikes <- length(bike);
 		int nb_bikes_target <- round(nbAgent * get_mobility_ratio()["bike"]);
@@ -931,6 +938,8 @@ species road  skills: [skill_road]  {
 	int time_accept <- 100;
 	int cpt_accept;
 	float sidewalk_size;
+	int p_before;
+	int p_after;
 	
 	reflex compute_mean_real_speed {
 		cpt_cycle <- cpt_cycle + 1;
