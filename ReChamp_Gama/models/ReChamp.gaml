@@ -76,14 +76,17 @@ global {
 	int bikeTrajectoryLengthAfter <-25 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	
+
+	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
 
 	float step <-5#sec parameter: 'Simulation Step' category: "Simulation" min: 1#sec max: 1000#sec;
 	
-	float speedUpSpeedMax <-100#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max:200#sec;
-	float speedUpSpeedMin <-5#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max: 20#sec;
+	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
+	float speedUpSpeedMin <-5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
 	
-	bool speedUpSim parameter: 'PspeedUpSim' category: "SpeedUp" <-true;
+	bool speedUpSim parameter: 'speedUpSim' category: "SpeedUp" <-true;
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
@@ -1105,7 +1108,7 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
-	bool applyFuzzyness<-true;
+	
 	int side;
 	
 	action updatefuzzTrajectory{
