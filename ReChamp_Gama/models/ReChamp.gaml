@@ -163,7 +163,7 @@ global {
 	
 	list<park> activated_parks;
 	list<culture> activated_cultures;
-	list<intersection> vertices;
+//	list<intersection> vertices;
 	
 	
 	int chrono_size <- 30;
@@ -274,11 +274,13 @@ global {
 		//creation of the road network using the road and intersection agents
 //		driving_road_network <- (as_driving_graph(road, intersection)) use_cache false ;
 		graph tmp <- as_driving_graph(road, intersection) use_cache false;
-		vertices <- list<intersection>(tmp.vertices);
-		loop i from: 0 to: length(vertices) - 1 {
-			vertices[i].id <- i; 
-		}
 		
+		// unused code ?
+//		vertices <- list<intersection>(tmp.vertices);
+//		loop i from: 0 to: length(vertices) - 1 {
+//			vertices[i].id <- i; 
+//		}
+//		
 		
 //		loop j from: 0 to: stateNumber - 1{
 //			loop i over: intersection{
