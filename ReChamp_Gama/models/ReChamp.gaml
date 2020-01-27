@@ -75,11 +75,12 @@ global {
 	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 
+	float step <-5#sec parameter: 'Simulation Step' category: "Simulation" min: 1#sec max: 1000#sec;
 	
 	float speedUpSpeedMax <-100#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-5#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
-	float step <-5#sec parameter: 'Simulation Step' category: "SpeedUp" min: 1#sec max: 1000#sec;
+	
 	bool speedUpSim parameter: 'PspeedUpSim' category: "SpeedUp" <-true;
 	
 
