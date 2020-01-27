@@ -217,9 +217,16 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+	//	create road from: roads_shapefile with: [essai::int(read("lanes")),lanes::max([int(read("lanes")),int(read("pro_lanes"))]),lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [essai::int(read("lanes")),lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
-					
+			if int(self) = 2499 or int(self)=2492 {
+				write "essai "+int(self);
+				write lanes_nb;
+				write essai;
+				write lanes;
+			}
+			lanes <- lanes_nb[currentSimuState];
 			switch oneway {
 				match "no" {
 					create road {
@@ -692,8 +699,8 @@ global {
 				do remove_and_die;
 			}
 		}
-		ask road {
-		  	loop i from: 0 to:length(agents_on) - 1 {
+		ask road {// ca sert a quoi ?
+		  	loop i from: 0 to:length(agents_on) - 1 step: 1{
 		  		list<list<agent>> ag_l <- agents_on[i];
 				loop j from: 0 to: length(ag_l) - 1  {
 					list<agent> ag_s <- ag_l[j];
@@ -873,6 +880,7 @@ species water {
 
 
 species road  skills: [skill_road]  {
+	int essai;
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
@@ -894,7 +902,9 @@ species road  skills: [skill_road]  {
 		}else {
 			to_display <- true;
 			int prev <- lanes;
-			if prev < new_number {
+			if prev = 0{
+				agents_on <- list_with(new_number,list_with(length(shape.points)-1,[]));
+			}else if prev < new_number {
 				list<list<list<agent>>> new_agents_on;
 				int nb_seg <- length(agents_on[0]);
 				loop i from: 0 to: new_number - 1 {
@@ -910,7 +920,6 @@ species road  skills: [skill_road]  {
 					}	
 				}
 				agents_on <- new_agents_on;
-			//	lanes <- new_number;
 			} else if prev > new_number {
 				list<list<list<agent>>> new_agents_on;
 				int nb_seg <- length(shape.points) - 1;
@@ -928,7 +937,6 @@ species road  skills: [skill_road]  {
 						} 	
 					}
 				}
-			//	lanes <- new_number;
 				agents_on <- new_agents_on;		
 			}
 			lanes <- new_number;		
