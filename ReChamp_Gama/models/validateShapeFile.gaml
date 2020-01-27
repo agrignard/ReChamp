@@ -13,7 +13,8 @@ global {
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
 	file nodes_shapefile <- file("../includes/GIS/nodes_OSM.shp");
 	file signals_zone_shapefile <- file("../includes/GIS/signals_zone.shp");
-	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");		
+	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");
+	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");		
 	geometry shape <- envelope(shape_file_bounds);
 	
 
@@ -53,6 +54,11 @@ global {
 	list<list<intersection>> possible_sources <-list_with(stateNumber, []);
 
 	list<intersection> vertices;
+//	list<map<intersection,int>> origin_intersections <- list_with(stateNumber, nil);
+//	list<map<intersection,intersection>> destination_intersections <-list_with(stateNumber, nil);
+	list<map<int,int>> od_weights <- list_with(stateNumber, nil);
+	list<map<int,intersection>> od_origins <- list_with(stateNumber, nil);
+	list<map<int,intersection>> od_destinations <-list_with(stateNumber, nil);
 	
 	init {
 		
@@ -179,7 +185,32 @@ global {
 			possible_targets[j] <- intersection - input_intersections[j];
 		}	
 		
+		loop j from: 0 to: stateNumber - 1{
+			int index <- 0;
+			loop pt over: origin_destination_shapefile.contents {
+				int weight <- int(pt.attributes['capacity']);
+				intersection i <- possible_sources[j] closest_to first(pt.points);
+				intersection o <- possible_targets[j] closest_to last(pt.points);
+				od_weights[j] << index::weight;
+				od_origins[j] << index::i;
+				od_destinations[j] << index::o;
+				index <- index + 1;	
+			} 
+		}
 		
+		loop j from: 0 to: stateNumber - 1{
+			loop k over: od_weights[j].keys {
+				intersection i <- od_origins[j][k];
+				intersection o <- od_destinations[j][k];
+				if i.reachable_by_all[j] {
+					write "Warning: input intersection "+i+" is not a pure input location.";
+				}
+				if o.can_reach_all[j] {
+					write "Warning: output intersection "+o+" is not a pure output location.";
+				}
+			} 
+		}
+	
 		write "test connection";
 		do updateSimuState;
 		
@@ -804,6 +835,19 @@ species intersection skills: [skill_road_node] {
 			if can_reach_all[currentSimuState] {color <- #blue;}
 			if reachable_by_all[currentSimuState] and can_reach_all[currentSimuState] {color <- #green;}
 			draw circle(5) color: color;
+			if self in od_origins[currentSimuState].values{
+			draw circle(2.5) color: #white;
+			draw circle(1.5) color: #blue;
+			loop i over: od_origins[currentSimuState].keys{
+				if self = od_origins[currentSimuState][i]{
+					draw line([location,od_destinations[currentSimuState][i]]) color: #white;
+				}
+			}
+		}
+		if self in od_destinations[currentSimuState].values{
+			draw circle(2.5) color: #white;
+			draw circle(1.5) color: #yellow;
+		}
 		}
 		if (active and is_traffic_signal and showTrafficSignal) {
 	//		draw triangle(5) color: color_group border: #black;
