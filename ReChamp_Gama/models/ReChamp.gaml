@@ -653,23 +653,23 @@ global {
 		}
 	}
 	
-	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
-		
-		list<intersection> nodes <- [];
-		int id <- source.id;
-		int target_id <- target.id;
-		int cpt <- 0;
-		loop while: id != target_id {
-			nodes << intersection(vertices[id]);
-			id <- int(ssp[target_id, id]);
-			cpt <- cpt +1;
-			if (id = -1 or cpt > 50000) {
-				return list<intersection>([]);
-			}
-		}
-		nodes<<target;
-		return nodes;
-	}
+//	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
+//		
+//		list<intersection> nodes <- [];
+//		int id <- source.id;
+//		int target_id <- target.id;
+//		int cpt <- 0;
+//		loop while: id != target_id {
+//			nodes << intersection(vertices[id]);
+//			id <- int(ssp[target_id, id]);
+//			cpt <- cpt +1;
+//			if (id = -1 or cpt > 50000) {
+//				return list<intersection>([]);
+//			}
+//		}
+//		nodes<<target;
+//		return nodes;
+//	}
 	
 	action manage_waiting_line {
 		loop wl over: Waiting_line_shapefile.contents {
@@ -1322,21 +1322,21 @@ species car skills:[advanced_driving]{
 	int max_cpt_blocked <- 100;
 
 
-	bool use_blocked_road {	//	bool use_blocked_road {
-		if currentSimuState = 0 {return false;}	//		if currentSimuState = 0 {return false;}
-		if (current_path = nil) {
-			return false;	//			return false;
-		}	//		}
-		loop rd over:current_path.edges {	//		loop rd over:current_path.edges {
-			if road(rd).lanes_nb[1] = 0 {	//			if road(rd).lanes_nb[1] = 0 {
-				//write "blocked road: "+road(rd);	//				//write "blocked road: "+road(rd);
-				return true;	//				return true;
-			}	//			}
-		}	//		}
-		return false;	//		return false;	
-
+// this function has no use anymore
+//	bool use_blocked_road {	//	bool use_blocked_road {
+//		if currentSimuState = 0 {return false;}	//		if currentSimuState = 0 {return false;}
+//		if (current_path = nil) {
+//			return false;	//			return false;
+//		}	//		}
+//		loop rd over:current_path.edges {	//		loop rd over:current_path.edges {
+//			if road(rd).lanes_nb[1] = 0 {	//			if road(rd).lanes_nb[1] = 0 {
+//				//write "blocked road: "+road(rd);	//				//write "blocked road: "+road(rd);
+//				return true;	//				return true;
+//			}	//			}
+//		}	//		}
+//		return false;	//		return false;	
 //	}
-	}
+//	
 	reflex manage_cpt_blocked {
 		if real_speed = 0 {
 			cpt_blocked <- cpt_blocked +1 ;
