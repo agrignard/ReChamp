@@ -223,15 +223,13 @@ global {
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-	//	create road from: roads_shapefile with: [essai::int(read("lanes")),lanes::max([int(read("lanes")),int(read("pro_lanes"))]),lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
-		create road from: roads_shapefile with: [essai::int(read("lanes")),lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
-			if int(self) = 2499 or int(self)=2492 {
-				write "essai "+int(self);
-				write lanes_nb;
-				write essai;
-				write lanes;
-			}
+//			if int(self) = 2499 or int(self)=2492 {
+//				write "essai "+int(self);
+//				write lanes_nb;
+//				write lanes;
+//			}
 			lanes <- lanes_nb[currentSimuState];
 			switch oneway {
 				match "no" {
@@ -904,7 +902,6 @@ species water {
 
 
 species road  skills: [skill_road]  {
-	int essai;
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
