@@ -54,8 +54,6 @@ global {
 	list<list<intersection>> possible_sources <-list_with(stateNumber, []);
 
 	list<intersection> vertices;
-//	list<map<intersection,int>> origin_intersections <- list_with(stateNumber, nil);
-//	list<map<intersection,intersection>> destination_intersections <-list_with(stateNumber, nil);
 	list<map<int,int>> od_weights <- list_with(stateNumber, nil);
 	list<map<int,intersection>> od_origins <- list_with(stateNumber, nil);
 	list<map<int,intersection>> od_destinations <-list_with(stateNumber, nil);

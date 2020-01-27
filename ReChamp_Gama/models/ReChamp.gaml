@@ -20,7 +20,7 @@ global {
 	file station_shapefile <- file("../includes/GIS/stations_metro_simple.shp");
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
-	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination.shp");
+	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");
 
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
@@ -155,8 +155,11 @@ global {
 	list<list<intersection>> output_intersections <-list_with(stateNumber, []);
 	list<list<intersection>> possible_targets <-list_with(stateNumber, []);
 	list<list<intersection>> possible_sources <-list_with(stateNumber, []);
-	list<list<intersection>> origin_intersections <- list_with(stateNumber, []);
-	list<list<intersection>> destination_intersections<-list_with(stateNumber, []);
+//	list<list<intersection>> origin_intersections <- list_with(stateNumber, []);
+//	list<list<intersection>> destination_intersections<-list_with(stateNumber, []);
+	list<map<int,int>> od_weights <- list_with(stateNumber, nil);
+	list<map<int,intersection>> od_origins <- list_with(stateNumber, nil);
+	list<map<int,intersection>> od_destinations <-list_with(stateNumber, nil);
 	
 	map<agent,float> proba_choose_park;
 	map<agent,float> proba_choose_culture;
@@ -178,7 +181,7 @@ global {
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-0.8;
+	float proba_used_od <-1.0;//0.8;
 	float factor_avoid_tj <- 2.0;
 	
 	init {
@@ -225,11 +228,6 @@ global {
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
-//			if int(self) = 2499 or int(self)=2492 {
-//				write "essai "+int(self);
-//				write lanes_nb;
-//				write lanes;
-//			}
 			lanes <- lanes_nb[currentSimuState];
 			switch oneway {
 				match "no" {
@@ -303,7 +301,7 @@ global {
 		}
 		
 		loop j from: 0 to:  stateNumber-1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 1) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 2) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
 			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false;
 		}
 		
@@ -333,15 +331,22 @@ global {
 				if not(i.reachable_by_all[j]){input_intersections[j] << i;}
 			}
 			possible_targets[j] <- intersection - input_intersections[j];
-			possible_sources[j] <- intersection - output_intersections[j];
-			
-			loop pt over: origin_destination_shapefile.contents {
-				origin_intersections[j] << possible_sources[j] closest_to pt;
-				destination_intersections[j] << possible_targets[j] closest_to pt;
-				
-			} 
-			
+			possible_sources[j] <- intersection - output_intersections[j];		
 		}	
+		
+		loop j from: 0 to: stateNumber - 1{
+			int index <- 0;
+			loop pt over: origin_destination_shapefile.contents {
+				int weight <- int(pt.attributes['capacity']);
+				intersection i <- possible_sources[j] closest_to first(pt.points);
+				intersection o <- possible_targets[j] closest_to last(pt.points);
+				od_weights[j] << index::weight;
+				od_origins[j] << index::i;
+				od_destinations[j] << index::o;
+				index <- index + 1;	
+			} 
+		}
+		
 		loop j from: 0 to: stateNumber - 1{
 			loop i over: intersection where not(each.can_reach_all[j]) {
 				if empty(i.roads_out where (road(each).lanes_nb[j] != 0)){
@@ -379,6 +384,8 @@ global {
 		//------------------- AGENT ---------------------------------------- //
 		
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
+		
+		ask first(car){test_car <- true;}
 		
 		//Create Pedestrain
 		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
@@ -487,7 +494,9 @@ global {
 			/*current_intersection <- one_of(intersection - output_intersections);
 			location <-current_intersection.location;*/
 			if flip(proba_used_od) {
-				current_intersection <- one_of(origin_intersections[currentSimuState]);
+			//	intersection i <- od_origins[currentSimuState].values[rnd_choice(od_weights[currentSimuState].values)];
+			//	current_intersection <- one_of(origin_intersections[currentSimuState]);
+				current_intersection <- od_origins[currentSimuState].values[rnd_choice(od_weights[currentSimuState].values)];
 			} else {
 				current_intersection <- one_of(possible_sources[currentSimuState]);
 			}
@@ -638,12 +647,12 @@ global {
 		
 	}
 	
-	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
-		loop j from: 0 to:  stateNumber-1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 1) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)));
-			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map ;
-		}
-	}
+//	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
+//		loop j from: 0 to:  stateNumber-1{
+//			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 1) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)));
+//			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map ;
+//		}
+//	}
 	reflex updateSimuState when:updateSim=true{
 		currentSimuState <- (currentSimuState + 1) mod stateNumber;
 		do updateSimuState;
@@ -1355,8 +1364,10 @@ species car skills:[advanced_driving]{
 				}
 				current_lane <- 0;
 				if flip(proba_used_od) {
-					current_intersection <- one_of(origin_intersections[currentSimuState]);
-					target_intersection <- one_of(destination_intersections[currentSimuState] - current_intersection);
+					//current_intersection <- one_of(origin_intersections[currentSimuState]);
+					int od_index <- rnd_choice(od_weights[currentSimuState].values);
+					current_intersection <- od_origins[currentSimuState].values[od_index];
+					target_intersection <- od_destinations[currentSimuState].values[od_index];
 				} else {
 					current_intersection <- one_of(possible_sources[currentSimuState]);
 					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
@@ -1368,7 +1379,13 @@ species car skills:[advanced_driving]{
 			 }else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
 				target_intersection <- target_intersection.exit[currentSimuState];
 			}else{ // reached a generic target
-				target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+				if flip(proba_used_od) {
+					//current_intersection <- one_of(origin_intersections[currentSimuState]);
+					int od_index <- rnd_choice(od_weights[currentSimuState].values);
+					target_intersection <- od_destinations[currentSimuState].values[od_index];
+				}else{
+					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+				}
 			}
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 	}
@@ -1438,8 +1455,11 @@ species car skills:[advanced_driving]{
 				}
 			}			
 			if flip(proba_used_od) {
-				current_intersection <- one_of(origin_intersections[currentSimuState]);
-				target_intersection <- one_of(destination_intersections[currentSimuState] - current_intersection);
+				int od_index <- rnd_choice(od_weights[currentSimuState].values);
+				current_intersection <- od_origins[currentSimuState].values[od_index];
+				target_intersection <- od_destinations[currentSimuState].values[od_index];
+//				current_intersection <- one_of(origin_intersections[currentSimuState]);
+//				target_intersection <- one_of(destination_intersections[currentSimuState] - current_intersection);
 			} else {
 				current_intersection <- one_of(possible_sources[currentSimuState]);
 				target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
@@ -1474,7 +1494,7 @@ species car skills:[advanced_driving]{
 	  		
 	  		if current_path != nil{
 	  			loop e over: current_path.edges{
-	  				draw 1 around(road(e).shape) color: #white;
+	  				draw 3 around(road(e).shape) color: #white;
 	  			}
 	  		}
 	  		loop p over: targets{
@@ -1725,16 +1745,16 @@ experiment debug_xp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 			
-			graphics "origin" {
-				loop pt over: origin_intersections[currentSimuState] {
-					draw circle(10) color: #magenta at: pt.location;
-				}
-			}
-			graphics "destination" {
-				loop pt over: destination_intersections[currentSimuState] {
-					draw circle(10) color: #cyan at: pt.location;
-				}
-			}
+//			graphics "origin" {
+//				loop pt over: origin_intersections[currentSimuState] {
+//					draw circle(10) color: #magenta at: pt.location;
+//				}
+//			}
+//			graphics "destination" {
+//				loop pt over: destination_intersections[currentSimuState] {
+//					draw circle(10) color: #cyan at: pt.location;
+//				}
+//			}
 			
 				
 			event["z"] action: {updateSim<-true;};			
