@@ -76,14 +76,17 @@ global {
 	int bikeTrajectoryLengthAfter <-25 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
 	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	
+
+	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
 
 	float step <-5#sec parameter: 'Simulation Step' category: "Simulation" min: 1#sec max: 1000#sec;
 	
-	float speedUpSpeedMax <-100#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max:200#sec;
-	float speedUpSpeedMin <-5#sec parameter: 'Speedup Speed' category: "SpeedUp" min: 1#sec max: 20#sec;
+	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
+	float speedUpSpeedMin <-5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
 	
-	bool speedUpSim parameter: 'PspeedUpSim' category: "SpeedUp" <-true;
+	bool speedUpSim parameter: 'speedUpSim' category: "SpeedUp" <-true;
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
@@ -750,6 +753,13 @@ global {
 				do die;
 			}
 		}
+		if(currentSimuState=0){
+			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
+		}
+		if(currentSimuState=1){
+			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
+		}
+		
 		
 		int nb_bikes <- length(bike);
 		int nb_bikes_target <- round(nbAgent * get_mobility_ratio()["bike"]);
@@ -928,6 +938,8 @@ species road  skills: [skill_road]  {
 	int time_accept <- 100;
 	int cpt_accept;
 	float sidewalk_size;
+	int p_before;
+	int p_after;
 	
 	reflex compute_mean_real_speed {
 		cpt_cycle <- cpt_cycle + 1;
@@ -1105,7 +1117,7 @@ species pedestrian skills:[moving] control: fsm{
 	bool stroling_in_park<-false;
 	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
-	bool applyFuzzyness<-true;
+	
 	int side;
 	
 	action updatefuzzTrajectory{

@@ -11,10 +11,10 @@
         <property key="legend/expressionFilterEnabled" value="false"/>
       </customproperties>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="stations_metro20200127182050996" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro.shp" name="stations_metro">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="stations_metro20200127182050996" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro.shp" name="stations_metro">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="origin_destination20200127174518356" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/origin_destination.shp" name="origin_destination">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="origin_destination20200127174518356" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/origin_destination.shp" name="origin_destination">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="roads_OSM20200113191005665" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/roads_OSM.shp" name="roads_OSM">
@@ -79,10 +79,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>646847.95493245462421328</xmin>
-      <ymin>6863627.89953683316707611</ymin>
-      <xmax>648722.02573323587421328</xmax>
-      <ymax>6865195.43957589566707611</ymax>
+      <xmin>648459.56457452708855271</xmin>
+      <ymin>6862560.47053639311343431</ymin>
+      <xmax>648928.08227472240105271</xmax>
+      <ymax>6862952.35554615873843431</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -170,14 +170,14 @@
         <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="stations_metro" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="stations_metro" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="stations_metro20200127182050996" visible="1"/>
+        <legendlayerfile isInOverview="0" layerid="stations_metro20200127182050996" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="origin_destination" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="origin_destination" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="origin_destination20200127174518356" visible="0"/>
+        <legendlayerfile isInOverview="0" layerid="origin_destination20200127174518356" visible="1"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="roads_OSM" showFeatureCount="0">
@@ -2835,7 +2835,7 @@ def my_form_open(dialog, layer, feature):
         <multilineenabled fieldname="" on=""/>
         <selectedonly on=""/>
       </labelattributes>
-      <annotationform></annotationform>
+      <annotationform>.</annotationform>
       <aliases/>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
@@ -2845,10 +2845,10 @@ def my_form_open(dialog, layer, feature):
           <column width="-1" hidden="1" type="actions"/>
         </columns>
       </attributetableconfig>
-      <editform></editform>
+      <editform>.</editform>
       <editforminit/>
       <editforminitcodesource>0</editforminitcodesource>
-      <editforminitfilepath></editforminitfilepath>
+      <editforminitfilepath>.</editforminitfilepath>
       <editforminitcode><![CDATA[]]></editforminitcode>
       <featformsuppress>0</featformsuppress>
       <editorlayout>generatedlayout</editorlayout>
@@ -3989,7 +3989,7 @@ def my_form_open(dialog, layer, feature):
         <multilineenabled fieldname="" on=""/>
         <selectedonly on=""/>
       </labelattributes>
-      <annotationform></annotationform>
+      <annotationform>.</annotationform>
       <aliases>
         <alias field="stop_id" index="0" name=""/>
         <alias field="stop_name" index="1" name=""/>
@@ -4002,12 +4002,20 @@ def my_form_open(dialog, layer, feature):
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
       <attributetableconfig actionWidgetStyle="dropDown" sortExpression="" sortOrder="0">
-        <columns/>
+        <columns>
+          <column width="-1" hidden="0" type="field" name="stop_id"/>
+          <column width="-1" hidden="0" type="field" name="stop_name"/>
+          <column width="-1" hidden="0" type="field" name="stop_desc"/>
+          <column width="-1" hidden="0" type="field" name="id"/>
+          <column width="-1" hidden="0" type="field" name="type"/>
+          <column width="-1" hidden="0" type="field" name="capacity"/>
+          <column width="-1" hidden="1" type="actions"/>
+        </columns>
       </attributetableconfig>
-      <editform></editform>
+      <editform>.</editform>
       <editforminit/>
       <editforminitcodesource>0</editforminitcodesource>
-      <editforminitfilepath></editforminitfilepath>
+      <editforminitfilepath>.</editforminitfilepath>
       <editforminitcode><![CDATA[]]></editforminitcode>
       <featformsuppress>0</featformsuppress>
       <editorlayout>generatedlayout</editorlayout>
@@ -4024,7 +4032,7 @@ def my_form_open(dialog, layer, feature):
         <default field="type" expression=""/>
         <default field="capacity" expression=""/>
       </defaults>
-      <previewExpression></previewExpression>
+      <previewExpression>COALESCE( "stop_name", '&lt;NULL>' )</previewExpression>
     </maplayer>
     <maplayer simplifyAlgorithm="0" minimumScale="0" maximumScale="1e+08" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" readOnly="0" geometry="Point" simplifyMaxScale="1" type="vector" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
       <id>stations_metro_bus_RER20200108144231302</id>
