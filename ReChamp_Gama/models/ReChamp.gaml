@@ -114,9 +114,11 @@ global {
 	float bikeSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
+	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
+	
 	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
-	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-true;
+	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	file dashboardbackground <- file('../includes/PNG/dashboardtest.png');
@@ -144,7 +146,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-500;
+	int nbAgent<-750;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
@@ -1492,7 +1494,7 @@ species car skills:[advanced_driving]{
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
-	  	if (test_car){
+	  	if (test_car and showTestCar){
 	  		
 	  		if current_path != nil{
 	  			loop e over: current_path.edges{
