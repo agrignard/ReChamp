@@ -20,6 +20,7 @@ global {
 	float proba_used_od <- 1.0;
 	list<road> sp;
 	list<road> lp;
+	list<road> pb;
 	map<road,float> general_speed_map;	
 
 	list<graph> driving_road_network;
@@ -241,6 +242,9 @@ global {
 		//	write sp accumulate(general_speed_map[each]);
 		write "longeur poids chemin long (weight map actuelle) (jaune): "+sum(lp accumulate(float(general_speed_map[each])));
 		
+		
+		pb <- path_between(driving_road_network[currentSimuState],intersection[2072],intersection[2028]).edges accumulate(road(each));
+		write "longeur poids chemin le plus court (bleu): "+sum(pb accumulate(float(general_speed_map[each])));
 	
 				
 		//First Intervention (Paris Now)
@@ -463,6 +467,12 @@ global {
 		return [reachable, can_reach];
 	}
 	
+	list<road> shortest_path(graph g, point loc){
+		
+	//	write g.map;
+		return [];
+	}
+	
 	
 }
 
@@ -493,7 +503,10 @@ species road  skills: [skill_road]  {
 			}
 			if self in lp{
 				draw 3 around(shape) color: #yellow;
-			}		
+			}
+			if self in pb{
+				draw 5 around(shape) color: #blue;
+			}
 		}
 	}
 
