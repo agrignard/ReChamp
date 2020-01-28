@@ -123,7 +123,7 @@ global {
 		
 		loop j from: 0 to:  stateNumber-1{
 			general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)));
-			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map;
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map with_optimizer_type "Dijkstra";
 		}
 		
 
