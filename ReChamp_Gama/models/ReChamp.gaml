@@ -115,7 +115,7 @@ global {
 	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
-	bool drawLegend parameter: 'Legend' category: "Debug" <-false;
+	bool drawLegend parameter: 'Legend' category: "Debug" <-true;
 	
 	
 	
@@ -1864,20 +1864,22 @@ experiment ReChamp type: gui autorun:true{
 			
 			graphics "legend"{
 				if(drawLegend){
-					point posIn<-{world.shape.width*0.7, world.shape.height*0.7};
+					point posIn<-{world.shape.width*0.77, world.shape.height*0.75};
 					float space<-world.shape.width * 0.025;
-					float circleSize<-world.shape.width * 0.005;
+					float circleSize<-world.shape.width * 0.0025;
+					int fontSize<-10;
+					point textOffset<-{10,10};
 				    draw circle(circleSize) color: type_colors["people"] at: posIn;
-					draw "walk" color: type_colors["people"]  at: posIn font:font("Helvetica", 20 , #bold) rotate:angle;
+					draw "people" color: type_colors["people"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
 					
 					draw circle(circleSize) color: type_colors["bike"] at: posIn + {space* cos (angle), space * sin(angle)};
-					draw "bike" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)} font:font("Helvetica", 20 , #bold) rotate:angle;
+					draw "bike" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					
 					draw circle(circleSize) color: type_colors["car"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
-					draw "car" color: type_colors["car"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 font:font("Helvetica", 20 , #bold) rotate:angle;
+					draw "car" color: type_colors["car"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					
 					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
-					draw "pev" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 font:font("Helvetica", 20 , #bold) rotate:angle;
+					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 				}
 					
 			}
