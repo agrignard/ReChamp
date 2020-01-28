@@ -114,9 +114,11 @@ global {
 	float bikeSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
+	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
+	
 	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
-	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-true;
+	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	file dashboardbackground <- file('../includes/PNG/dashboardtest.png');
@@ -144,7 +146,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-500;
+	int nbAgent<-750;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
@@ -183,6 +185,12 @@ global {
 	
 	float proba_used_od <-0.8;
 	float factor_avoid_tj <- 2.0;
+	float proba_avoid_tj <- 0.5;
+	
+	point source;
+	point destination;
+	path shortest_path;
+	bool test_path <- false;
 	
 	init {
 		
@@ -932,6 +940,12 @@ species road  skills: [skill_road]  {
 	float sidewalk_size;
 	int p_before;
 	int p_after;
+	list<int> nb_car_max <- [1 + round(shape.perimeter * p_before / 10), 1 +round(shape.perimeter * p_after / 10)] ;
+	
+	bool has_traffic_jam {
+		list<agent> ags <- all_agents;
+		return (length(ags) > (nb_car_max[currentSimuState] / 0.75)) and ((ags mean_of (car(each).real_speed)) < 5 #km/#h);
+	}
 	
 	reflex compute_mean_real_speed {
 		cpt_cycle <- cpt_cycle + 1;
@@ -1324,9 +1338,16 @@ species car skills:[advanced_driving]{
 	}
 	float external_factor_impact(agent new_road, float remaining_time) {
 		if (cpt_blocked > max_cpt_blocked) {
-			proba_respect_stops <- [0.0];	
 			final_target <- nil;
 			remaining_time <- 0.0;
+		}
+		
+		if flip(proba_avoid_tj) {
+			bool has_traffic_jam <-road(new_road).has_traffic_jam();
+			if (has_traffic_jam) {
+				current_path <- nil;
+				remaining_time <- 0.0;
+			}
 		}
 		return remaining_time;
 	}
@@ -1396,6 +1417,9 @@ species car skills:[advanced_driving]{
 	
 	
 	reflex move when: final_target != nil{	
+	  	if (current_path = nil) {
+			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+		}
 	  	do drive;	
 	  	//on tente le tout pour le tout
 	  	loop while:(length(current_trajectory) > ((currentSimuState =0) ? carTrajectoryLengthBefore : carTrajectoryLengthAfter))
@@ -1497,8 +1521,8 @@ species car skills:[advanced_driving]{
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
-	  	if (test_car and showCar){
-	  		
+
+	  	if (test_car and showTestCar){	
 	  		if current_path != nil{
 	  			loop e over: current_path.edges{
 	  				draw 3 around(road(e).shape) color: #white;
@@ -1753,6 +1777,17 @@ experiment debug_xp type: gui autorun:true{
 			species station aspect: base;
 			species bikelane aspect:base;
 			
+			graphics "shortest_path" {
+				if (shortest_path != nil and shortest_path.shape != nil) {
+					draw shortest_path.shape + 1 color: #magenta;
+				}
+				if (source != nil) {
+					draw circle(10) at:source color: #yellow;
+				}
+				if (destination != nil) {
+					draw circle(10) at:destination color: #cyan;
+				}
+			}
 //			graphics "origin" {
 //				loop pt over: origin_intersections[currentSimuState] {
 //					draw circle(10) color: #magenta at: pt.location;
@@ -1764,7 +1799,30 @@ experiment debug_xp type: gui autorun:true{
 //				}
 //			}
 			
-				
+			event mouse_down action:{
+				if (test_path and (#user_location != nil)) {
+					if (source = nil) { 
+						source <- (list(intersection) with_min_of (each distance_to #user_location)).location;
+					}
+					else if (destination = nil) {
+						destination <- (list(intersection) with_min_of (each distance_to #user_location)).location;
+					} 
+					if (source != nil and destination != nil) {
+						shortest_path <- driving_road_network[currentSimuState] path_between(source, destination);
+						source <- nil;
+						destination <- nil;
+					}
+					
+				} 
+			};
+			event["p"] action: {
+				test_path<-not test_path; 
+				if not test_path {
+					shortest_path <- nil;
+					source <- nil;
+					destination <- nil;
+				}
+			};	
 			event["z"] action: {updateSim<-true;};			
 		}
 	}
