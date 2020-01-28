@@ -78,10 +78,10 @@ global {
 
 	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
 
-	float step <-5#sec parameter: 'Simulation Step' category: "Simulation" min: 1#sec max: 1000#sec;
+	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
 	float traffic_light_duration <-40#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
 	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
-	float speedUpSpeedMin <-5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 1#sec max: 20#sec;
+	float speedUpSpeedMin <-2.5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 0.1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
 	
 	bool speedUpSim parameter: 'speedUpSim' category: "SpeedUp" <-true;
@@ -149,7 +149,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-750;
+	int nbAgent<-200;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
@@ -425,7 +425,8 @@ global {
 		
         //Create Bike
 	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
-	       type <- "bike";
+	      type <- "bike";
+	      speed<-2+rnd(maxSpeed);
 		  location<-any_location_in(one_of(building));	
 		}
 				
@@ -802,7 +803,8 @@ global {
 		if (nb_bikes_target > nb_bikes) {
 			create bike number:nb_bikes_target - nb_bikes{
 	      		type <- "bike";
-		  		location<-any_location_in(one_of(building));	
+		  		location<-any_location_in(one_of(building));
+		  		speed<-2+rnd(maxSpeed);	
 			}
 		} else if (nb_bikes_target < nb_bikes) {
 			ask (nb_bikes - nb_bikes_target) among bike {
@@ -922,7 +924,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color:rgb(75,75,75) empty:true;	
+		  draw shape color:rgb(75,75,75) empty:true depth:0;	
 		}
 	}
 }
@@ -1261,7 +1263,7 @@ species pedestrian skills:[moving] control: fsm{
 		if(showPeople){
 			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
-		if(showPeopleTrajectory ){
+		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
 	  	}	
 	}
@@ -1271,12 +1273,12 @@ species bike skills:[moving]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
-	
+	float maxSpeed<-10#km/#h;
 	reflex choose_target when: my_target = nil {
 		my_target <- any_location_in(one_of(bikelane));
 	}
 	reflex move{
-	  do goto on: bike_graph target: my_target speed: 8#km/#h move_weights:weights_bikelane ;
+	  do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
 	  if (my_target = location) {my_target <- nil;}
 	  loop while:(length(current_trajectory) > ((currentSimuState=0) ? bikeTrajectoryLengthBefore : bikeTrajectoryLengthAfter))
   	    {
@@ -1288,7 +1290,7 @@ species bike skills:[moving]{
 		if(showBike){
 		 draw rectangle(bikeSize,bikeSize*2) color:type_colors[type] rotate:heading-90;	
 		}	
-		if(showBikeTrajectory){
+		if(showBikeTrajectory and showBike){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? bikeTrajectoryTransparencyBefore : bikeTrajectoryTransparencyAfter);	
 	  }
 	}
@@ -1552,7 +1554,7 @@ species car skills:[advanced_driving]{
 		if(showCar){
 		    draw rectangle(carSize,carSize*2.5) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
 	  	}
-	  	if(showCarTrajectory){
+	  	if(showCarTrajectory and showCar){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
 
@@ -1865,7 +1867,7 @@ experiment debug_xp type: gui autorun:true{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
