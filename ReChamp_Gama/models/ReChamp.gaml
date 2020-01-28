@@ -149,10 +149,10 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-1000;
+	int nbAgent<-750;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
-	map<string,float> mobilityRatioFuture <-["people"::0.5, "car"::0.3,"bike"::0.15, "bus"::0.05];
+	map<string,float> mobilityRatioFuture <-["people"::1.2, "car"::0.3,"bike"::0.15, "bus"::0.05];
 
 	
 	map<bikelane,float> weights_bikelane;
