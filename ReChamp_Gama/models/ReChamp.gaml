@@ -186,7 +186,7 @@ global {
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-0.8;
+	float proba_used_od <-0.6;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
 	
@@ -313,7 +313,7 @@ global {
 		
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)^2));
-			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false;// with_optimizer_type "Dijkstra";
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false with_optimizer_type "Dijkstra";
 		}
 		
 		
@@ -664,7 +664,7 @@ global {
 	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)^2));
-			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map;//  with_optimizer_type "Dijkstra";
+			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "Dijkstra";
 		}
 	}
 	reflex updateSimuState when:updateSim=true{
