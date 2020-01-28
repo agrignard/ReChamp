@@ -52,8 +52,8 @@ global {
 	
 	bool showCar parameter: 'Car (c)' category: "Agent" <-true;
 	bool showPeople parameter: 'Pedestrain (p)' category: "Agent" <-true;
-	bool showBike parameter: 'Bike (b)' category: "Agent" <-true;
-	bool showSharedMobility parameter: 'Shared Mobility (s)' category: "Agent" <-true;
+	bool showBike parameter: 'Bike (v)' category: "Agent" <-true;
+	bool showSharedMobility parameter: 'Shared Mobility (b)' category: "Agent" <-true;
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
@@ -98,12 +98,12 @@ global {
 	float busTrajectoryTransparencyAfter <-0.25 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 
 	
-	bool showBikeLane  parameter: 'Bike Lane (v)' category: "Parameters" <-false;
-	bool showBusLane parameter: 'Bus Lane(j)' category: "Parameters" <-false;
-	bool showStation parameter: 'Station (s)' category: "Parameters" <-false;
+	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
+	bool showBusLane parameter: 'Bus Lane' category: "Parameters" <-false;
+	bool showStation parameter: 'Station' category: "Parameters" <-false;
 	bool showTrafficSignal parameter: 'Traffic signal (t)' category: "Parameters" <-false;
-	bool showBuilding parameter: 'Building (b)' category: "Parameters" <-false;
-	bool showRoad parameter: 'Road Simu(r)' category: "Parameters" <-false;
+	bool showBuilding parameter: 'Building (l)' category: "Parameters" <-false;
+	bool showRoad parameter: 'Road (r)' category: "Parameters" <-false;
 	
 	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
@@ -115,7 +115,7 @@ global {
 	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
-	bool drawLegend parameter: 'Legend' category: "Debug" <-true;
+	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
 	
 	
 	
@@ -149,10 +149,10 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-200;
+	int nbAgent<-1000;
 	
-	map<string,float> mobilityRatioNow <-["people"::0.6, "car"::0.8,"bike"::0.1, "bus"::0];
-	map<string,float> mobilityRatioFuture <-["people"::2.0, "car"::0.4,"bike"::0.3, "bus"::0.1];
+	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
+	map<string,float> mobilityRatioFuture <-["people"::0.5, "car"::0.3,"bike"::0.15, "bus"::0.05];
 
 	
 	map<bikelane,float> weights_bikelane;
@@ -1888,21 +1888,16 @@ experiment ReChamp type: gui autorun:true{
 			
 			event["p"] action: {showPeople<-!showPeople;};
 			event["c"] action: {showCar<-!showCar;};
-			event["b"] action: {showBike<-!showBike;};
-			event["s"] action: {showSharedMobility<-!showSharedMobility;};
-			event["g"] action: {showGif<-!showGif;};
-			event["l"] action: {showBuilding<-!showBuilding;};
-			event["r"] action: {showRoad<-!showRoad;};
-			event["m"] action: {showVizuRoad<-!showVizuRoad;};
-			event["v"] action: {showBikeLane<-!showBikeLane;};
-			event["i"] action: {showIntervention<-!showIntervention;};
-			event["j"] action: {showBusLane<-!showBusLane;};
-			event["s"] action: {showStation<-!showStation;};
+			event["v"] action: {showBike<-!showBike;};
+			event["b"] action: {showSharedMobility<-!showSharedMobility;};
 			event["n"] action: {showGreen<-!showGreen;};
 			event["u"] action: {showUsage<-!showUsage;};
+			event["l"] action: {showBuilding<-!showBuilding;};
+			event["r"] action: {showRoad<-!showRoad;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {updateSim<-true;};
+			event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 		}
 	}
