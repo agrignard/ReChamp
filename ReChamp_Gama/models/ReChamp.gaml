@@ -79,7 +79,7 @@ global {
 	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
 
 	float step <-5#sec parameter: 'Simulation Step' category: "Simulation" min: 1#sec max: 1000#sec;
-	
+	float traffic_light_duration <-40#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
 	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
@@ -186,7 +186,7 @@ global {
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-0.8;
+	float proba_used_od <-0.6;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
 	
@@ -313,8 +313,9 @@ global {
 		
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)^2));
-			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false;// with_optimizer_type "Dijkstra";
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false with_optimizer_type "Dijkstra";
 		}
+		
 		
 		loop i over: intersection{
 			i.roads_in <- remove_duplicates(i.roads_in);
@@ -502,18 +503,18 @@ global {
 			right_side_driving <- myself.right_side_driving;
 			proba_lane_change_up <- 0.1 + (rnd(500) / 500);
 			proba_lane_change_down <- 0.5 + (rnd(500) / 500);
-			/*current_intersection <- one_of(intersection - output_intersections);
-			location <-current_intersection.location;*/
+			/*starting_intersection <- one_of(intersection - output_intersections);
+			location <-starting_intersection.location;*/
 			if flip(proba_used_od) {
 			//	intersection i <- od_origins[currentSimuState].values[rnd_choice(od_weights[currentSimuState].values)];
-			//	current_intersection <- one_of(origin_intersections[currentSimuState]);
+			//	starting_intersection <- one_of(origin_intersections[currentSimuState]);
 				int od_index <- rnd_choice(od_weights[currentSimuState].values);
-				current_intersection <- od_origins[currentSimuState].values[od_index];
+				starting_intersection <- od_origins[currentSimuState].values[od_index];
 				target_intersection <- od_destinations[currentSimuState].values[od_index];
 			} else {
-				current_intersection <- one_of(possible_sources[currentSimuState]);
+				starting_intersection <- one_of(possible_sources[currentSimuState]);
 			}
-			location <-current_intersection.location;
+			location <-starting_intersection.location;
 			security_distance_coeff <- 5 / 9 * 3.6 * (1.5 - rnd(1000) / 1000);
 			proba_respect_priorities <- 1.0;// - rnd(200 / 1000);
 			proba_respect_stops <- [1.0];
@@ -540,7 +541,7 @@ global {
 		loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {
 			list<intersection> gp <- traffic_signals where(each.group = i);
 			rgb col <- rnd_color(255);
-			int cpt_init <- rnd(100);
+			float cpt_init <- rnd(traffic_light_duration);
 			bool green <- flip(0.5);
 			ask gp {
 				color_group <- col;
@@ -567,7 +568,7 @@ global {
 		loop gp over: groupes {
 			rgb col <- rnd_color(255);
 			ask gp {color_group <- col;}
-			int cpt_init <- rnd(100);
+			float cpt_init <- rnd(traffic_light_duration);
 			bool green <- flip(0.5);
 			if (length(gp) = 1) {
 				ask (intersection(first(gp))) {
@@ -663,7 +664,7 @@ global {
 	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)^2));
-			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map;//  with_optimizer_type "Dijkstra";
+			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "Dijkstra";
 		}
 	}
 	reflex updateSimuState when:updateSim=true{
@@ -964,7 +965,7 @@ species road  skills: [skill_road]  {
 			cpt_accept <- 0;
 			
 		}
-		if (target_node != nil and (intersection(target_node).is_traffic_signal) and cpt_accept > time_accept) {
+		if false and (target_node != nil and (intersection(target_node).is_traffic_signal) and cpt_accept > time_accept) {//false a enlever apres les tests
 			ask intersection(target_node) {
 				do free;
 			}
@@ -1324,7 +1325,7 @@ species car skills:[advanced_driving]{
 	float speed;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel[currentSimuState];
 	list<point> current_trajectory;
-	intersection current_intersection;
+	intersection starting_intersection;
 	point target;
 	
 	int cpt_blocked;
@@ -1390,29 +1391,29 @@ species car skills:[advanced_driving]{
 				}
 				current_lane <- 0;
 				if flip(proba_used_od) {
-					//current_intersection <- one_of(origin_intersections[currentSimuState]);
+					//starting_intersection <- one_of(origin_intersections[currentSimuState]);
 					int od_index <- rnd_choice(od_weights[currentSimuState].values);
-					current_intersection <- od_origins[currentSimuState].values[od_index];
+					starting_intersection <- od_origins[currentSimuState].values[od_index];
 					target_intersection <- od_destinations[currentSimuState].values[od_index];
 				} else {
-					current_intersection <- one_of(possible_sources[currentSimuState]);
-					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+					starting_intersection <- one_of(possible_sources[currentSimuState]);
+					target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
 				}
-				location <-current_intersection.location;
-				//target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+				location <-starting_intersection.location;
+				//target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
 				current_trajectory <- [];
 				current_offset <- {0,0};
 			 }else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
-			 	current_intersection <- target_intersection;
+			 	starting_intersection <- target_intersection;
 				target_intersection <- target_intersection.exit[currentSimuState];
 			}else{ // reached a generic target
 				if flip(proba_used_od) {
-					current_intersection <- target_intersection;
+					starting_intersection <- target_intersection;
 					int od_index <- rnd_choice(od_weights[currentSimuState].values);
 					target_intersection <- od_destinations[currentSimuState].values[od_index];
 				}else{
-					current_intersection <- target_intersection;
-					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+					starting_intersection <- target_intersection;
+					target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
 				}
 			}
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
@@ -1444,7 +1445,7 @@ species car skills:[advanced_driving]{
 					point save_location <- location;
 					road cr <- road(current_road);
 					location <- last(cr.shape.points);	
-					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
+					starting_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
 						target_intersection<- ci.exit[currentSimuState];
 					}		
@@ -1460,7 +1461,7 @@ species car skills:[advanced_driving]{
 					ask cr{
 						do register(myself, 0);// remplacer 0 par lane
 					}
-					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
+					starting_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					current_index <- 0;
 					final_target <- target_intersection.location;
 					targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
@@ -1469,7 +1470,7 @@ species car skills:[advanced_driving]{
 				}else{//target is not good or car in last road of path
 					current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
 					target_intersection <- driving_road_network[currentSimuState] target_of current_road;
-					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
+					starting_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					current_index <- 0;
 					final_target <- target_intersection.location;
 					current_target <- final_target;
@@ -1490,15 +1491,15 @@ species car skills:[advanced_driving]{
 			}			
 			if flip(proba_used_od) {
 				int od_index <- rnd_choice(od_weights[currentSimuState].values);
-				current_intersection <- od_origins[currentSimuState].values[od_index];
+				starting_intersection <- od_origins[currentSimuState].values[od_index];
 				target_intersection <- od_destinations[currentSimuState].values[od_index];
-//				current_intersection <- one_of(origin_intersections[currentSimuState]);
-//				target_intersection <- one_of(destination_intersections[currentSimuState] - current_intersection);
+//				starting_intersection <- one_of(origin_intersections[currentSimuState]);
+//				target_intersection <- one_of(destination_intersections[currentSimuState] - starting_intersection);
 			} else {
-				current_intersection <- one_of(possible_sources[currentSimuState]);
-				target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
+				starting_intersection <- one_of(possible_sources[currentSimuState]);
+				target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
 			}
-			location <-current_intersection.location;
+			location <-starting_intersection.location;
 			
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 			final_target <- target_intersection.location;
@@ -1534,8 +1535,7 @@ species car skills:[advanced_driving]{
 	  		loop p over: targets{
 	  			draw circle(2#m) at: p color: #black; 
 	  		}
-	  		draw circle(2#m) at: current_intersection.location color: #blue; 
-	  		//draw circle(2#m) at: first(targets) color: #yellow; 
+	  		draw circle(2#m) at: starting_intersection.location color: #blue; 
 	  		draw circle(2#m) at: last(targets) color: #yellow; 
 	  		draw circle(2#m) at: current_target color: #yellow;
 	  		draw circle(5#m) at: location color:#blue; 
@@ -1654,10 +1654,10 @@ species intersection skills: [skill_road_node] {
 	bool is_crossing;
 	int group;
 	int id;
-	int time_to_change <- 20;
-	int free_time <- 20;
-	int cpt_free;
-	int counter <- rnd(time_to_change);
+//	float time_to_change <- traffic_light_duration;
+//	float free_time <- traffic_light_duration;
+	float cpt_free;
+	float counter <- rnd(traffic_light_duration);
 	list<road> ways1;
 	list<road> ways2;
 	bool is_green;
@@ -1716,33 +1716,32 @@ species intersection skills: [skill_road_node] {
 	}
 
 	reflex dynamic_node when: active and is_traffic_signal {
-		counter <- counter + 1;
+		counter <- counter + step;
 		if (is_free) {
-			cpt_free <- cpt_free+ 1;
-			if (cpt_free > free_time) {
-				cpt_free <- 0;
+			cpt_free <- cpt_free+ step;
+			if (cpt_free > traffic_light_duration) {
+				cpt_free <- 0.0;
 				is_free <- false;
 			}
 		}
-		if (counter >= time_to_change) {
-			counter <- 0;
+		if (counter >= traffic_light_duration) {
+			counter <- 0.0;
 			if is_green {
 				do to_red;
 			} else {
 				do to_green;
 			}
-
 		}
 
 	}
 
 	aspect default {
+		if showTrafficSignal{
+			draw circle(3#m) color: color;
+		}
 		if (active and is_traffic_signal and showTrafficSignal) {
 			draw circle(5) color: color_fire;
 			
-		}
-		if showTrafficSignal{
-			draw circle(3#m) color: color;
 		}
 	}
 }
