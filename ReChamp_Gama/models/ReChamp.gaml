@@ -1379,13 +1379,15 @@ species car skills:[advanced_driving]{
 				current_trajectory <- [];
 				current_offset <- {0,0};
 			 }else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
+			 	current_intersection <- target_intersection;
 				target_intersection <- target_intersection.exit[currentSimuState];
 			}else{ // reached a generic target
 				if flip(proba_used_od) {
-					//current_intersection <- one_of(origin_intersections[currentSimuState]);
+					current_intersection <- target_intersection;
 					int od_index <- rnd_choice(od_weights[currentSimuState].values);
 					target_intersection <- od_destinations[currentSimuState].values[od_index];
 				}else{
+					current_intersection <- target_intersection;
 					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
 				}
 			}
@@ -1414,7 +1416,8 @@ species car skills:[advanced_driving]{
 				if (target_intersection in possible_targets[currentSimuState]) and (ci != target_intersection) {// target is good. Computing a new path				
 					point save_location <- location;
 					road cr <- road(current_road);
-					location <- last(cr.shape.points);			
+					location <- last(cr.shape.points);	
+					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
 						target_intersection<- ci.exit[currentSimuState];
 					}		
@@ -1430,6 +1433,7 @@ species car skills:[advanced_driving]{
 					ask cr{
 						do register(myself, 0);// remplacer 0 par lane
 					}
+					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					current_index <- 0;
 					final_target <- target_intersection.location;
 					targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
@@ -1438,6 +1442,7 @@ species car skills:[advanced_driving]{
 				}else{//target is not good or car in last road of path
 					current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
 					target_intersection <- driving_road_network[currentSimuState] target_of current_road;
+					current_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					current_index <- 0;
 					final_target <- target_intersection.location;
 					current_target <- final_target;
@@ -1492,7 +1497,7 @@ species car skills:[advanced_driving]{
 	  	if(showCarTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
 	  	}
-	  	if (test_car){
+	  	if (test_car and showCar){
 	  		
 	  		if current_path != nil{
 	  			loop e over: current_path.edges{
@@ -1502,9 +1507,10 @@ species car skills:[advanced_driving]{
 	  		loop p over: targets{
 	  			draw circle(2#m) at: p color: #black; 
 	  		}
-	  		draw circle(2#m) at: first(targets) color: #yellow; 
+	  		draw circle(2#m) at: current_intersection.location color: #blue; 
+	  		//draw circle(2#m) at: first(targets) color: #yellow; 
 	  		draw circle(2#m) at: last(targets) color: #yellow; 
-	  		draw circle(2#m) at: current_target color: #blue;
+	  		draw circle(2#m) at: current_target color: #yellow;
 	  		draw circle(5#m) at: location color:#blue; 
 	  	}
 	}	
