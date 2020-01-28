@@ -115,6 +115,9 @@ global {
 	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
+	bool drawLegend parameter: 'Legend' category: "Debug" <-false;
+	
+	
 	
 	
 	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
@@ -310,7 +313,7 @@ global {
 		
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)^2));
-			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false with_optimizer_type "Dijkstra";
+			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false;// with_optimizer_type "Dijkstra";
 		}
 		
 		
@@ -661,7 +664,7 @@ global {
 	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
 		loop j from: 0 to:  stateNumber-1{
 			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)^2));
-			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "Dijkstra";
+			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map;//  with_optimizer_type "Dijkstra";
 		}
 	}
 	reflex updateSimuState when:updateSim=true{
@@ -1857,6 +1860,27 @@ experiment ReChamp type: gui autorun:true{
 				draw geometry(shape_file_bounds) color:#white empty:true;
 				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
+			
+			graphics "legend"{
+				if(drawLegend){
+					point posIn<-{world.shape.width*0.7, world.shape.height*0.7};
+					float space<-world.shape.width * 0.025;
+					float circleSize<-world.shape.width * 0.005;
+				    draw circle(circleSize) color: type_colors["people"] at: posIn;
+					draw "walk" color: type_colors["people"]  at: posIn font:font("Helvetica", 20 , #bold) rotate:angle;
+					
+					draw circle(circleSize) color: type_colors["bike"] at: posIn + {space* cos (angle), space * sin(angle)};
+					draw "bike" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)} font:font("Helvetica", 20 , #bold) rotate:angle;
+					
+					draw circle(circleSize) color: type_colors["car"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
+					draw "car" color: type_colors["car"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 font:font("Helvetica", 20 , #bold) rotate:angle;
+					
+					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
+					draw "pev" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 font:font("Helvetica", 20 , #bold) rotate:angle;
+				}
+					
+			}
+
 			
 			event["p"] action: {showPeople<-!showPeople;};
 			event["c"] action: {showCar<-!showCar;};
