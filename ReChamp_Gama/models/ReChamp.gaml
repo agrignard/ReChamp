@@ -609,7 +609,7 @@ global {
 		} 
 	}
 	
-	reflex memory_management when: every(100 #cycle) {
+	reflex memory_management when: every(10000 #cycle) {
 		ask experiment {do compact_memory;}
 	}
 	
