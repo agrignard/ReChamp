@@ -181,7 +181,7 @@ global {
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-1.0;//0.8;
+	float proba_used_od <-0.8;
 	float factor_avoid_tj <- 2.0;
 	
 	init {
