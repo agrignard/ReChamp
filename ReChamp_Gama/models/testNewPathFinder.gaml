@@ -8,6 +8,8 @@
 model shapeFileTester
 
 global {
+	
+	
 	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");	
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
@@ -51,7 +53,7 @@ global {
 	int currentSimuState<-0;
 	bool updateSim<-true;
 	int nbAgent<-1000;
-	float step <- 1 #sec;
+	float step <- 10 #sec;
 	map<string,float> mobilityRatioNow <-["people"::0.49, "car"::0.3,"bike"::0.2, "bus"::0.01];
 
 	list<list<intersection>> input_intersections <-list_with(stateNumber, []);
@@ -214,13 +216,13 @@ global {
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
 		
 		
-	//	ask first(40,car){test_car <- true;}
+		ask first(10,car){test_car <- true;}
 		
 		ask first(car){
 			test_car <- true;
 			location <- intersection[2072].location;
 			current_intersection <- intersection[2072];
-			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: intersection[2028]);
+			current_path <- new_shortest_path(driving_road_network[currentSimuState], intersection[2028], general_speed_map);
 			float longueur <- sum(current_path.edges accumulate (road(each).perimeter));
 			write "longueur chemin "+self+": "+longueur;
 			float l2 <- sum(current_path.edges accumulate (float(general_speed_map[road(each)])));
@@ -245,9 +247,9 @@ global {
 		
 		
 		pb <- path_between(driving_road_network[currentSimuState],intersection[2072],intersection[2028]).edges accumulate(road(each));
-		djk <- new_shortest_path(driving_road_network[currentSimuState], intersection[2072].location, intersection[2028], general_speed_map);
+//		djk <- first(car).new_shortest_path(driving_road_network[currentSimuState], intersection[2072].location, intersection[2028], general_speed_map);
 		write "longeur poids chemin le plus court (bleu): "+sum(pb accumulate(float(general_speed_map[each])));
-		write "longeur poids chemin le plus court (Dijstra, violet): "+sum(djk accumulate(float(general_speed_map[each])));
+//		write "longeur poids chemin le plus court (Dijstra, violet): "+sum(djk accumulate(float(general_speed_map[each])));
 				
 		//First Intervention (Paris Now)
 		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
@@ -469,27 +471,6 @@ global {
 		return [reachable, can_reach];
 	}
 	
-	list<road> new_shortest_path(graph g, point loc, intersection dest, map<road, float> m){
-		intersection init_i <- intersection closest_to loc;
-		list<intersection> visited_intersections <- [];
-		map<intersection, float> path_length <- [init_i::0.0];
-		map<intersection, list<road>> paths <- [init_i::[]];
-		loop while: not(dest in visited_intersections){
-			list<intersection> candidates_targets <- path_length.keys - visited_intersections;
-			intersection next_i <- candidates_targets with_min_of (path_length[each]);
-			visited_intersections << next_i;
-			loop i over: successors_of (g, next_i){
-				road r <- road(edge_between(g,next_i::intersection(i)));
-				float dist <- path_length[next_i]+m[r];
-				if not(intersection(i) in path_length.keys) or (dist < path_length[intersection(i)]) {
-					put dist at: i in: path_length;
-					put paths[next_i]+r at: i in: paths;
-				}
-			}
-		}
-		return paths[dest];
-	}
-	
 	
 }
 
@@ -556,6 +537,42 @@ species car skills:[advanced_driving]{
 	list<point> current_trajectory;
 	intersection current_intersection;
 	
+	path new_shortest_path(graph g, intersection dest, map<road, float> m){
+		intersection init_i <- intersection closest_to self.location;
+		list<intersection> visited_intersections <- [];
+		map<intersection, float> path_length <- [init_i::0.0];
+		map<intersection, list<road>> paths <- [init_i::[]];
+		write "computing path for "+self;
+		loop while: not(dest in visited_intersections){
+			list<intersection> candidates_targets <- path_length.keys - visited_intersections;
+			intersection next_i <- candidates_targets with_min_of (path_length[each]);
+			visited_intersections << next_i;
+			loop i over: successors_of (g, next_i){
+				road r <- road(edge_between(g,next_i::intersection(i)));
+				float dist <- path_length[next_i]+m[r];
+				if not(intersection(i) in path_length.keys) or (dist < path_length[intersection(i)]) {
+					put dist at: i in: path_length;
+					put paths[next_i]+r at: i in: paths;
+				}
+			}
+		}
+		if current_road != nil{
+			ask current_road as road {
+				do unregister(myself);
+			}
+		}
+		ask first(paths[dest]){
+			do register(myself, 0);
+		}
+		targets <- paths[dest] accumulate (g target_of each);
+		current_index <- 0;
+		segment_index_on_road <- 0;
+		current_target <- first(targets);
+		final_target <- last(targets).location;
+		return paths[dest] as path;
+	}
+	
+	
 	
 	
 	action remove_and_die {
@@ -602,7 +619,11 @@ species car skills:[advanced_driving]{
 					target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
 				}
 			}
-			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			if int(self) = 0 {
+				current_path <- new_shortest_path(driving_road_network[currentSimuState], target_intersection, general_speed_map);
+			}else{
+				current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			}
 	}
 	
 	
@@ -630,11 +651,12 @@ species car skills:[advanced_driving]{
 					location <- last(cr.shape.points);			
 					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
 						target_intersection<- ci.exit[currentSimuState];
-					}		
-					new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
-//					if new_path = nil{
-//						write "Error";
-//					}
+					}	
+					if int(self) = 0 {
+						new_path <- new_shortest_path(driving_road_network[currentSimuState], target_intersection, general_speed_map);
+					}else{
+						new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+					}	
 					current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
 					ask current_road as road {
 						do unregister(myself);
@@ -681,8 +703,11 @@ species car skills:[advanced_driving]{
 				target_intersection <- one_of(possible_targets[currentSimuState] - current_intersection);
 			}
 			location <-current_intersection.location;
-			
-			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			if int(self) = 0 {
+				current_path <- new_shortest_path(driving_road_network[currentSimuState], target_intersection, general_speed_map);
+			}else{
+				current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			}
 			final_target <- target_intersection.location;
 			current_lane <- 0;
 			current_trajectory <- [];
@@ -700,7 +725,11 @@ aspect base {
 	  		
 	  		if current_path != nil{
 	  			loop e over: current_path.edges{
-	  				draw 3 around(road(e).shape) color: #white;
+	  				if int(self)=0{
+	  					draw 5 around(road(e).shape) color: #cyan;
+	  				}else{
+	  					draw 3 around(road(e).shape) color: #white;
+	  				}	
 	  			}
 	  		}
 	  		loop p over: targets{
