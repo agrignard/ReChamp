@@ -317,11 +317,11 @@ global {
 		}
 		
 		
-		loop i over: intersection{
-			i.roads_in <- remove_duplicates(i.roads_in);
-			i.roads_out <- remove_duplicates(i.roads_out);
-		}
-		
+//		loop i over: intersection{
+//			i.roads_in <- remove_duplicates(i.roads_in);
+//			i.roads_out <- remove_duplicates(i.roads_out);
+//		}
+//		
 		loop j from: 0 to:  stateNumber-1{
 			ask intersection{
 				self.reachable_by_all[j] <- false;
@@ -378,6 +378,12 @@ global {
 			} 
 		}
 		ask first(dummy_car) {do die;}
+		
+		loop i over: intersection{
+			i.roads_in <- remove_duplicates(i.roads_in);
+			i.roads_out <- remove_duplicates(i.roads_out);
+		}
+		
 
 		
 		loop j from: 0 to: stateNumber - 1{
@@ -530,11 +536,12 @@ global {
 				int od_index <- rnd_choice(od_weights[currentSimuState].values);
 				starting_intersection <- od_origins[currentSimuState].values[od_index];
 				target_intersection <- od_destinations[currentSimuState].values[od_index];
+				location <-starting_intersection.location;
 				current_path <- set_path(od_paths[currentSimuState][od_index]);
 			} else {
 				starting_intersection <- one_of(possible_sources[currentSimuState]);
+				location <-starting_intersection.location;
 			}
-			location <-starting_intersection.location;
 			security_distance_coeff <- 5 / 9 * 3.6 * (1.5 - rnd(1000) / 1000);
 			proba_respect_priorities <- 1.0;// - rnd(200 / 1000);
 			proba_respect_stops <- [1.0];
@@ -1427,8 +1434,8 @@ species car skills:[advanced_driving]{
 					starting_intersection <- od_origins[currentSimuState].values[od_index];
 					target_intersection <- od_destinations[currentSimuState].values[od_index];
 					current_lane <- 0;
-					current_path <- set_path(od_paths[currentSimuState][od_index]);
 					location <-starting_intersection.location;
+					current_path <- set_path(od_paths[currentSimuState][od_index]);
 				} else {
 					starting_intersection <- one_of(possible_sources[currentSimuState]);
 					target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
@@ -1526,8 +1533,8 @@ species car skills:[advanced_driving]{
 				starting_intersection <- od_origins[currentSimuState].values[od_index];
 				target_intersection <- od_destinations[currentSimuState].values[od_index];
 				current_lane <- 0;
-				current_path <- set_path(od_paths[currentSimuState][od_index]);
 				location <-starting_intersection.location;
+				current_path <- set_path(od_paths[currentSimuState][od_index]);
 			} else {
 				starting_intersection <- one_of(possible_sources[currentSimuState]);
 				target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
