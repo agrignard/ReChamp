@@ -79,10 +79,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>647823.78431488201022148</xmin>
-      <ymin>6864173.16011988744139671</ymin>
-      <xmax>647882.34902740642428398</xmax>
-      <ymax>6864222.14574610814452171</ymax>
+      <xmin>649606.66862320550717413</xmin>
+      <ymin>6862852.14681045152246952</ymin>
+      <xmax>649840.92747330316342413</xmax>
+      <ymax>6863048.08931533433496952</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -3051,7 +3051,7 @@ def my_form_open(dialog, layer, feature):
       <defaults>
         <default field="capacity" expression=""/>
       </defaults>
-      <previewExpression></previewExpression>
+      <previewExpression>COALESCE( "capacity", '&lt;NULL>' )</previewExpression>
     </maplayer>
     <maplayer simplifyAlgorithm="0" minimumScale="0" maximumScale="1e+08" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" readOnly="0" geometry="Line" simplifyMaxScale="1" type="vector" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
       <id>reseau_cyclable20200108144222649</id>
