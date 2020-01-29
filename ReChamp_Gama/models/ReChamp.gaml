@@ -109,10 +109,10 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	float factor<-0.8;
-	float peopleSize <-(8.0)#m parameter: 'Peoplesize' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float carSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float bikeSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float busSize <-(6.0)#m parameter: 'Dot size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float peopleSize <-(8.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float carSize <-(6.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float bikeSize <-(6.0)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float busSize <-(6.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
@@ -149,7 +149,7 @@ global {
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
 	bool updateSim<-true;
-	int nbAgent<-750;
+	int nbAgent<-7500;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::1.2, "car"::0.3,"bike"::0.15, "bus"::0.05];
