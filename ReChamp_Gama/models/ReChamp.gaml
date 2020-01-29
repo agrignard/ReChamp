@@ -267,8 +267,11 @@ global {
 				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
 				vec_ref << [vec_dir,vec_ortho];
 			}
-			loop i from: 0 to: max(lanes_nb)-1{
-				offset_list << (oneway='no')?((lanes - i - 0.5)*3 + 0.25):((0.5*lanes - i - 0.5)*3);
+			offset_list <- list_with(stateNumber,nil);
+			loop j from: 0 to:  stateNumber-1{
+				loop i from: 0 to: lanes_nb[j] -1 step: 1 {
+					offset_list[j] << (oneway='no')?((lanes_nb[j] - i - 0.5)*3 + 0.25):((0.5*lanes_nb[j] - i - 0.5)*3);
+				}
 			}
 			loop i from: 0 to: length(shape.points) - 3 step: 1{		
 				float a <- angle_between(shape.points[i+1],shape.points[i],shape.points[i+2]);
@@ -312,7 +315,7 @@ global {
 		}
 		
 		loop j from: 0 to:  stateNumber-1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)^2));
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(0.1+each.lanes_nb[j])^2));
 			driving_road_network << (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false with_optimizer_type "NBAStarApprox";
 		}
 		
@@ -363,7 +366,7 @@ global {
 		create car returns: dummy_car;
 		path p;
 		loop j from: 0 to: stateNumber - 1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(1+each.lanes)^2));
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / each.maxspeed)/(0.1+each.lanes_nb[j])^2));
 			graph tmp <- (as_driving_graph(road where (each.lanes_nb[j] > 0), intersection)) with_weights general_speed_map use_cache false with_optimizer_type "Dijkstra";
 			loop od over: od_weights[j].keys {//♣	
 				ask first(dummy_car){
@@ -690,7 +693,7 @@ global {
 	
 	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
 		loop j from: 0 to:  stateNumber-1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(1+each.lanes)^2));
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(0.1+each.lanes_nb[j])^2));
 			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "NBAStarApprox";
 		}
 	}
@@ -961,7 +964,7 @@ species road  skills: [skill_road]  {
 	bool to_display <- true;
 	list<int> lanes_nb;
 	list<list<point>> vec_ref;
-	list<float> offset_list;
+	list<list<float>> offset_list;
 	list<float> angles;
 	float mean_speed;
 	list<float> current_speeds;
@@ -1049,7 +1052,11 @@ species road  skills: [skill_road]  {
 	}
 	
 	float compute_offset(int current_lane){
-		return offset_list[min(current_lane,max(0,lanes_nb[currentSimuState] -1))];
+		if lanes_nb[currentSimuState] = 0{
+			return 0;
+		}else{
+			return offset_list[currentSimuState][min(current_lane,lanes_nb[currentSimuState] -1)];
+		}
 	}
 	
 	aspect base {
