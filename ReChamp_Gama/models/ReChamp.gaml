@@ -57,7 +57,7 @@ global {
 	
 
 	bool showVizuRoad parameter: 'Mobility(m)' category: "Infrastructure" <-false;
-	bool showGreen parameter: 'Nature (n)' category: "Infrastructure" <-true;
+	bool showNature parameter: 'Nature (n)' category: "Infrastructure" <-true;
 	bool showUsage parameter: 'Usage (u)' category: "Infrastructure" <-true;
 
 	bool showPeopleTrajectory parameter: 'People Trajectory' category: "Trajectory" <-false;
@@ -486,14 +486,11 @@ global {
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
-	
-	
-	
 	action updateStoryTelling (int n){
-			if(n=1){currentStoryTellingState<-1;}
-			if(n=2){currentStoryTellingState<-2;}
-			if(n=3){currentStoryTellingState<-3;}
-			if(n=4){currentStoryTellingState<-4;}
+			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;}
+			if(n=2){currentStoryTellingState<-2;showBike<-!showBike;showSharedMobility<-!showSharedMobility;}
+			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;}
+			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;}
 	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
@@ -955,7 +952,7 @@ species park {
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
-		if(showGreen and (currentSimuState_str in state)){
+		if(showNature and (currentSimuState_str in state)){
 		  draw shape color: nature_colors[type]-100 border:nature_colors[type];	
 		}	
 	}
@@ -1817,12 +1814,11 @@ species coldSpot{
 
 experiment debug_xp type: gui autorun:true{
 	action _init_ {
-		create simulation with: [showCar::true, showPeople::true,showBike:: true, showSharedMobility::true, showGreen::true,showUsage::true,
+		create simulation with: [showCar::true, showPeople::true,showBike:: true, showSharedMobility::true, showNature::true,showUsage::true,
 			showCarTrajectory::false, showPeopleTrajectory::false, showBikeTrajectory::false, showSharedMobilityTrajectory::false,
 			showBikeLane::true, showBusLane::true, showStation::true,showTrafficSignal::true, showRoad::true, showBuilding::false,
 			showWaitingLine::true
 		];
-	
 	
 	}
 	output {
@@ -1949,13 +1945,13 @@ experiment ReChamp type: gui autorun:true{
 			event["c"] action: {showCar<-!showCar;};
 			event["v"] action: {showBike<-!showBike;};
 			event["b"] action: {showSharedMobility<-!showSharedMobility;};
-			event["n"] action: {showGreen<-!showGreen;};
+			event["n"] action: {showNature<-!showNature;};
 			event["u"] action: {showUsage<-!showUsage;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {updateSim<-true;};
+			event["z"] action: {updateSim<-true;showCar<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
 			event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
