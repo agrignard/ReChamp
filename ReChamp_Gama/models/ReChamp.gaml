@@ -109,13 +109,13 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	float factor<-0.8;
-	float peopleSize <-(8.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float carSize <-(6.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float bikeSize <-(6.0)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float busSize <-(6.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float peopleSize <-(3.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float carSize <-(2.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
-	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
+	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-true;
 	
 	
 	
@@ -1293,7 +1293,8 @@ species pedestrian skills:[moving] control: fsm{
 	
 	aspect base{
 		if(showPeople){
-			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			 //draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(peopleSize) color:#white at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
@@ -1964,7 +1965,7 @@ experiment ReChamp type: gui autorun:true{
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			event["l"] action: {drawLegend<-!drawLegend;};
+			//event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
 			event["1"] action: {ask world{do updateStoryTelling (1);}};
