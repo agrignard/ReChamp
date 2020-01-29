@@ -488,7 +488,7 @@ global {
 	
 	action updateStoryTelling (int n){
 			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;}
-			if(n=2){currentStoryTellingState<-2;showBike<-!showBike;showSharedMobility<-!showSharedMobility;}
+			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;}
 			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;}
 			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;}
 	}
@@ -1951,7 +1951,7 @@ experiment ReChamp type: gui autorun:true{
 			event["r"] action: {showRoad<-!showRoad;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {updateSim<-true;showCar<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["z"] action: {updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
 			event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
