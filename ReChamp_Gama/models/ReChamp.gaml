@@ -1933,20 +1933,19 @@ experiment ReChamp type: gui autorun:true{
 			
 			graphics "legend"{
 				if(drawLegend){
-					point posIn<-{world.shape.width*0.77, world.shape.height*0.75};
+					point lengendBox<-{360,100};
+					point posIn<-{world.shape.width*0.4, world.shape.height*0.7};
+					draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (angle), (lengendBox.x*0.9)/2 * sin(angle)} rotate:angle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
 					float space<-world.shape.width * 0.025;
 					float circleSize<-world.shape.width * 0.0025;
 					int fontSize<-10;
 					point textOffset<-{10,10};
-				    draw circle(circleSize) color: type_colors["people"] at: posIn;
-					draw "people" color: type_colors["people"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
-					
-					draw circle(circleSize) color: type_colors["bike"] at: posIn + {space* cos (angle), space * sin(angle)};
-					draw "bike" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					
-					draw circle(circleSize) color: type_colors["car"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
-					draw "car" color: type_colors["car"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					
+				    draw circle(circleSize) color: type_colors["car"] at: posIn;
+					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
+					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (angle), space * sin(angle)};
+					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
+					draw circle(circleSize) color: type_colors["people"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
+					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
 					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 				}
