@@ -109,7 +109,7 @@ global {
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	float factor<-0.8;
-	float peopleSize <-(8.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float peopleSize <-(30.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 50.0#m;
 	float carSize <-(6.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float bikeSize <-(6.0)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(6.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
@@ -416,7 +416,6 @@ global {
 
 	//	do check_signals_integrity;
 		
-		do updateSimuState;
 		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))];
 		create coldSpot from:coldspot_shapefile;
 		
@@ -430,11 +429,13 @@ global {
 		
 		//------------------- AGENT ---------------------------------------- //
 		
+		do updateSimuState;
+		
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
 		
 		ask first(5,car){test_car <- true;}
 		
-		//Create Pedestrain
+		//Create Pedestrian
 		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
 		
         //Create Bike
@@ -445,7 +446,6 @@ global {
 		}
 				
 		people_graph <- as_edge_graph(road) use_cache false;
-		//people_graph<- people_graph use_cache false;
 			
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
@@ -1163,6 +1163,8 @@ species pedestrian skills:[moving] control: fsm{
 	action updatefuzzTrajectory{
 	
 	}
+	
+	
 	state walk_to_objective initial: true{
 		enter {
 			walking <- true;
@@ -1269,8 +1271,7 @@ species pedestrian skills:[moving] control: fsm{
 			return location;
 		} else {
 			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2))) + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
-			
-			
+
 			
 			if(showPeopleTrajectory){
 			    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
@@ -1357,7 +1358,7 @@ species bus skills:[moving]{
 }
 
 
-species car skills:[advanced_driving]{			
+species car skills:[advanced_driving]{		
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -1514,9 +1515,10 @@ species car skills:[advanced_driving]{
 				fade_count <- 15;
 			}else{//current road is good
 				intersection ci <- driving_road_network[currentSimuState] target_of current_road;
-				if (target_intersection in possible_targets[currentSimuState]) and (ci != target_intersection) {// target is good. Computing a new path				
+				if (target_intersection in possible_targets[currentSimuState]) and (ci != target_intersection) {// target is good. Computing a new path			
 					point save_location <- location;
 					road cr <- road(current_road);
+					int oldi <- segment_index_on_road;
 					location <- last(cr.shape.points);	
 					starting_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					if ci.exit[currentSimuState] != nil{// current intersection is in a dead end
@@ -1524,6 +1526,7 @@ species car skills:[advanced_driving]{
 					}		
 					new_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 					current_path <- ([cr]+list<road> (new_path.edges)) as_path driving_road_network[currentSimuState];
+					location <- save_location;
 					ask current_road as road {
 						do unregister(myself);
 					}
@@ -1533,10 +1536,10 @@ species car skills:[advanced_driving]{
 					}
 					starting_intersection <- driving_road_network[currentSimuState] source_of current_road;	
 					current_index <- 0;
+					segment_index_on_road <- oldi;
 					final_target <- target_intersection.location;
 					targets <- list<point> (current_path.edges accumulate (driving_road_network[currentSimuState] target_of each));
 					current_target <- first(targets);					
-					location <- save_location;
 				}else{//target is not good or car in last road of path
 					current_path <- [road(current_road)] as_path driving_road_network[currentSimuState];
 					target_intersection <- driving_road_network[currentSimuState] target_of current_road;
@@ -1625,14 +1628,14 @@ species car skills:[advanced_driving]{
 			int count <- 0;
 			point offset_comp <- road(current_road).vec_ref[0][1]*road(current_road).compute_offset(current_lane);
 			float weight <- 1.0;
-			loop while: (count < s - 1) and ci < length(current_path.edges){
+			loop while: (count < s - 1) and ci < length(current_path.edges) {
 				count <- count + 1;
 				road cr <- road(current_path.edges[ci]);
 				if cs < length(cr.angles) {
 					float a <- cr.angles[cs];
 					float w <- 1+abs(a-180);
 					weight <- weight + w;
-					if abs(abs(a-90)-90)<5{
+					if mod(a,180) < 5 or mod(a,180)> 175{
 						offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
 					}else{
 						offset_comp <- offset_comp + (cr.vec_ref[cs][0]-cr.vec_ref[cs+1][0])*cr.compute_offset(current_lane)/sin(a)*w;
@@ -1647,7 +1650,8 @@ species car skills:[advanced_driving]{
 						}
 						float w <- 1+abs(a-180);
 						weight <- weight + w;
-						if abs(abs(a-90)-90)<5{
+//						if abs(abs(a-90)-90)<10{
+						if mod(a,180) < 5 or mod(a,180)> 175{
 							offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
 						}else{
 							offset_comp <- offset_comp + (cr.vec_ref[cs][0]*cr2.compute_offset(current_lane)-cr2.vec_ref[0][0]*cr.compute_offset(current_lane))/sin(a)*(1+abs(a-180));
@@ -1657,6 +1661,7 @@ species car skills:[advanced_driving]{
 					cs <- 0;
 				}
 			}
+		
 		return offset_comp / weight;
 		}	
 	}
