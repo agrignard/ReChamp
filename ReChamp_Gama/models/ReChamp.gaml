@@ -195,6 +195,11 @@ global {
 	point destination;
 	path shortest_path;
 	bool test_path <- false;
+	int crossOverTime<-10;
+	int crossOverCar;
+	int crossOverSoftMob;
+	int crossOverNature;
+	int crossOverUsage;
 	
 	init {
 		
@@ -487,10 +492,10 @@ global {
 	}
 	
 	action updateStoryTelling (int n){
-			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;}
-			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;}
-			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;}
-			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;}
+			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
+			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;crossOverUsage<-crossOverTime;}
 	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
@@ -508,6 +513,13 @@ global {
 			write "fps: "+round((1/mean(chrono))*10000)/10+"    ("+round(mean(chrono))+"ms per frame)";
 			}
 		m_time <- new_m_time;
+	}
+	
+	reflex fadein when:(crossOverCar>0 or crossOverSoftMob>0 or crossOverNature>0 or crossOverUsage>0){
+		if (crossOverCar>0){crossOverCar<-crossOverCar-1;}
+		if (crossOverSoftMob>0){crossOverSoftMob<-crossOverSoftMob-1;}
+		if (crossOverNature>0){crossOverNature<-crossOverNature-1;}
+		if (crossOverUsage>0){crossOverUsage<-crossOverUsage-1;}
 	}
 	
 	
@@ -1898,16 +1910,16 @@ experiment ReChamp type: gui autorun:true{
 	   	    species graphicWorld aspect:base;	    	
 	    	species intervention aspect: base;
 		    species building aspect: base;
-			species park aspect: base transparency:0.5;
-			species culture aspect: base transparency:0.5;
+			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
+			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
 			species road aspect: base;
 			species vizuRoad aspect:base transparency:0.5;
 			species bus_line aspect: base;
 			species intersection;
-			species car aspect:base transparency:0.5;
-			species pedestrian aspect:base transparency:0.2;
-			species bike aspect:base transparency:0.5;
-			species bus aspect:base transparency:0.5;
+			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
+			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
+			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
+			species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
 			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
