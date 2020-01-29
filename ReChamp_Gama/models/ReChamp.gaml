@@ -147,7 +147,7 @@ global {
 	string currentSimuState_str <- "present" among: ["present", "future"];
 	int currentSimuState<-0;
 	int currentStoryTellingState<-0;
-	list<string> catchPhrase<-["traffic","public space","vibrancy","traffic","public space","vibrancy"];
+	list<string> catchPhrase<-["car traffic","moblilité douce","park","culture"];
 	bool updateSim<-true;
 	int nbAgent<-750;
 	
@@ -486,6 +486,15 @@ global {
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
+	
+	
+	
+	action updateStoryTelling (int n){
+			if(n=1){currentStoryTellingState<-1;}
+			if(n=2){currentStoryTellingState<-2;}
+			if(n=3){currentStoryTellingState<-3;}
+			if(n=4){currentStoryTellingState<-4;}
+	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
 			return mobilityRatioNow;
@@ -1887,7 +1896,7 @@ experiment debug_xp type: gui autorun:true{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
@@ -1949,6 +1958,11 @@ experiment ReChamp type: gui autorun:true{
 			event["z"] action: {updateSim<-true;};
 			event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
+			
+			event["1"] action: {ask world{do updateStoryTelling (1);}};
+			event["2"] action: {ask world{do updateStoryTelling (2);}};
+			event["3"] action: {ask world{do updateStoryTelling (3);}};
+			event["4"] action: {ask world{do updateStoryTelling (4);}};
 		}
 	}
 }
@@ -1957,7 +1971,7 @@ experiment ReChamp type: gui autorun:true{
 experiment ReChamp2Proj parent:ReChamp autorun:true{	
 	
 	output {	
-		layout #split;
+		layout #horizontal;
 		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
@@ -1967,87 +1981,284 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 			}*/
 			
 			graphics "state" {
+				write currentStoryTellingState;
 				float textSize<-10#px;
+				float spacebetweenLine<-textSize*2;
+				point spacebetweenBlock<-{200#px,world.shape.height/8};
 				float spacebetween<-200#px;
+				
 				float spacebetweenSame<-250#px;
-				draw ((currentSimuState = 0 ) ? "Today" :"2024") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
-				if(currentStoryTellingState=1 or currentStoryTellingState=4){
-				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("Véhicules Individuels 33%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("Véhicules Partagés 5%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				  draw ("Mobilités Douces 2%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
-				  draw ("Piéton 60%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
-				  
-				  draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
-				  draw ("Vehicule/heure: 10 250 Vehicule/heure") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
-				  
-				  draw ("Place de l'Etoile: 11") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
-				  draw ("Ave Champs Elysées:6") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};
-				  draw ("Ave Winston Churchill:4") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*6};
-				  draw ("Place de la concorde:12") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*8};			
+				draw ((currentSimuState = 0 ) ? "TODAY" :"VISION") color: #white font: font("Helvetica", textSize*2, #bold) at: {world.shape.width*0.75,world.shape.height*0.25};
+				float curY<-spacebetweenBlock.y;
+				float curX<-0.0;
+				
+				if(currentStoryTellingState=1){ 
+				  if(currentSimuState =0){
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("VOIRIE DEDIEE") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Véhicules Individuels 33%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Véhicules Partagés 5%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("POLLUTION DE L'AIR") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Emission de CO2 318 670") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("TRAFFIC") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Vehicule/heure: 10 250") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				   draw ("VOIE CIRCULLEE") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de l'Etoile: 11") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Champs Elysées:6") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Winston Churchill:4") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de la concorde:12") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};		
+				  }else{
+				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {curX,curY};	
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;	
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("VOIRIE DEDIEE") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Véhicules Individuels 16% (-51%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Véhicules Partagés 6% (+12%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("POLLUTION DE L'AIR") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Emission de CO2 165 000 (-48%) ") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("TRAFFIC") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Vehicule/heure: 7 800 (-24%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("VOIE CIRCULLEE") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de l'Etoile: 7 (-40%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Champs Elysées:4 (-33%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Winston Churchill:0 (-100%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de la concorde:4 (-67%)") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  }
 				}
-				if(currentStoryTellingState=2 or currentStoryTellingState=5){
-				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("Véhicules Individuels 33%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("Véhicules Partagés 5%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				  draw ("Mobilités Douces 2%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
-				  draw ("Piéton 60%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
-				  
-				  
-				  
-				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
-				  draw ("Pleine Terre 30 000 m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Strate Arbustrive 30 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*4+spacebetween};
-				  draw ("Sol Perméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*6+spacebetween};
-				  draw ("Sol Imperméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*8+spacebetween};	
-				  
-				  draw ("Coefficient de Biotope: 5%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Nombre d'arbes: 55 000") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*4+spacebetween};
-				  
-				  draw ("Volume Evapo-Transpiré: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Abbatement sur pluie 12mm: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*4+spacebetween};
+				if(currentStoryTellingState=2){
+				if(currentSimuState =0){
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[1]) color: type_colors["bike"] font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("VOIRIE DEDIEE") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Mobilités Douces 2%") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Piéton 60%") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("POLLUTION DE L'AIR") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Emission de CO2 318 670") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("TRAFFIC") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Vehicule/heure: 10 250") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				   draw ("VOIE CIRCULLEE") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de l'Etoile: 11") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Champs Elysées:6") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Winston Churchill:4") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de la concorde:12") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};		
+				  }else{
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[1]) color: type_colors["bike"] font: font("Helvetica", textSize, #bold) at: {curX,curY};	
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("VOIRIE DEDIEE") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Mobilités Douces 4% (+66%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Piéton 74% (+23%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("POLLUTION DE L'AIR") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Emission de CO2 165 000 (-48%) ") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("TRAFFIC") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Vehicule/heure: 7 800 (-24%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("VOIE CIRCULLEE") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de l'Etoile: 7 (-40%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Champs Elysées:4 (-33%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Ave Winston Churchill:0 (-100%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Place de la concorde:4 (-67%)") color: type_colors["bike"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  }
 				}
-				if(currentStoryTellingState=3 or currentStoryTellingState=6){
-				  draw (catchPhrase[0]) color: type_colors["car"] font: font("Helvetica", textSize, #bold) at: {0,world.shape.height/4};
-				  draw ("Véhicules Individuels 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*2};
-				  draw ("Véhicules Partagés 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*4};
-				  draw ("Mobilités Douces 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*6};
-				  draw ("Espace Piéton 55%") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {0,world.shape.height/4+textSize*8};	
-				  
-				  /*draw ("Emission de CO2 55") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*2};
-				  draw ("Vehicule/heure: 1000") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame,world.shape.height/4+textSize*4};
-				  
-				  draw ("Arret de bus:10") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*2};
-				  draw ("Stations de Vélos:500") color: type_colors["car"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2,world.shape.height/4+textSize*4};	*/	
-				  
-				  
-				  draw (catchPhrase[1]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {0+spacebetween,world.shape.height/4+spacebetween};
-				  draw ("Pleine Terre 30 000 m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Strate Arbustrive 30 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*4+spacebetween};
-				  draw ("Sol Perméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*6+spacebetween};
-				  draw ("Sol Imperméable 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween,world.shape.height/4+textSize*8+spacebetween};	
-				  
-				  /*draw ("Coefficient de Biotope: 5%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Nombre d'arbes: 55 000") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween,world.shape.height/4+textSize*4+spacebetween};
-				  
-				  draw ("Volume Evapo-Transpiré: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*2+spacebetween};
-				  draw ("Abbatement sur pluie 12mm: 55%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween,world.shape.height/4+textSize*4+spacebetween};*/
-				  
-				  draw (catchPhrase[2]) color: #yellow font: font("Helvetica", textSize, #bold) at: {0+spacebetween*1.5,world.shape.height/4+spacebetween*2};
-				  draw ("Offre Gastronomiques: 20") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
-				  draw ("Surface Pique-Nique 3 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
-				  draw ("Surface Pietonne 30 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*6+spacebetween*2};
-				  draw ("Surface Ombragée 30 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {0+spacebetween*1.5,world.shape.height/4+textSize*8+spacebetween*2};	
-				  
-				  draw ("Espaces de rencontre :55 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
-				  draw ("Equipement Sportifs: 55 000m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
-				  
-				  draw ("Volume Evapo-Transpiré: 55%") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween*1.5,world.shape.height/4+textSize*2+spacebetween*2};
-				  draw ("Abbatement sur pluie 12mm: 55%") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {spacebetweenSame*2+spacebetween*1.5,world.shape.height/4+textSize*4+spacebetween*2};
+				
+				if(currentStoryTellingState=3){	
+				  if(currentSimuState =0){
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[2]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("PERMEABILITE DES SOLS") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Sol Perméable  38%") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Pleine de terre 75 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Strate Végétale 32 000m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("Nombre d'arbes: 4 280") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("RAFRAICHISSEMENT") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Temperature chaussée  35°C") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Temperature trottoir 35°C") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("EAU DE PLUIE") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Absorbée/Evaporée 56 000 m2") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Envoyée à l'égout 355 000 m3") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};				  
+				  }else{
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[2]) color: type_colors["bus"] font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  curY<-curY+spacebetweenLine;
+				  draw ("PERMEABILITE DES SOLS") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Sol Perméable  58% (+53%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Pleine de terre 112 400m2 (+49%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Strate Végétale 95 000m2 (+196%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};	
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("Nombre d'arbes: 5 420 (+26%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("RAFRAICHISSEMENT") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Temperature chaussée  33.5°C (-1.5°C)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Temperature trottoir 31°C (-4°C)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("EAU DE PLUIE") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Absorbée/Evaporée 140 000 m2 (+150%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Envoyée à l'égout 271 500 m3 (-24%)") color: type_colors["bus"] font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  }
 				}
-			}
-			
 
+				if(currentStoryTellingState=4){ 
+				  if(currentSimuState =0){
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[3]) color: #yellow font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("RESTAURATION") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Offre Existante 6") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Surface de Pique-Nique 12 400 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("PROMENADE") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Promenade Pietonne 257 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Surface Ombragée 45 000 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Assises 458") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Fontaine d'eau potable 10") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY}; 
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("Aménités") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Espace de détente 7300 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Espace de Sport 0m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Air de Jeux 340 m2") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};			  
+				  }else{
+				  curY<-spacebetweenBlock.y;
+				  curX<-0.0;
+				  draw (catchPhrase[3]) color: #yellow font: font("Helvetica", textSize, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("RESTAURATION") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Offre Augmentée 26 (+333%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Surface de Pique-Nique 54 300 m2 (+338%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curX<-curX+spacebetweenBlock.x;			  
+				  curY<-curY+spacebetweenBlock.y;
+				  draw ("PROMENADE") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Promenade Pietonne 332 000 m2 (+29%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Surface Ombragée 110 000 m2 (+145%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Assises 1 540 (+236%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				   curY<-curY+spacebetweenLine;
+				  draw ("Fontaine d'eau potable 81 (+710%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY}; 
+				  curY<-curY+spacebetweenLine;
+				  curY<-curY+spacebetweenBlock.y;
+				  curX<-curX+spacebetweenBlock.x;
+				  draw ("Aménités") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Espace de détente 50 200 m2 (+585%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Espace de Sport 2 850m2 (+100%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  curY<-curY+spacebetweenLine;
+				  draw ("Air de Jeux 1580 m2 (+365%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
+				  }
+			  }
+			}
 		}
 	}
 }
