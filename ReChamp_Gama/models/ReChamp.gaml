@@ -1401,7 +1401,13 @@ species car skills:[advanced_driving]{
 				old_segment_index <- segment_index_on_road;
 				old_index <- current_index;
 			}
-			current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
+			if current_road = nil{
+				current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
+			}else{
+				point diff_offset <- (target_offset - current_offset);
+				list<point> vecs <- road(current_road).vec_ref[segment_index_on_road];
+				current_offset  <- current_offset + vecs[0]*(diff_offset.x*vecs[0].x+diff_offset.y*vecs[0].y)* min([1,real_speed/100*step])+ vecs[1]*(diff_offset.x*vecs[1].x+diff_offset.y*vecs[1].y)* min([1,3*real_speed/100*step]);			
+			}
 		}else{
 			float val <- road(current_road).compute_offset(current_lane);
 			val <- on_linked_road ? -val : val;
