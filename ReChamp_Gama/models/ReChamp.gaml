@@ -612,6 +612,23 @@ global {
 				counter <- cpt_init;	
 				}
 			}
+			
+			
+			ask gp {
+				point centroide <- mean (gp collect (intersection(each)).location);
+				loop rd over: roads_in {
+					bool inward <- distance_to(centroide, first(rd.shape.points)) > distance_to(centroide, last(rd.shape.points));
+					if inward {
+						road(rd).ped_xing << self;
+					}
+				}
+				loop rd over: roads_out {
+					bool outward <- distance_to(centroide, first(rd.shape.points)) < distance_to(centroide, last(rd.shape.points));
+					if outward {
+						road(rd).ped_xing << self;
+					}
+				}
+			}
 		}
 		
 		list<list<intersection>> groupes <- traffic_signals where (each.group = 0) simple_clustering_by_distance dist_group_traffic_light;
@@ -996,6 +1013,7 @@ species road  skills: [skill_road]  {
 	int p_before;
 	int p_after;
 	list<int> nb_car_max <- [1 + round(shape.perimeter * p_before / 10), 1 +round(shape.perimeter * p_after / 10)] ;
+	list<intersection> ped_xing;
 	
 	bool has_traffic_jam {
 		list<agent> ags <- all_agents;
@@ -1150,6 +1168,7 @@ species pedestrian skills:[moving] control: fsm{
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	
+	bool waiting_at_traffic_light <- false;
 	bool wandering <- false;
 	bool to_culture <- false;
 	bool visiting <- false;
@@ -1193,7 +1212,19 @@ species pedestrian skills:[moving] control: fsm{
 				}
 			}
 		}
-		do goto target: target on:people_graph speed: speed_walk_current;
+		if current_edge != nil{
+			intersection i <- first(road(current_edge).ped_xing where(distance_to(each,self)<10));
+			point p1 <- destination - location;
+			if i != nil and (p1.x*(i.location - location).x+p1.y*(i.location - location).y > 0) and not(i.is_green) {
+				
+				
+			}else{
+				do goto target: target on:people_graph speed: speed_walk_current;
+			}
+			
+		}else{
+			do goto target: target on:people_graph speed: speed_walk_current;
+		}
 		transition to: stroll_in_city when: not to_exit and wandering and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
 		transition to: queueing when: not to_exit and to_culture and location = target;
@@ -1280,7 +1311,10 @@ species pedestrian skills:[moving] control: fsm{
 		  	    {
 		        current_trajectory >> first(current_trajectory);
 		        }
-		        current_trajectory << location + {cos(heading + 90) * val, sin(heading + 90) * val};	
+		        if length(current_trajectory) = 0 or distance_to(location + {cos(heading + 90), sin(heading + 90)} * val,last(current_trajectory)) > 20 {
+		        	 current_trajectory << location + {cos(heading + 90) * val, sin(heading + 90) * val};	
+		        }
+		       
 			}
 			
 			//float val <- ((road(current_edge).oneway='no')? ((road(current_edge).lanes - 0.5)*3 + 2.25):((0.5*road(current_edge).lanes - 0.5)*3 +2.0)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2));
@@ -1295,12 +1329,13 @@ species pedestrian skills:[moving] control: fsm{
 	} 
 	
 	aspect base{
+		point loc <- calcul_loc();
 		if(showPeople){
 			 //draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-			 draw square(peopleSize) color:#white at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(peopleSize) color:#white at:walking ? loc :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
+	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
 	  	}	
 	}
 }
@@ -1767,6 +1802,7 @@ species intersection skills: [skill_road_node] {
 
 		}
 	}
+
 
 	action to_green {
 		if not is_free {
