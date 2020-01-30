@@ -209,6 +209,8 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	
 	
 	bool benchmark_mode <- false;
+	float display_time_global;
+	float display_time_sequence;
 	float global_time_global;
 	float global_time_sequence;
 	int nb_cycles_sequence <- 100;
@@ -529,6 +531,12 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	
 	reflex record_time when: benchmark_mode{
 		
+		if (t_ref_inter > 0) {
+			float t_display <- machine_time - t_ref_inter;
+			display_time_global <- display_time_global + t_display ;
+			display_time_sequence <- display_time_sequence + t_display;
+			
+		}
 		if (t_ref = 0) {
 			t_ref <- machine_time;
 		}
@@ -541,6 +549,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 			write "\n******************* CYCLE : " + cycle + " *******************" ;
 			write "total time: " + (total_time_global/ 1000.0) + "-> 100%";
 			write "global reflex total: "+ (global_time_global/ 1000.0) with_precision 3+ "-> " + (global_time_global/total_time_global * 100.0) with_precision 3+"%";
+			write "display total: "+ (display_time_global/ 1000.0) with_precision 3+ "-> " + (display_time_global/total_time_global * 100.0) with_precision 3+"%";
 			ask benchmark_ag  {
 				write name + " total: "+ (total_time/ 1000.0) with_precision 3+ "-> " + (total_time/total_time_global * 100.0) with_precision 3+"%";
 			}
@@ -548,12 +557,14 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 			
 			write "sequence time: " + (total_time_sequence/ 1000.0) with_precision 3+ "-> 100%";	
 			write "global reflex sequence time: "+ (global_time_sequence/ 1000.0) with_precision 3+ "-> " + (global_time_sequence/total_time_sequence * 100.0) with_precision 3+"%";
+			write "display sequence time: "+ (display_time_sequence/ 1000.0) with_precision 3+ "-> " + (display_time_sequence/total_time_sequence * 100.0) with_precision 3+"%";
 			ask benchmark_ag  {
 				write name + " sequence: "+ (sequence_time/ 1000.0) with_precision 3+ "-> " + (sequence_time/total_time_sequence * 100.0) with_precision 3 +"%";
 				sequence_time <- 0.0;
 			}
 			total_time_sequence <- 0.0;
 			global_time_sequence <- 0.0;
+			display_time_sequence <- 0.0;
 			
 		}
 		t_ref <- machine_time;
