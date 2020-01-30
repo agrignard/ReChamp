@@ -66,21 +66,21 @@ global {
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	int trajectorySizeMax<-100;
-	int peopleTrajectoryLengthBefore <-25 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:50;
-	int peopleTrajectoryLengthAfter <-25 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:50;
-	int carTrajectoryLengthBefore <-25 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 50;
-	int carTrajectoryLengthAfter <-25 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 50;
-	int bikeTrajectoryLengthBefore <-25 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 50;
-	int bikeTrajectoryLengthAfter <-25 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 50;
-	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
-	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int peopleTrajectoryLengthBefore <-50 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:100;
+	int peopleTrajectoryLengthAfter <-50 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:100;
+	int carTrajectoryLengthBefore <-50 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 100;
+	int carTrajectoryLengthAfter <-50 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectoryLengthBefore <-50 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectoryLengthAfter <-50 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLengthBefore <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLengthAfter <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
 	
 
-	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
+	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
 	float traffic_light_duration <-40#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
-	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
+	float speedUpSpeedMax <-50#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-2.5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 0.1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
 	
@@ -88,14 +88,14 @@ global {
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	float peopleTrajectoryTransparencyBefore <-0.25 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float peopleTrajectoryTransparencyAfter <-0.25 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyBefore <-0.25 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyAfter <-0.25 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyBefore <-0.25 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyAfter <-0.25 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyBefore <-0.25 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyAfter <-0.25 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyBefore <-0.5 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyAfter <-0.5 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyBefore <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyAfter <-0.5 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyBefore <-0.5 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyAfter <-0.5 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyBefore <-0.5 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyAfter <-0.5 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 
 	
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -110,7 +110,7 @@ global {
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
 	float factor<-0.8;
 	float peopleSize <-(3.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float carSize <-(2.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float carSize <-(3.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	
@@ -135,7 +135,7 @@ global {
 	//OLD PCA
 	//map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	//NEW COLOR
-	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(140,200,135),"pro"::rgb(140,200,135)];
@@ -187,7 +187,7 @@ global {
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-0.6;
+	float proba_used_od <-0.7;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
 	
@@ -1294,7 +1294,7 @@ species pedestrian skills:[moving] control: fsm{
 	aspect base{
 		if(showPeople){
 			 //draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-			 draw square(peopleSize) color:#white at:walking ? calcul_loc() :location rotate: angle;	
+			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
@@ -1944,7 +1944,7 @@ experiment ReChamp type: gui autorun:true{
 					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
 					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (angle), space * sin(angle)};
 					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					draw circle(circleSize) color: type_colors["people"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
+					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
 					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
 					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
@@ -1974,7 +1974,7 @@ experiment ReChamp type: gui autorun:true{
 		}
 	}
 }
-
+	
 
 experiment ReChamp2Proj parent:ReChamp autorun:true{	
 	
@@ -1983,10 +1983,12 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
-			/*graphics 'dashboardbackground'{
+		    /*graphics 'dashboardbackground'{
 				draw rectangle(1920,1080) texture:dashboardbackground.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 				
 			}*/
+			
+			
 			
 			graphics "state" {
 				write currentStoryTellingState;
