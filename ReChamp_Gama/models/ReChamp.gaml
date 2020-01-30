@@ -1494,11 +1494,20 @@ species car skills:[advanced_driving]{
 	float speed;
 	bool in_tunnel -> current_road != nil and road(current_road).is_tunnel[currentSimuState];
 	list<point> current_trajectory;
+	list<list<point>> tail;
+	list<point> last_locations;
 	intersection starting_intersection;
 	point target;
 	
 	int cpt_blocked;
 	int max_cpt_blocked <- 100;
+	
+	action compute_tail{
+		list<list<point>> lr <- copy_between(current_path.edges, old_index, current_index +1) collect (last(length(road(each).shape.points)-1,road(each).shape.points));//collect and remove first points
+		lr[0] <- last(length(lr[0] - old_segment_index ),lr[0]);
+		lr[length(lr)-1] <- first(segment_index_on_road-1,last(lr));
+		last_locations <- last_locations + lr accumulate(each);
+	}
 
 	reflex manage_cpt_blocked {
 		if real_speed = 0 {
@@ -1524,53 +1533,7 @@ species car skills:[advanced_driving]{
 		}
 		return remaining_time;
 	}
-	action remove_and_die {
-		if (current_road != nil) {
-			ask road(current_road) {
-				do unregister(myself);
-			}
-		}
-		do die;
-	}
-	reflex smooth_curve{
-		if smoothTrajectory{
-			if (old_segment_index != segment_index_on_road) or (old_index != current_index){
-				target_offset <- compute_offset(3);
-				old_segment_index <- segment_index_on_road;
-				old_index <- current_index;
-			}
-			if current_road = nil{
-				current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
-			}else{
-				point diff_offset <- (target_offset - current_offset);
-				list<point> vecs <- road(current_road).vec_ref[segment_index_on_road];
-				current_offset  <- current_offset + vecs[0]*(diff_offset.x*vecs[0].x+diff_offset.y*vecs[0].y)* min([1,real_speed/100*step])+ vecs[1]*(diff_offset.x*vecs[1].x+diff_offset.y*vecs[1].y)* min([1,3*real_speed/100*step]);			
-			}
-		}else{
-			float val <- road(current_road).compute_offset(current_lane);
-			val <- on_linked_road ? -val : val;
-			if (current_road != nil){
-				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
-			}		
-		}	
-	}
 	
-	path set_path(path p){
-		if current_road != nil{
-			ask current_road as road {
-				do unregister(myself);
-			}
-		}
-		ask road(first(p.edges)){
-			do register(myself, myself.current_lane);
-		}	
-		current_index <- 0;
-		segment_index_on_road <- 0;
-		final_target <- target_intersection.location;
-		targets <- list<point> (p.edges accumulate (driving_road_network[currentSimuState] target_of each));
-		current_target <- first(targets);
-		return p;
-	}
 	
 	reflex leave when: final_target = nil  {
 			if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
@@ -1612,8 +1575,35 @@ species car skills:[advanced_driving]{
 			}
 	}
 	
+	reflex fade when: (fade_count > 0){
+		fade_count <- fade_count - 1;
+		if fade_count = 0{
+			if current_road != nil {
+				ask current_road as road {
+					do unregister(myself);
+				}
+			}			
+			if flip(proba_used_od) {
+				int od_index <- rnd_choice(od_weights[currentSimuState].values);
+				starting_intersection <- od_origins[currentSimuState].values[od_index];
+				target_intersection <- od_destinations[currentSimuState].values[od_index];
+				current_lane <- 0;
+				location <-starting_intersection.location;
+				current_path <- set_path(od_paths[currentSimuState][od_index]);
+			} else {
+				starting_intersection <- one_of(possible_sources[currentSimuState]);
+				target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
+				location <-starting_intersection.location;
+				current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+			}	
+			final_target <- target_intersection.location;
+			current_lane <- 0;
+			current_trajectory <- [];
+			current_offset <- {0,0};
+		}	
+	}
 	
-	reflex move when: final_target != nil{	
+	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
 	  	if (current_path = nil) {
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 		}
@@ -1624,6 +1614,29 @@ species car skills:[advanced_driving]{
         current_trajectory >> first(current_trajectory);
         }
         current_trajectory << location+current_offset;
+	}
+	
+	reflex smooth_curve{
+		if smoothTrajectory{
+			if (old_segment_index != segment_index_on_road) or (old_index != current_index){
+				target_offset <- compute_offset(3);
+				old_segment_index <- segment_index_on_road;
+				old_index <- current_index;
+			}
+			if current_road = nil{
+				current_offset  <- current_offset + (target_offset - current_offset) * min([1,real_speed/100*step]);
+			}else{
+				point diff_offset <- (target_offset - current_offset);
+				list<point> vecs <- road(current_road).vec_ref[segment_index_on_road];
+				current_offset  <- current_offset + vecs[0]*(diff_offset.x*vecs[0].x+diff_offset.y*vecs[0].y)* min([1,real_speed/100*step])+ vecs[1]*(diff_offset.x*vecs[1].x+diff_offset.y*vecs[1].y)* min([1,3*real_speed/100*step]);			
+			}
+		}else{
+			float val <- road(current_road).compute_offset(current_lane);
+			val <- on_linked_road ? -val : val;
+			if (current_road != nil){
+				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
+			}		
+		}	
 	}
 	
 	
@@ -1673,32 +1686,30 @@ species car skills:[advanced_driving]{
 		to_update <- false;	
 	}
 
-	reflex fade when: (fade_count > 0){
-		fade_count <- fade_count - 1;
-		if fade_count = 0{
-			if current_road != nil {
-				ask current_road as road {
-					do unregister(myself);
-				}
-			}			
-			if flip(proba_used_od) {
-				int od_index <- rnd_choice(od_weights[currentSimuState].values);
-				starting_intersection <- od_origins[currentSimuState].values[od_index];
-				target_intersection <- od_destinations[currentSimuState].values[od_index];
-				current_lane <- 0;
-				location <-starting_intersection.location;
-				current_path <- set_path(od_paths[currentSimuState][od_index]);
-			} else {
-				starting_intersection <- one_of(possible_sources[currentSimuState]);
-				target_intersection <- one_of(possible_targets[currentSimuState] - starting_intersection);
-				location <-starting_intersection.location;
-				current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
-			}	
-			final_target <- target_intersection.location;
-			current_lane <- 0;
-			current_trajectory <- [];
-			current_offset <- {0,0};
+	action remove_and_die {
+		if (current_road != nil) {
+			ask road(current_road) {
+				do unregister(myself);
+			}
+		}
+		do die;
+	}
+
+		path set_path(path p){
+		if current_road != nil{
+			ask current_road as road {
+				do unregister(myself);
+			}
+		}
+		ask road(first(p.edges)){
+			do register(myself, myself.current_lane);
 		}	
+		current_index <- 0;
+		segment_index_on_road <- 0;
+		final_target <- target_intersection.location;
+		targets <- list<point> (p.edges accumulate (driving_road_network[currentSimuState] target_of each));
+		current_target <- first(targets);
+		return p;
 	}
 	
 	point calcul_loc {
@@ -1709,34 +1720,6 @@ species car skills:[advanced_driving]{
 		}
 	} 
 	
-	
-	aspect base {
-		if(showCar){
-		    draw rectangle(carSize,carSize*2.5) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
-	  	}
-	  	if(showCarTrajectory and showCar){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
-	  	}
-
-	  	if (test_car and showTestCar){	
-	  		if current_path != nil{
-	  			loop e over: current_path.edges{
-	  				draw 3 around(road(e).shape) color: #white;
-	  			}
-	  		}
-	  		loop p over: targets{
-	  			draw circle(2#m) at: p color: #black; 
-	  		}
-	  		draw circle(2#m) at: starting_intersection.location color: #blue; 
-	  		draw circle(2#m) at: last(targets) color: #yellow; 
-	  		draw circle(2#m) at: current_target color: #yellow;
-	  		draw circle(5#m) at: location color:#blue; 
-	  	}
-	}	
-	
-
-	
-
 		
 	point compute_offset(int s){	
 		if current_road = nil or current_path = nil{
@@ -1784,6 +1767,31 @@ species car skills:[advanced_driving]{
 		return offset_comp / weight;
 		}	
 	}
+	
+	aspect base {
+		if(showCar){
+		    draw rectangle(carSize,carSize*2.5) at: calcul_loc() rotate:heading-90 color:in_tunnel?rgb(50,0,0):rgb(type_colors[type],(fade_count=0)?1:fade_count/20);	   
+	  	}
+	  	if(showCarTrajectory and showCar){
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);	
+	  	}
+
+	  	if (test_car and showTestCar){	
+	  		if current_path != nil{
+	  			loop e over: current_path.edges{
+	  				draw 3 around(road(e).shape) color: #white;
+	  			}
+	  		}
+	  		loop p over: targets{
+	  			draw circle(2#m) at: p color: #black; 
+	  		}
+	  		draw circle(2#m) at: starting_intersection.location color: #blue; 
+	  		draw circle(2#m) at: last(targets) color: #yellow; 
+	  		draw circle(2#m) at: current_target color: #yellow;
+	  		draw circle(5#m) at: location color:#blue; 
+	  	}
+	}	
+	
 }
 
 species graphicWorld{
