@@ -7,7 +7,11 @@
 
 model ReChamp
 
-global {
+global schedules:  station + road + intersection + culture + (benchmark_mode ? (benchmark_ag where (each.name = "other")): []) + 
+					car + (benchmark_mode ? (benchmark_ag where (each.name = "car")): [])+
+					bus + (benchmark_mode ? (benchmark_ag where (each.name = "bus")): [])+
+					bike + (benchmark_mode ? (benchmark_ag where (each.name = "bike")): [])+
+					pedestrian + (benchmark_mode ? (benchmark_ag where (each.name = "pedestrian")): []) {
 	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
@@ -203,6 +207,15 @@ global {
 	int crossOverNature;
 	int crossOverUsage;
 	
+	
+	bool benchmark_mode <- false;
+	float global_time_global;
+	float global_time_sequence;
+	int nb_cycles_sequence <- 100;
+	float total_time_global;
+	float total_time_sequence;
+	float t_ref;
+	float t_ref_inter;
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -368,7 +381,6 @@ global {
 				index <- index + 1;	
 			} 
 		}
-		
 		// precompute paths with Dijkstra
 		create car returns: dummy_car;
 		path p;
@@ -388,6 +400,7 @@ global {
 			} 
 		}
 		ask first(dummy_car) {do die;}
+		
 		
 		loop i over: intersection{
 			i.roads_in <- remove_duplicates(i.roads_in);
@@ -434,6 +447,7 @@ global {
 		do updateSimuState;
 		
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
+		
 		
 		ask first(5,car){test_car <- true;}
 		
@@ -487,7 +501,13 @@ global {
 			}
 		}	
 
-		
+		if (benchmark_mode) {
+			create benchmark_ag with:[name::"car"];
+			create benchmark_ag with:[name::"bus"];
+			create benchmark_ag with:[name::"bike"];
+			create benchmark_ag with:[name::"pedestrian"];
+			create benchmark_ag with:[name::"other"];
+		}
 
 //		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
@@ -505,6 +525,39 @@ global {
 		} else {
 			return mobilityRatioFuture;
 		}
+	}
+	
+	reflex record_time when: benchmark_mode{
+		
+		if (t_ref = 0) {
+			t_ref <- machine_time;
+		}
+		float t_cycle <- machine_time - t_ref;
+		
+		total_time_sequence <- total_time_sequence + t_cycle;
+		total_time_global <- total_time_global + t_cycle;
+		
+		if cycle > 0 and (cycle mod nb_cycles_sequence = 0) {
+			write "\n******************* CYCLE : " + cycle + " *******************" ;
+			write "total time: " + (total_time_global/ 1000.0) + "-> 100%";
+			write "global reflex total: "+ (global_time_global/ 1000.0) with_precision 3+ "-> " + (global_time_global/total_time_global * 100.0) with_precision 3+"%";
+			ask benchmark_ag  {
+				write name + " total: "+ (total_time/ 1000.0) with_precision 3+ "-> " + (total_time/total_time_global * 100.0) with_precision 3+"%";
+			}
+			write "--------------------------------------" ;
+			
+			write "sequence time: " + (total_time_sequence/ 1000.0) with_precision 3+ "-> 100%";	
+			write "global reflex sequence time: "+ (global_time_sequence/ 1000.0) with_precision 3+ "-> " + (global_time_sequence/total_time_sequence * 100.0) with_precision 3+"%";
+			ask benchmark_ag  {
+				write name + " sequence: "+ (sequence_time/ 1000.0) with_precision 3+ "-> " + (sequence_time/total_time_sequence * 100.0) with_precision 3 +"%";
+				sequence_time <- 0.0;
+			}
+			total_time_sequence <- 0.0;
+			global_time_sequence <- 0.0;
+			
+		}
+		t_ref <- machine_time;
+		t_ref_inter <- t_ref;
 	}
 	
 	reflex chrono when: fps_monitor{
@@ -873,7 +926,13 @@ global {
 			}
 		}
 	}
-		
+	
+	reflex record_time_end when: benchmark_mode{
+		float t_cycle <- machine_time - t_ref_inter;
+		global_time_sequence <- global_time_sequence + t_cycle;
+		global_time_global <- global_time_global + t_cycle;
+		t_ref_inter <- machine_time;
+	}
 }
 
 species culture{
@@ -1357,6 +1416,17 @@ species bus skills:[moving]{
 		if(showSharedMobilityTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? busTrajectoryTransparencyBefore : busTrajectoryTransparencyAfter);	
 	  }
+	}
+}
+
+species benchmark_ag {
+	float sequence_time;
+	float total_time;
+	reflex record_time {
+		float t_cycle <- machine_time - t_ref_inter;
+		sequence_time <- sequence_time + t_cycle;
+		total_time <- total_time + t_cycle;
+		t_ref_inter <- machine_time;
 	}
 }
 
@@ -1908,6 +1978,12 @@ experiment debug_xp type: gui autorun:true{
 	
 
 	}
+	
+experiment ReChamp_benchmark parent: ReChamp autorun:true{
+	action _init_ {
+		create simulation with:[benchmark_mode::true];
+	}
+}
 
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
