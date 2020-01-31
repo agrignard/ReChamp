@@ -7,7 +7,7 @@
 
 model ReChamp
 
-global schedules:  station + road + intersection + culture + (benchmark_mode ? (benchmark_ag where (each.name = "other")): []) + 
+global schedules:  (station where (each.type="metro")) + road + intersection + culture + (benchmark_mode ? (benchmark_ag where (each.name = "other")): []) + 
 					car + (benchmark_mode ? (benchmark_ag where (each.name = "car")): [])+
 					bus + (benchmark_mode ? (benchmark_ag where (each.name = "bus")): [])+
 					bike + (benchmark_mode ? (benchmark_ag where (each.name = "bike")): [])+
@@ -70,21 +70,21 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	int trajectorySizeMax<-100;
-	int peopleTrajectoryLengthBefore <-25 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:50;
-	int peopleTrajectoryLengthAfter <-25 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:50;
-	int carTrajectoryLengthBefore <-25 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 50;
-	int carTrajectoryLengthAfter <-25 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 50;
-	int bikeTrajectoryLengthBefore <-25 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 50;
-	int bikeTrajectoryLengthAfter <-25 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 50;
-	int busTrajectoryLengthBefore <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
-	int busTrajectoryLengthAfter <-25 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 50;
+	int peopleTrajectoryLengthBefore <-50 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:100;
+	int peopleTrajectoryLengthAfter <-50 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:100;
+	int carTrajectoryLengthBefore <-50 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 100;
+	int carTrajectoryLengthAfter <-50 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectoryLengthBefore <-50 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectoryLengthAfter <-50 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLengthBefore <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLengthAfter <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
 	
 
-	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-false;
+	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
 	float traffic_light_duration <-40#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
-	float speedUpSpeedMax <-100#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
+	float speedUpSpeedMax <-50#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-2.5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 0.1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
 	
@@ -92,14 +92,14 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	float peopleTrajectoryTransparencyBefore <-0.25 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float peopleTrajectoryTransparencyAfter <-0.25 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyBefore <-0.25 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyAfter <-0.25 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyBefore <-0.25 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyAfter <-0.25 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyBefore <-0.25 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyAfter <-0.25 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyBefore <-0.5 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparencyAfter <-0.5 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyBefore <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparencyAfter <-0.5 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyBefore <-0.5 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparencyAfter <-0.5 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyBefore <-0.5 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparencyAfter <-0.5 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 
 	
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -115,7 +115,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	float factor<-0.8;
 
 	float peopleSize <-(3.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float carSize <-(2.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float carSize <-(3.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 
@@ -142,7 +142,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	//OLD PCA
 	//map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(204,0,106),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	//NEW COLOR
-	map<string, rgb> type_colors <- ["default"::#white,"people"::#white, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
+	map<string, rgb> type_colors <- ["default"::#white,"people"::#yellow, "car"::rgb(255,0,0),"bike"::rgb(18,145,209), "bus"::rgb(131,191,98)];
 	
 	map<string, rgb> voirie_colors <- ["Piste"::#white,"Couloir Bus"::#green, "Couloir mixte bus-vélo"::#red,"Piste cyclable"::#blue];
 	map<string, rgb> nature_colors <- ["exi"::rgb(140,200,135),"pro"::rgb(140,200,135)];
@@ -194,7 +194,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	float maxSpeedPeople<-5 #km/#h;
 	
 	
-	float proba_used_od <-0.6;
+	float proba_used_od <-0.7;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
 	
@@ -219,6 +219,38 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	float total_time_sequence;
 	float t_ref;
 	float t_ref_inter;
+	float t_re_init <- machine_time;
+	map<string,float> tmps_state;
+	float t_driving;
+	float t_compute_path;
+	float t_other;
+	
+	
+	float time_between_clean <- 2 * (60.0 * 60 * 1000);
+	
+	reflex reset_simulation when: (machine_time - t_re_init) >  time_between_clean{
+		t_re_init <- machine_time;
+		write "CLEAN";
+		ask car {
+			do remove_and_die;
+		} 
+		ask bus {
+			do die;
+		}
+		ask bike {
+			do die;
+		}
+		ask culture {
+			people_waiting <- [];
+			waiting_tourists <- [];
+		}
+		ask pedestrian {
+			do die;
+		}
+		ask experiment {do compact_memory;}
+		do init_agents;
+	}
+	
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -384,6 +416,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 				index <- index + 1;	
 			} 
 		}
+		
 		// precompute paths with Dijkstra
 		create car returns: dummy_car;
 		path p;
@@ -449,35 +482,15 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 		
 		do updateSimuState;
 		
-		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
-		
-		
-		ask first(5,car){test_car <- true;}
-		
-		//Create Pedestrian
-		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
-		
-        //Create Bike
-	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
-	      type <- "bike";
-	      speed<-2+rnd(maxSpeed);
-		  location<-any_location_in(one_of(building));	
-		}
-				
+		do init_agents;
 		people_graph <- as_edge_graph(road) use_cache false;
-			
+		
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
 		//bike_graph<- bike_graph use_cache false;
 		
-		
-		 //Create Bus
-	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
-	      type <- "bus";
-		  location<-any_location_in(one_of(road));	
-		}
 		bus_graph <- (as_edge_graph(road)) use_cache false;
 		//bus_graph<- bus_graph use_cache false;
 		
@@ -516,6 +529,29 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
+	
+	action init_agents {
+		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
+		
+		
+		ask first(5,car){test_car <- true;}
+		
+		//Create Pedestrian
+		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
+		
+        //Create Bike
+	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
+	      type <- "bike";
+	      speed<-2+rnd(maxSpeed);
+		  location<-any_location_in(one_of(building));	
+		}
+	
+		 //Create Bus
+	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
+	      type <- "bus";
+		  location<-any_location_in(one_of(road));	
+		}
+	}
 	action updateStoryTelling (int n){
 			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
@@ -563,6 +599,18 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 				write name + " sequence: "+ (sequence_time/ 1000.0) with_precision 3+ "-> " + (sequence_time/total_time_sequence * 100.0) with_precision 3 +"%";
 				sequence_time <- 0.0;
 			}
+			loop st over: tmps_state.keys {
+				write "Pedestrian - " + st + " : " + (tmps_state[st]/ 1000.0);  
+				tmps_state[st] <- 0.0;
+			}
+			write "Car - driving " + (t_driving/ 1000.0);  
+			t_driving <- 0.0;
+			write "Car - compute path " + (t_compute_path/ 1000.0);  
+			t_compute_path <- 0.0;
+			write "Car - other " + (t_other/ 1000.0);  
+			t_other <- 0.0;
+			
+				
 			total_time_sequence <- 0.0;
 			global_time_sequence <- 0.0;
 			display_time_sequence <- 0.0;
@@ -753,9 +801,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 		} 
 	}
 	
-	reflex memory_management when: every(10000 #cycle) {
-		ask experiment {do compact_memory;}
-	}
+	
 	
 	
 	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
@@ -964,7 +1010,7 @@ global schedules:  station + road + intersection + culture + (benchmark_mode ? (
 	}
 }
 
-species culture{
+species culture schedules:[]{
 	list<string> state;
 	string type;
 	string style;
@@ -1061,7 +1107,7 @@ species park {
 
 }
 
-species road  skills: [skill_road]  {
+species road  skills: [skill_road] schedules:[] {
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
@@ -1197,7 +1243,7 @@ species bus_line{
 	}
 }
 
-species station schedules: station where (each.type="metro") {
+species station schedules: [] {
 	rgb color;
 	string type;
 	int capacity;
@@ -1226,7 +1272,7 @@ species station schedules: station where (each.type="metro") {
 	}
 }
 
-species pedestrian skills:[moving] control: fsm{
+species pedestrian skills:[moving] control: fsm schedules:[]{
 	string type;
 	agent target_place;
 	point target;
@@ -1258,7 +1304,9 @@ species pedestrian skills:[moving] control: fsm{
 	
 	
 	state walk_to_objective initial: true{
+		
 		enter {
+			float t<- machine_time;
 			walking <- true;
 			wandering <- false;
 			to_culture <- false;
@@ -1282,7 +1330,9 @@ species pedestrian skills:[moving] control: fsm{
 					}
 				}
 			}
+			tmps_state[state] <- tmps_state[state] + (machine_time - t);
 		}
+		float t2<- machine_time;
 		if current_edge != nil{
 			intersection i <- first(road(current_edge).ped_xing where(distance_to(each,self)<10));
 			point p1 <- destination - location;
@@ -1303,11 +1353,13 @@ species pedestrian skills:[moving] control: fsm{
 		do updatefuzzTrajectory;		
 		exit {
 			walking <- false;
-		}	
+		}
+		tmps_state[state] <- tmps_state[state] + (machine_time - t2);	
 	}
 	
 	
 	state stroll_in_city {
+		float t <- machine_time;
 		enter {
 			stroll_time <- rnd(1, 10) *60;
 			stroling_in_city<-true;
@@ -1319,10 +1371,12 @@ species pedestrian skills:[moving] control: fsm{
 		exit{
 			stroling_in_city<-false;
 		}
+		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	
 	state stroll_in_park {
+		float t <- machine_time;
 		enter {
 			stroll_time <- rnd(1, 10) * 60;
 			stroling_in_park<-true;
@@ -1334,6 +1388,7 @@ species pedestrian skills:[moving] control: fsm{
 		exit{
 		  stroling_in_park<-false;	
 		}
+		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	state outside_sim {
@@ -1343,6 +1398,7 @@ species pedestrian skills:[moving] control: fsm{
 	
 	//ce mot existe ?
 	state queueing {
+		float t <- machine_time;
 		enter {
 			ask culture(target_place) {
 				do add_people(myself);
@@ -1354,9 +1410,12 @@ species pedestrian skills:[moving] control: fsm{
 			visiting <- false;
 			ready_to_visit <- false;
 		}
+		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	state visiting_place {
+		float t <- machine_time;
+		
 		enter {
 			visiting <- true;
 			visiting_time <- rnd(1,10) * 60;
@@ -1368,6 +1427,7 @@ species pedestrian skills:[moving] control: fsm{
 		exit {
 			visiting <- false;
 		}
+		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	point calcul_loc {
@@ -1403,7 +1463,8 @@ species pedestrian skills:[moving] control: fsm{
 		point loc <- calcul_loc();
 		if(showPeople){
 			 //draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-			 draw square(peopleSize) color:#white at:walking ? loc :location rotate: angle;	
+			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
+
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
@@ -1411,7 +1472,7 @@ species pedestrian skills:[moving] control: fsm{
 	}
 }
 
-species bike skills:[moving]{
+species bike skills:[moving] schedules:[]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
@@ -1439,7 +1500,7 @@ species bike skills:[moving]{
 }
 
 
-species bus skills:[moving]{
+species bus skills:[moving] schedules:[]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
@@ -1466,7 +1527,7 @@ species bus skills:[moving]{
 	}
 }
 
-species benchmark_ag {
+species benchmark_ag schedules:[]{
 	float sequence_time;
 	float total_time;
 	reflex record_time {
@@ -1478,7 +1539,7 @@ species benchmark_ag {
 }
 
 
-species car skills:[advanced_driving]{		
+species car skills:[advanced_driving] schedules:[]{		
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -1538,7 +1599,8 @@ species car skills:[advanced_driving]{
 	
 	
 	reflex leave when: final_target = nil  {
-		if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
+		float t <- benchmark_mode ? machine_time : 0.0;
+	  	if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
 			if current_road != nil {
 				ask current_road as road {
 					do unregister(myself);
@@ -1547,7 +1609,7 @@ species car skills:[advanced_driving]{
 			current_lane <- 0;
 			if flip(proba_used_od) {
 				int od_index <- rnd_choice(od_weights[currentSimuState].values);
-				starting_intersection <- od_origins[currentSimuState].values[od_index];
+					starting_intersection <- od_origins[currentSimuState].values[od_index];
 				target_intersection <- od_destinations[currentSimuState].values[od_index];
 				current_lane <- 0;
 				location <-starting_intersection.location;
@@ -1558,10 +1620,10 @@ species car skills:[advanced_driving]{
 				location <-starting_intersection.location;
 				current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 			}
-			current_trajectory <- [];
-			trail <- [];
-		//	trail <- [[]];
-			current_offset <- {0,0};
+		current_trajectory <- [];
+		trail <- [];
+	//	trail <- [[]];
+		current_offset <- {0,0};
 		}else if (target_intersection != nil and target_intersection.exit[currentSimuState] != nil) {// reached a dead end
 		 	starting_intersection <- target_intersection;
 			target_intersection <- target_intersection.exit[currentSimuState];
@@ -1580,10 +1642,14 @@ species car skills:[advanced_driving]{
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 		}
 		path_updated <- true;
+
+		if benchmark_mode{t_compute_path <- t_compute_path + machine_time - t;}
 	}
 	
+	
 	reflex fade when: (fade_count > 0){
-		fade_count <- fade_count - 1;
+		float t <- benchmark_mode ? machine_time : 0.0;
+	  	fade_count <- fade_count - 1;
 		if fade_count = 0{
 			if current_road != nil {
 				ask current_road as road {
@@ -1609,20 +1675,27 @@ species car skills:[advanced_driving]{
 			trail <- [];
 		//	trail <- [[]];
 			current_offset <- {0,0};
+
 			path_updated <- true;
 		}
 	}
 	
+	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
+	  	float t <- benchmark_mode ? machine_time : 0.0;
 //	  	if (current_path = nil) {
 //			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 //		}
+		if benchmark_mode{t_compute_path <- t_compute_path + machine_time - t; t <- machine_time;}
 	  	do drive;	
+	  	if benchmark_mode{t_driving <- t_driving + machine_time - t;t <- machine_time;}
 	}
 	
 	reflex compute_offset_and_trail{
+		float t <- benchmark_mode ? machine_time : 0.0;
 		if smoothTrajectory{
 			if path_updated or old_indexes[1] != current_index or old_indexes[2] != segment_index_on_road{
+
 				target_offset <- compute_offset(3);
 			}
 			if current_road = nil{
@@ -1641,6 +1714,7 @@ species car skills:[advanced_driving]{
 				current_offset <- road(current_road).vec_ref[segment_index_on_road][1] * val;
 			}		
 		}
+
 		
 		if new_trail{
 			do compute_trail;
@@ -1649,10 +1723,14 @@ species car skills:[advanced_driving]{
 	    		current_trajectory >> first(current_trajectory);
        		}
         	current_trajectory << location+current_offset;
+        	if benchmark_mode{t_other <- t_other + machine_time - t;}
 		}
 		old_location <- copy(location);
 		old_indexes <- [int(starting_intersection), current_index,segment_index_on_road]; 
 		path_updated <- false;
+
+		 if benchmark_mode{t_other <- t_other + machine_time - t;}
+
 	}
 	
 	
@@ -1935,7 +2013,7 @@ species signals_zone{
 		}
 }
 
-species intersection skills: [skill_road_node] {
+species intersection skills: [skill_road_node] schedules:[]{
 	rgb color <- #white; //used for integrity tests
 	list<bool> reachable_by_all <- list_with(stateNumber,false);
 	list<bool> can_reach_all <- list_with(stateNumber,false);
@@ -2171,7 +2249,7 @@ experiment ReChamp type: gui autorun:true{
 					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
 					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (angle), space * sin(angle)};
 					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					draw circle(circleSize) color: type_colors["people"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
+					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
 					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
 					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
@@ -2201,7 +2279,7 @@ experiment ReChamp type: gui autorun:true{
 		}
 	}
 }
-
+	
 
 experiment ReChamp2Proj parent:ReChamp autorun:true{	
 	
@@ -2210,10 +2288,12 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
-			/*graphics 'dashboardbackground'{
+		    /*graphics 'dashboardbackground'{
 				draw rectangle(1920,1080) texture:dashboardbackground.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 				
 			}*/
+			
+			
 			
 			graphics "state" {
 				write currentStoryTellingState;
