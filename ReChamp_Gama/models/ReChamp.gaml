@@ -92,6 +92,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
+	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-true;
 	float peopleTrajectoryTransparencyBefore <-0.5 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 	float peopleTrajectoryTransparencyAfter <-0.5 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 	float carTrajectoryTransparencyBefore <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
@@ -121,8 +122,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 
 	
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
-	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-true;
-	bool new_trail parameter: 'New trail drawing' category: "Debug" <-true;
+	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
+	
+	
+	bool oneButtonInterface parameter: 'Interface' category: "Interface" <-false;
+	
+
 	
 	
 	
@@ -131,9 +136,13 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	file dashboardbackground <- file('../includes/PNG/dashboardtest.png');
+	file dashboardbackground_before <- file('../includes/PNG/dashboard_before.png');
+	file dashboardbackground_after <- file('../includes/PNG/dashboard_after.png');
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
+    
+    list<file> radarPlots <- [file('../includes/PNG/radar_plot/radar_plot.001.jpeg'),file('../includes/PNG/radar_plot/radar_plot.002.jpeg'),file('../includes/PNG/radar_plot/radar_plot.003.jpeg'),file('../includes/PNG/radar_plot/radar_plot.004.jpeg'),file('../includes/PNG/radar_plot/radar_plot.005.jpeg'),file('../includes/PNG/radar_plot/radar_plot.006.jpeg')];
+    
     
 	bool right_side_driving <- true;
 	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
@@ -553,10 +562,11 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		}
 	}
 	action updateStoryTelling (int n){
-			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
-			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
-			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;crossOverUsage<-crossOverTime;}
+		    if(n=0){currentStoryTellingState<-0;}
+			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;crossOverCar<-crossOverTime;}
+			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;crossOverSoftMob<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
 	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
@@ -2268,7 +2278,7 @@ experiment ReChamp type: gui autorun:true{
 			event["r"] action: {showRoad<-!showRoad;};
 			event["h"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
 			//event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
@@ -2285,17 +2295,58 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #horizontal;
-		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
+		display indicator type:opengl background:#black draw_env:false fullscreen:1 toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
-		    /*graphics 'dashboardbackground'{
-				draw rectangle(1920,1080) texture:dashboardbackground.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    graphics 'dashboardbackground'{
+		    	if(oneButtonInterface){
+		    		if(currentSimuState=0){
+		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1){
+		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    	}else{
+		    		if(currentSimuState=0 and currentStoryTellingState=0){
+		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1 and currentStoryTellingState=0){
+		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=0 and currentStoryTellingState=1){
+		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1 and currentStoryTellingState=1){
+		    			draw rectangle(1920,1080) texture:radarPlots[3].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=0 and currentStoryTellingState=2){
+		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1 and currentStoryTellingState=2){
+		    			draw rectangle(1920,1080) texture:radarPlots[3].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=0 and currentStoryTellingState=3){
+		    			draw rectangle(1920,1080) texture:radarPlots[1].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1 and currentStoryTellingState=3){
+		    			draw rectangle(1920,1080) texture:radarPlots[4].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=0 and currentStoryTellingState=4){
+		    			draw rectangle(1920,1080) texture:radarPlots[2].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		if(currentSimuState=1 and currentStoryTellingState=4){
+		    			draw rectangle(1920,1080) texture:radarPlots[5].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    		}
+		    		
+		    	}
+		    	
+		    	
+		    	
+		    	
 				
-			}*/
-			
-			
-			
-			graphics "state" {
+				
+			}
+			/*graphics "state" {
 				write currentStoryTellingState;
 				float textSize<-10#px;
 				float spacebetweenLine<-textSize*2;
@@ -2573,7 +2624,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 				  draw ("Air de Jeux 1580 m2 (+365%)") color: #yellow font: font("Helvetica", textSize/3, #bold) at: {curX,curY};
 				  }
 			  }
-			}
+			}*/
 		}
 	}
 }
