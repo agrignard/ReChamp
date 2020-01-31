@@ -92,7 +92,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-true;
+	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-false;
 	float peopleTrajectoryTransparencyBefore <-0.5 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 	float peopleTrajectoryTransparencyAfter <-0.5 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 	float carTrajectoryTransparencyBefore <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
