@@ -72,8 +72,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int trajectorySizeMax<-100;
 	int peopleTrajectoryLengthBefore <-50 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:100;
 	int peopleTrajectoryLengthAfter <-50 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:100;
-	int carTrajectoryLengthBefore <-50 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 100;
-	int carTrajectoryLengthAfter <-50 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 100;
+	int carTrajectoryLengthBefore <-20 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 100;
+	int carTrajectoryLengthAfter <-20 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 100;
 	int bikeTrajectoryLengthBefore <-50 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 100;
 	int bikeTrajectoryLengthAfter <-50 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 100;
 	int busTrajectoryLengthBefore <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
@@ -320,7 +320,6 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 				}
 			}
 		}
-		
 
 		ask road{
 			loop i from: 0 to: length(shape.points) -2{
@@ -1114,6 +1113,7 @@ species park {
 
 }
 
+
 species road  skills: [skill_road] schedules:[] {
 	int id;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
@@ -1325,12 +1325,13 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	point target;
 	int stroll_time;
 	int visiting_time;
-	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople) #km/#h;
+	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
 	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
+	bool test_ped;
 	
 	bool waiting_at_traffic_light <- false;
 	bool wandering <- false;
@@ -1363,7 +1364,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-					target <- any_location_in(agent(one_of(people_graph.edges)));
+//					test_ped <- true;
+			//		target <- any_location_in(agent(one_of(people_graph.edges)));
+					target <- first(road(one_of(people_graph.edges)).shape.points);
 					wandering <- true;
 					speed_walk_current <- speed_walk_current/ 3.0;
 				} else {
@@ -1408,14 +1411,17 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state stroll_in_city {
 		float t <- machine_time;
 		enter {
+						test_ped <- true;
 			stroll_time <- rnd(1, 10) *60;
 			stroling_in_city<-true;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander amplitude:10.0 speed:2.0#km/#h;
+		//do wander speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
+			test_ped <- false;
 			stroling_in_city<-false;
 		}
 		tmps_state[state] <- tmps_state[state] + (machine_time - t);
@@ -1481,8 +1487,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		if (current_edge = nil) {
 			return location;
 		} else {
-			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2))) + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
-
+			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));// + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
+	//		float val <- 0;
+	// valeur a modifier, valeur doit etre independante de la simu
 			
 			if(showPeopleTrajectory){
 			    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
@@ -1511,7 +1518,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		if(showPeople){
 			 //draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
 			 draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;	
-
+		}
+		if test_ped{
+			draw square(peopleSize*3) color:#green at:walking ? calcul_loc() :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
@@ -1841,7 +1850,7 @@ species car skills:[advanced_driving] schedules:[]{
 	       			loop while: (ci < current_index) or (ci = current_index and cs <segment_index_on_road){
 						road cr <- road(current_path.edges[ci]);
 	       				//l << cr.shape.points[cs+1] + cr.vec_ref[cs][1] * cr.compute_offset(current_lane);
-	       				l << cr.shape.points[cs+1]+compute_offset_simple(ci,cs);
+	       				l << cr.shape.points[cs+1]+compute_offset_simple(ci,cs)+rnd(-1.0,1.0);
 	       				cs <- cs + 1;
 	       				if cs > length(road(current_path.edges[ci]).shape.points)-2{
 	       					cs <- 0;
