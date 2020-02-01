@@ -133,8 +133,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	file dashboardbackground_before <- file('../includes/PNG/dashboard_before.png');
-	file dashboardbackground_after <- file('../includes/PNG/dashboard_after.png');
+	file dashboardbackground_before <- file('../includes/PNG/dashboard_before.jpg');
+	file dashboardbackground_after <- file('../includes/PNG/dashboard_after.jpg');
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
@@ -2350,17 +2350,17 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 		    graphics 'dashboardbackground'{
 		    	if(oneButtonInterface){
 		    		if(currentSimuState=0){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1322,1558) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=1){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1322,1558) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    	}else{
 		    		if(currentSimuState=0 and currentStoryTellingState=0){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1322,1558) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=1 and currentStoryTellingState=0){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1322,1558) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=0 and currentStoryTellingState=1){
 		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
