@@ -70,14 +70,10 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
 	
 	int trajectorySizeMax<-100;
-	int peopleTrajectoryLengthBefore <-50 parameter: 'People Trajectory length Before' category: "Trajectory" min: 0 max:100;
-	int peopleTrajectoryLengthAfter <-50 parameter: 'People Trajectory length After' category: "Trajectory" min: 0 max:100;
-	int carTrajectoryLengthBefore <-50 parameter: 'Car Trajectory length Before' category: "Trajectory" min: 0 max: 100;
-	int carTrajectoryLengthAfter <-50 parameter: 'Car Trajectory length After' category: "Trajectory" min: 0 max: 100;
-	int bikeTrajectoryLengthBefore <-50 parameter: 'Bike Trajectory Before' category: "Trajectory" min: 0 max: 100;
-	int bikeTrajectoryLengthAfter <-50 parameter: 'Bike Trajectory After' category: "Trajectory" min: 0 max: 100;
-	int busTrajectoryLengthBefore <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
-	int busTrajectoryLengthAfter <-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int peopleTrajectoryLength <-50 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max:100;
+	int carTrajectoryLength <-50 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectory <-50 parameter: 'Bike Trajectory' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLength<-50 parameter: 'Bus Trajectory' category: "Trajectory" min: 0 max: 100;
 	
 
 	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-true;
@@ -93,14 +89,10 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 
 	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
 	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-true;
-	float peopleTrajectoryTransparencyBefore <-0.5 parameter: 'People Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float peopleTrajectoryTransparencyAfter <-0.5 parameter: 'People Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyBefore <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparencyAfter <-0.5 parameter: 'Car Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyBefore <-0.5 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparencyAfter <-0.5 parameter: 'Bike Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyBefore <-0.5 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparencyAfter <-0.5 parameter: 'Bus Trajectory transparency After' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float peopleTrajectoryTransparency <-0.5 parameter: 'People Trajectory transparency ' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float carTrajectoryTransparency <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparency <-0.5 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
+	float busTrajectoryTransparency <-0.5 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
 
 	
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -162,7 +154,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["car traffic","moblilité douce","park","culture"];
 	bool updateSim<-true;
-	int nbAgent<-750;
+	int nbAgent<-500;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::1.2, "car"::0.3,"bike"::0.15, "bus"::0.05];
@@ -1485,7 +1477,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 
 			
 			if(showPeopleTrajectory){
-			    loop while:(length(current_trajectory) > ((currentSimuState=0) ? peopleTrajectoryLengthBefore : peopleTrajectoryLengthAfter))
+			    loop while:(length(current_trajectory) > peopleTrajectoryLength)
 		  	    {
 		        current_trajectory >> first(current_trajectory);
 		        }
@@ -1514,7 +1506,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 
 		}
 		if(showPeopleTrajectory and showPeople){
-	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? peopleTrajectoryTransparencyBefore : peopleTrajectoryTransparencyAfter);	
+	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
 	  	}	
 	}
 }
@@ -1530,7 +1522,7 @@ species bike skills:[moving] schedules:[]{
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > ((currentSimuState=0) ? bikeTrajectoryLengthBefore : bikeTrajectoryLengthAfter))
+	  loop while:(length(current_trajectory) > bikeTrajectory)
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1541,7 +1533,7 @@ species bike skills:[moving] schedules:[]{
 		 draw rectangle(bikeSize,bikeSize*2) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showBikeTrajectory and showBike){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? bikeTrajectoryTransparencyBefore : bikeTrajectoryTransparencyAfter);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,bikeTrajectoryTransparency);	
 	  }
 	}
 }
@@ -1558,7 +1550,7 @@ species bus skills:[moving] schedules:[]{
 	reflex move{
 	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
 	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > ((currentSimuState=0) ? busTrajectoryLengthBefore : busTrajectoryLengthAfter))
+	  loop while:(length(current_trajectory) > busTrajectoryLength)
   	    {
         current_trajectory >> first(current_trajectory);
         }
@@ -1569,7 +1561,7 @@ species bus skills:[moving] schedules:[]{
 		 draw rectangle(busSize,busSize*3) color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showSharedMobilityTrajectory){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? busTrajectoryTransparencyBefore : busTrajectoryTransparencyAfter);	
+	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,busTrajectoryTransparency);	
 	  }
 	}
 }
@@ -1760,7 +1752,7 @@ species car skills:[advanced_driving] schedules:[]{
 		if new_trail{
 			do compute_trail;
 		}else{
-			loop while:(length(current_trajectory) > ((currentSimuState =0) ? carTrajectoryLengthBefore : carTrajectoryLengthAfter)){
+			loop while:(length(current_trajectory) > carTrajectoryLength){
 	    		current_trajectory >> first(current_trajectory);
        		}
         	current_trajectory << location+current_offset;
@@ -1823,7 +1815,7 @@ species car skills:[advanced_driving] schedules:[]{
 	}
 	
 	action compute_trail {
-		loop while:(length(trail) >  ((currentSimuState =0) ? carTrajectoryLengthBefore : carTrajectoryLengthAfter)){
+		loop while:(length(trail) >  (carTrajectoryLength)){
 	    	trail >> first(trail);
        	}
        	if old_location = location{
@@ -1977,9 +1969,9 @@ species car skills:[advanced_driving] schedules:[]{
 	  	}
 	  	if(showCarTrajectory and showCar){
 	  		if new_trail{
-  				draw line(trail accumulate(each)+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);
+  				draw line(trail accumulate(each)+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,carTrajectoryTransparency);
 	  		}else{
-				draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,(currentSimuState = 0) ? carTrajectoryTransparencyBefore : carTrajectoryTransparencyAfter);		
+				draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,carTrajectoryTransparency );		
 	  		}
 	  	}
 	  	// ne pas enlever tout de suite
@@ -2260,7 +2252,7 @@ experiment ReChamp_benchmark parent: ReChamp autorun:true{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:true synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
