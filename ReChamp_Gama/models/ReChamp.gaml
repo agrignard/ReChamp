@@ -71,7 +71,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	
 	int trajectorySizeMax<-100;
 	int peopleTrajectoryLength <-50 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max:100;
-	int carTrajectoryLength <-50 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int carTrajectoryLength <-20 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 100;
 	int bikeTrajectory <-50 parameter: 'Bike Trajectory' category: "Trajectory" min: 0 max: 100;
 	int busTrajectoryLength<-50 parameter: 'Bus Trajectory' category: "Trajectory" min: 0 max: 100;
 
@@ -126,12 +126,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
-	file dashboardbackground_before <- file('../includes/PNG/dashboard_before.jpg');
-	file dashboardbackground_after <- file('../includes/PNG/dashboard_after.jpg');
+	file dashboardbackground_before <- file('../includes/PNG/radar_plot/radar_plot.001.jpeg');
+	file dashboardbackground_after <- file('../includes/PNG/radar_plot/radar_plot.002.jpeg');
 	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
     list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
-    list<file> radarPlots <- [file('../includes/PNG/radar_plot/radar_plot.001.jpeg'),file('../includes/PNG/radar_plot/radar_plot.002.jpeg'),file('../includes/PNG/radar_plot/radar_plot.003.jpeg'),file('../includes/PNG/radar_plot/radar_plot.004.jpeg'),file('../includes/PNG/radar_plot/radar_plot.005.jpeg'),file('../includes/PNG/radar_plot/radar_plot.006.jpeg')];
+    list<file> radarPlots <- [file('../includes/PNG/radar_plot/radar_plot.003.jpeg'),file('../includes/PNG/radar_plot/radar_plot.004.jpeg'),file('../includes/PNG/radar_plot/radar_plot.005.jpeg'),file('../includes/PNG/radar_plot/radar_plot.006.jpeg'),file('../includes/PNG/radar_plot/radar_plot.007.jpeg'),file('../includes/PNG/radar_plot/radar_plot.008.jpeg')];
     
     
 	bool right_side_driving <- true;
@@ -155,7 +155,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["car traffic","moblilité douce","park","culture"];
 	bool updateSim<-true;
-	int nbAgent<-500;
+	int nbAgent<-2500;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::1.2, "car"::0.3,"bike"::0.15, "bus"::0.05];
@@ -1404,13 +1404,12 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state stroll_in_city {
 		float t <- machine_time;
 		enter {
-						test_ped <- true;
+			test_ped <- true;
 			stroll_time <- rnd(1, 10) *60;
 			stroling_in_city<-true;
 		}
 		stroll_time <- stroll_time - 1;
 		do wander amplitude:10.0 speed:2.0#km/#h;
-		//do wander speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
@@ -2262,7 +2261,7 @@ experiment ReChamp_benchmark parent: ReChamp autorun:true{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:true synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
@@ -2337,23 +2336,23 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #horizontal;
-		display indicator type:opengl background:#black draw_env:false fullscreen:1 toolbar:false
+		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 		    graphics 'dashboardbackground'{
 		    	if(oneButtonInterface){
 		    		if(currentSimuState=0){
-		    			draw rectangle(1322,1558) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=1){
-		    			draw rectangle(1322,1558) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    	}else{
 		    		if(currentSimuState=0 and currentStoryTellingState=0){
-		    			draw rectangle(1322,1558) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=1 and currentStoryTellingState=0){
-		    			draw rectangle(1322,1558) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
+		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=0 and currentStoryTellingState=1){
 		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
