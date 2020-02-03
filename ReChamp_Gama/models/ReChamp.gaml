@@ -1297,7 +1297,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	agent target_place;
 	point target;
 	float stroll_time;
-	int visiting_time;
+	float visiting_time;
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
@@ -1413,7 +1413,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
 		}
-		stroll_time <- stroll_time - 1;
+		stroll_time <- stroll_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
@@ -1450,9 +1450,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		
 		enter {
 			visiting <- true;
-			visiting_time <- rnd(1,10) * 60;
+			visiting_time <- rnd(10,120)  #mn;
 		}
-		visiting_time <- visiting_time - 1;
+		visiting_time <- visiting_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: visiting_time = 0;
