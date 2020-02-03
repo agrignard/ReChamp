@@ -1393,7 +1393,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		}else{
 			do goto target: target on:people_graph speed: speed_walk_current;
 		}
-		transition to: stroll_in_city when: not to_exit and wandering and location = target;
+		transition to: stroll_in_city when: not to_exit and wandering;// and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
 		transition to: queueing when: not to_exit and to_culture and location = target;
 		transition to: outside_sim when:to_exit and location = target;
@@ -1409,12 +1409,12 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		float t <- machine_time;
 		enter {
 			test_ped <- true;
-			stroll_time <- (rnd(1, 10) *60)#mn;
+			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 		}
 		stroll_time <- stroll_time - step;
-		do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
-		//do wander speed:2.0#km/#h on: people_graph;
+		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
+		do wander on: people_graph;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
@@ -1428,7 +1428,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state stroll_in_park {
 		float t <- machine_time;
 		enter {
-			stroll_time <- rnd(1, 10) * 60#mn;
+			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
 		}
 		stroll_time <- stroll_time - 1;
