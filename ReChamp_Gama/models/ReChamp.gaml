@@ -1310,6 +1310,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	bool wandering <- false;
 	bool to_culture <- false;
 	bool visiting <- false;
+	bool queuing <- false;
 	bool ready_to_visit <- false;
 	bool walking <- false;
 	bool stroling_in_city<-false;
@@ -1432,6 +1433,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state queueing {
 		float t <- machine_time;
 		enter {
+			queuing<-true;
 			ask culture(target_place) {
 				do add_people(myself);
 			}
@@ -1441,6 +1443,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		exit {
 			visiting <- false;
 			ready_to_visit <- false;
+			queuing<-false;
 		}
 		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
@@ -1504,6 +1507,24 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[loc]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
 	  	}	
+	}
+	
+	aspect profile{
+		 if (walking){
+		   draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;		
+		 }
+		 if (visiting){
+		   draw square(peopleSize*2) color:#red at:walking ? calcul_loc() :location rotate: angle;	
+		 }
+		 if(stroling_in_park){
+		 draw triangle(peopleSize*2) color:#green at:walking ? calcul_loc() :location rotate: angle;
+		 }
+		 if(stroling_in_city){
+		 draw triangle(peopleSize*2) color:#red at:walking ? calcul_loc() :location rotate: angle;
+		 }
+		 if(queuing){
+		   draw square(peopleSize) color:#white at:walking ? calcul_loc() :location rotate: angle;	
+		 }
 	}
 }
 
