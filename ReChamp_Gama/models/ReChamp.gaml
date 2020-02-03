@@ -707,7 +707,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			bool green <- flip(0.5);
 			ask gp {
 				color_group <- col;
-				point centroide <- mean (gp collect (intersection(each)).location);
+				point centroide <- mean (gp collect each.location);
 				loop rd over: roads_in {
 					road r <- road(rd);
 					bool inward <- distance_to(centroide, first(rd.shape.points)) > distance_to(centroide, last(rd.shape.points));
@@ -727,7 +727,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			
 			
 			ask gp {
-				point centroide <- mean (gp collect (intersection(each)).location);
+				point centroide <- mean (gp collect (each).location);
 				loop rd over: roads_in {
 					bool inward <- distance_to(centroide, first(rd.shape.points)) > distance_to(centroide, last(rd.shape.points));
 					if inward {
@@ -1316,7 +1316,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	string type;
 	agent target_place;
 	point target;
-	int stroll_time;
+	float stroll_time;
 	int visiting_time;
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
@@ -1405,11 +1405,11 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		float t <- machine_time;
 		enter {
 			test_ped <- true;
-			stroll_time <- rnd(1, 10) *60;
+			stroll_time <- (rnd(1, 10) *60)#mn;
 			stroling_in_city<-true;
 		}
-		stroll_time <- stroll_time - 1;
-		do wander amplitude:10.0 speed:2.0#km/#h;
+		stroll_time <- stroll_time - step;
+		do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
@@ -1907,7 +1907,7 @@ species car skills:[advanced_driving] schedules:[]{
 					float a <- cr.angles[cs];
 					float w <- 1+abs(a-180);
 					weight <- weight + w;
-					if mod(a,180) < 15 or mod(a,180)> 165{
+					if mod(int(a),180) < 15 or mod(int(a),180)> 165{
 						offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
 					}else{
 						offset_comp <- offset_comp + (cr.vec_ref[cs][0]-cr.vec_ref[cs+1][0])*cr.compute_offset(current_lane)/sin(a)*w;
@@ -1922,7 +1922,7 @@ species car skills:[advanced_driving] schedules:[]{
 						}
 						float w <- 1+abs(a-180);
 						weight <- weight + w;
-						if mod(a,180) < 15 or mod(a,180)> 165{
+						if mod(int(a),180) < 15 or mod(int(a),180)> 165{
 							offset_comp <- offset_comp + cr.vec_ref[cs][1]*cr.compute_offset(current_lane)*w;
 						}else{
 							offset_comp <- offset_comp + (cr.vec_ref[cs][0]*cr2.compute_offset(current_lane)-cr2.vec_ref[0][0]*cr.compute_offset(current_lane))/sin(a)*(1+abs(a-180));
@@ -1946,7 +1946,7 @@ species car skills:[advanced_driving] schedules:[]{
 			road cr <-  road(current_path.edges[ci]);
 			if cs < length(cr.angles) {
 				float a <- cr.angles[cs];
-				if mod(a,180) < 15 or mod(a,180)> 165{
+				if mod(int(a),180) < 15 or mod(int(a),180)> 165{
 					offset <-  cr.vec_ref[cs][1]*cr.compute_offset(current_lane);
 				}else{
 					offset <-  cr.vec_ref[cs][1]*cr.compute_offset(current_lane);
@@ -1961,7 +1961,7 @@ species car skills:[advanced_driving] schedules:[]{
 				if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
 					a <- 180.0;
 				}
-				if mod(a,180) < 15 or mod(a,180)> 165{
+				if mod(int(a),180) < 15 or mod(int(a),180)> 165{
 					offset <- cr.vec_ref[cs][1]*cr.compute_offset(current_lane);
 				}else{
 					offset <- (cr.vec_ref[cs][0]*cr2.compute_offset(current_lane)-cr2.vec_ref[0][0]*cr.compute_offset(current_lane))/sin(a);
