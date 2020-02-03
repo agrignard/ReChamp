@@ -28,8 +28,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
-	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");
-	file intervention_shapefile <- file("../includes/GIS/Intervention.shp");		
+	file coldspot_shapefile <- file("../includes/GIS/Coldspot.shp");		
 	//MOBILITY
 	file Mobility_Now_shapefile <- file("../includes/GIS/PCA_CE_EXP_EXI_MOBILITY_ABSTRACT.shp");
 	file Mobility_Future_shapefile <- file("../includes/GIS/PCA_CE_EXP_PRO_MOBILITY_ABSTRACT.shp");
@@ -495,26 +494,6 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
-		//First Intervention (Paris Now)
-		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
-		{   gifFile<-interventionGif0[id-1];
-			do initialize;
-			interventionNumber<-1;
-			isActive<-true;
-		}
-		//Second Intervention (PCA proposal)
-		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
-		{   gifFile<-interventionGif1[id-1];
-			do initialize;
-			interventionNumber<-2;
-			isActive<-false;
-		}	
-		ask intervention {
-			ask road overlapping self {
-				hot_spot <- true;
-			}
-		}	
-
 		if (benchmark_mode) {
 			create benchmark_ag with:[name::"car"];
 			create benchmark_ag with:[name::"bus"];
@@ -2032,44 +2011,6 @@ species graphicWorld{
 	}
 }
 
-species intervention{
-	bool isActive;
-	int interventionNumber;
-	int id;
-	string type;
-	string gifFile;
-	float h;
-	float w;
-	bool fit_to_shape <- true;
-	action initialize {
-		geometry s <- shape rotated_by (-angle);
-		w <- s.width ;
-		h <- s.height;
-		if not(fit_to_shape) {
-			geometry env <- envelope(gif_file(gifFile));
-			float coeff_img <- env.width / env.height;
-			float coeff_shap <- s.width / s.height;
-			if (coeff_img > coeff_shap ) {
-				h <- w / coeff_img;
-			} 
-			else if (coeff_img < coeff_shap ){
-				w <- h * coeff_img;
-			}
-		}
-		
-			
-	}
-	aspect base {
-		if(showIntervention){
-			draw shape empty:true color:#white;		
-			if(showGif and isActive){
-			  draw gif_file(gifFile) size:{w,h} rotate:angle;	
-			}
-		}
-			
-		}
-}
-
 species signals_zone{
 		aspect base {
 			draw shape empty: true  color:#green;		
@@ -2277,7 +2218,6 @@ experiment ReChamp type: gui autorun:true{
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 	   	{
 	   	    species graphicWorld aspect:base;	    	
-	    	species intervention aspect: base;
 		    species building aspect: base;
 			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
 			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
