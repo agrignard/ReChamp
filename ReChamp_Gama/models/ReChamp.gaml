@@ -1423,7 +1423,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state stroll_in_park {
 		float t <- machine_time;
 		enter {
-			stroll_time <- rnd(1, 10) * 60;
+			stroll_time <- rnd(1, 10) * 60#mn;
 			stroling_in_park<-true;
 		}
 		stroll_time <- stroll_time - 1;
