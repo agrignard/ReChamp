@@ -121,20 +121,16 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 
 	
 	
-	bool showGif  parameter: 'Gif (g)' category: "Parameters" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	file dashboardbackground_before <- file('../includes/PNG/radar_plot/radar_plot.001.jpeg');
 	file dashboardbackground_after <- file('../includes/PNG/radar_plot/radar_plot.002.jpeg');
-	list<string> interventionGif0 <- [('../includes/GIF/Etoile/Etoile_0.gif'),('../includes/GIF/Champs/Champs_0.gif'),('../includes/GIF/Palais/Palais_0.gif'),('../includes/GIF/Concorde/Concorde_0.gif')];
-    list<string> interventionGif1 <- [('../includes/GIF/Etoile/Etoile_1.gif'),('../includes/GIF/Champs/Champs_1.gif'),('../includes/GIF/Palais/Palais_1.gif'),('../includes/GIF/Concorde/Concorde_1.gif')];
     
     list<file> radarPlots <- [file('../includes/PNG/radar_plot/radar_plot.003.jpeg'),file('../includes/PNG/radar_plot/radar_plot.004.jpeg'),file('../includes/PNG/radar_plot/radar_plot.005.jpeg'),file('../includes/PNG/radar_plot/radar_plot.006.jpeg'),file('../includes/PNG/radar_plot/radar_plot.007.jpeg'),file('../includes/PNG/radar_plot/radar_plot.008.jpeg')];
     
     
 	bool right_side_driving <- true;
-	string transition0to_1<-'../includes/GIF/Etoile/Etoile_1.gif';
 	
 	map<string, rgb> metro_colors <- ["1"::rgb("#FFCD00"), "2"::rgb("#003CA6"),"3"::rgb("#837902"), "6"::rgb("#E2231A"),"7"::rgb("#FA9ABA"),"8"::rgb("#E19BDF"),"9"::rgb("#B6BD00"),"12"::rgb("#007852"),"13"::rgb("#6EC4E8"),"14"::rgb("#62259D")];
 	//OLD PCA
