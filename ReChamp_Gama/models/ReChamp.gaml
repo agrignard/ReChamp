@@ -1317,6 +1317,7 @@ species station schedules: [] {
 }
 
 species pedestrian skills:[moving] control: fsm schedules:[]{
+	path tmp;
 	string type;
 	agent target_place;
 	point target;
@@ -1325,7 +1326,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.5;
+	float proba_wandering <- 0;//0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	bool test_ped;
@@ -1338,7 +1339,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	bool walking <- false;
 	bool stroling_in_city<-false;
 	bool stroling_in_park<-false;
-	float val_f <- rnd(-max_dev,max_dev);
 	list<point> current_trajectory;
 	
 	int side;
@@ -1361,11 +1361,12 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-//					test_ped <- true;
+	//				test_ped <- true;
 					target <- any_location_in(agent(one_of(people_graph.edges)));
-		//			target <- first(road(one_of(people_graph.edges)).shape.points);
+					target <- first(road(one_of(people_graph.edges)).shape.points);
 					wandering <- true;
-					speed_walk_current <- speed_walk_current/ 3.0;
+					// FIXME speed_walk_current à uniformiser
+					speed_walk_current <- speed_walk_current/ 3.0; // 
 				} else {
 					if flip(proba_culture) {
 						target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
@@ -1388,10 +1389,12 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 				
 			}else{
 				do goto target: target on:people_graph speed: speed_walk_current;
+			//	if !wandering {do goto target: target on:people_graph speed: speed_walk_current;}
 			}
 			
 		}else{
 			do goto target: target on:people_graph speed: speed_walk_current;
+		//	if !wandering {do goto target: target on:people_graph speed: speed_walk_current;}
 		}
 		transition to: stroll_in_city when: not to_exit and wandering;// and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
@@ -1408,9 +1411,13 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state stroll_in_city {
 		float t <- machine_time;
 		enter {
+			current_path <- nil;
+			current_edge <- nil;
+			do goto target: self.location;
 			test_ped <- true;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
+			tmp <- current_path;
 		}
 		stroll_time <- stroll_time - step;
 		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
