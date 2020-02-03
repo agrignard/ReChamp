@@ -155,7 +155,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int currentStoryTellingState<-0;
 	list<string> catchPhrase<-["car traffic","moblilité douce","park","culture"];
 	bool updateSim<-true;
-	int nbAgent<-2500;
+	int nbAgent<-750;
 	
 	map<string,float> mobilityRatioNow <-["people"::0.3, "car"::0.6,"bike"::0.1, "bus"::0];
 	map<string,float> mobilityRatioFuture <-["people"::1.2, "car"::0.3,"bike"::0.15, "bus"::0.05];
@@ -183,8 +183,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	
 	int chrono_size <- 30;
 	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
-	float m_time;
-	list<float> chrono <- list_with(chrono_size,0.0);
+	float m_time <- 0.0;
+	list<float> chrono <- [];//list_with(chrono_size,0.0);
 	
 	float meanSpeedCar<-15 #km/#h;
 	float deviationSpeedCar<-10 #km/#h;
@@ -619,11 +619,15 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		t_ref_inter <- t_ref;
 	}
 	
-	reflex chrono when: fps_monitor{
-		chrono >> first(chrono);
+	reflex chrono {
+		if length(chrono) > chrono_size{
+			chrono >> first(chrono);
+		}
 		float new_m_time <- machine_time;
-		chrono << new_m_time - m_time;
-		if cycle mod 5 = 0 {
+		if cycle > 1 {
+			chrono << new_m_time - m_time;
+		}
+		if fps_monitor and cycle mod 5 = 0  {
 			write "fps: "+round((1/mean(chrono))*10000)/10+"    ("+round(mean(chrono))+"ms per frame)";
 			}
 		m_time <- new_m_time;
@@ -1358,8 +1362,8 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			} else {
 				if flip(proba_wandering) {
 //					test_ped <- true;
-			//		target <- any_location_in(agent(one_of(people_graph.edges)));
-					target <- first(road(one_of(people_graph.edges)).shape.points);
+					target <- any_location_in(agent(one_of(people_graph.edges)));
+		//			target <- first(road(one_of(people_graph.edges)).shape.points);
 					wandering <- true;
 					speed_walk_current <- speed_walk_current/ 3.0;
 				} else {
@@ -1410,6 +1414,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		}
 		stroll_time <- stroll_time - step;
 		do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
+		//do wander speed:2.0#km/#h on: people_graph;
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
