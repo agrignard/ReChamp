@@ -2290,9 +2290,11 @@ experiment ReChamp type: gui autorun:true{
 			event["u"] action: {showUsage<-!showUsage;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
-			event["h"] action: {showHotSpot<-!showHotSpot;};
+			event["m"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			
 			//event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
@@ -2300,6 +2302,11 @@ experiment ReChamp type: gui autorun:true{
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
 			event["3"] action: {ask world{do updateStoryTelling (3);}};
 			event["4"] action: {ask world{do updateStoryTelling (4);}};
+			
+			event["w"] action: {ask world{do updateStoryTelling (1);}};
+			event["c"] action: {ask world{do updateStoryTelling (2);}};
+			event[";"] action: {ask world{do updateStoryTelling (3);}};
+			event["="] action: {ask world{do updateStoryTelling (4);}};
 		}
 	}
 }
