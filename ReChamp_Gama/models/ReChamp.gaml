@@ -518,6 +518,9 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		
 		//Create Pedestrian
 		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
+		ask one_of(pedestrian){
+			show_story <- true;
+		}
 		
         //Create Bike
 	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
@@ -609,7 +612,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		if cycle > 1 {
 			chrono << new_m_time - m_time;
 		}
-		if fps_monitor and cycle mod 5 = 0  {
+		if fps_monitor and cycle mod 5 = 0 and cycle > 0 {
 			write "fps: "+round((1/mean(chrono))*10000)/10+"    ("+round(mean(chrono))+"ms per frame)";
 			}
 		m_time <- new_m_time;
@@ -1366,6 +1369,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	bool blocked <- false;
 	float blocked_timer <- 2#mn;
 	bool test_ped;
+	bool show_story;
 	
 	bool waiting_at_traffic_light <- false;
 	bool wandering <- false;
@@ -1606,6 +1610,18 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
 	  	}	
+	  	
+	  	if show_story{
+	  		draw circle(10) at: location+current_offset empty: true color: #white;
+	  		draw line([location+current_offset+{1,-1}*5*sqrt(2),location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
+	  		draw line([location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)},location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
+	  		string text1 <- "Jean-Claude Régnault, 3 ans";
+	  		string text2 <- "Touriste";
+	  		string text3 <-"Se rend au Grand Palais";
+	  		draw text1 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} rotate: angle color:#white font:font("Helvetica", 15 , #plain);
+	  		draw text2 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-20 * sin(angle),20*cos(angle)} rotate: angle color:#white;
+	  		draw text3 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-30 * sin(angle),30*cos(angle)} rotate: angle color:#white;
+	  	}
 	}
 	
 	aspect profile{
@@ -2090,15 +2106,6 @@ species car skills:[advanced_driving] schedules:[]{
 				draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,carTrajectoryTransparency );		
 	  		}
 	  	}
-	  	// ne pas enlever tout de suite
-//	  	if (test_car){
-//	  			list<point>l1 <- trail2 accumulate(each);
-//				list<point> l2 <- of accumulate(each);
-//				loop i from: 0 to: length(l1)-1{
-//					draw line([l1[i],l1[i]+l2[i]]) color: #white;
-//					draw square(1#m) at: l1[i] color: #white;
-//				}
-//	  	}
 
 	  	if (test_car and showTestCar){	
 	  		if current_path != nil{
@@ -2249,11 +2256,11 @@ species intersection skills: [skill_road_node] schedules:[]{
 			draw circle(5) color: color_fire;
 			
 		}
-//		if is_green and master_intersection{
-//			loop r over: ped_xing_block{
-//			draw r.shape color: #red;
-//			}
-//		}
+		if is_green and master_intersection{
+			loop r over: ped_xing_block{
+			draw r.shape color: #red;
+			}
+		}
 	}
 }
 
@@ -2425,7 +2432,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #horizontal;
-		display indicator type:opengl background:#black draw_env:false fullscreen:false toolbar:false
+		display indicator type:java2D background:#black draw_env:false fullscreen:false toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 		    graphics 'dashboardbackground'{
