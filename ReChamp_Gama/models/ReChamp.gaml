@@ -2359,8 +2359,7 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
-	   	{
+camera_pos: {2006.1487,1691.5843,2551.75} camera_look_pos: {2006.1487,1691.5398,-0.003} camera_up_vector: {0.0,1.0,0.0}{
 	   	    species graphicWorld aspect:base;	    	
 		    species building aspect: base;
 			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
