@@ -1275,7 +1275,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.0;//0.5;
+	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1402,6 +1402,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 			tmp <- current_path;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
@@ -1419,6 +1422,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
@@ -2236,6 +2242,7 @@ experiment ReChamp type: gui autorun:true{
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+	   	 keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
 	   	{
 
 	   	    species graphicWorld aspect:base;	    	
