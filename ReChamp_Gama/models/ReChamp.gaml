@@ -1275,7 +1275,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.0;//0.5;
+	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1402,6 +1402,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 			tmp <- current_path;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
@@ -1419,6 +1422,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
@@ -2291,9 +2297,11 @@ experiment ReChamp type: gui autorun:true{
 			event["u"] action: {showUsage<-!showUsage;};
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
-			event["h"] action: {showHotSpot<-!showHotSpot;};
+			event["m"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			
 			//event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
@@ -2301,6 +2309,11 @@ experiment ReChamp type: gui autorun:true{
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
 			event["3"] action: {ask world{do updateStoryTelling (3);}};
 			event["4"] action: {ask world{do updateStoryTelling (4);}};
+			
+			event["w"] action: {ask world{do updateStoryTelling (1);}};
+			event["c"] action: {ask world{do updateStoryTelling (2);}};
+			event[";"] action: {ask world{do updateStoryTelling (3);}};
+			event["="] action: {ask world{do updateStoryTelling (4);}};
 		}
 	}
 }
