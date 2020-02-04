@@ -79,10 +79,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649606.66862320550717413</xmin>
-      <ymin>6862852.14681045152246952</ymin>
-      <xmax>649840.92747330316342413</xmax>
-      <ymax>6863048.08931533433496952</ymax>
+      <xmin>648730.97918850556015968</xmin>
+      <ymin>6863638.20054216403514147</ymin>
+      <xmax>648965.23803860321640968</xmax>
+      <ymax>6863834.14304704684764147</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -3675,9 +3675,6 @@ def my_form_open(dialog, layer, feature):
         <edittype widgetv2type="TextEdit" name="lanes">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
-        <edittype widgetv2type="TextEdit" name="maxspeed">
-          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
-        </edittype>
         <edittype widgetv2type="TextEdit" name="oneway">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
@@ -3697,6 +3694,9 @@ def my_form_open(dialog, layer, feature):
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
         <edittype widgetv2type="TextEdit" name="p_after">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="maxspeed">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
       </edittypes>
@@ -3926,14 +3926,14 @@ def my_form_open(dialog, layer, feature):
       <annotationform>.</annotationform>
       <aliases>
         <alias field="lanes" index="0" name=""/>
-        <alias field="maxspeed" index="1" name=""/>
-        <alias field="oneway" index="2" name=""/>
-        <alias field="tunnel" index="3" name=""/>
-        <alias field="pro_lanes" index="4" name=""/>
-        <alias field="pro_tunnel" index="5" name=""/>
-        <alias field="sideoffset" index="6" name=""/>
-        <alias field="p_before" index="7" name=""/>
-        <alias field="p_after" index="8" name=""/>
+        <alias field="oneway" index="1" name=""/>
+        <alias field="tunnel" index="2" name=""/>
+        <alias field="pro_lanes" index="3" name=""/>
+        <alias field="pro_tunnel" index="4" name=""/>
+        <alias field="sideoffset" index="5" name=""/>
+        <alias field="p_before" index="6" name=""/>
+        <alias field="p_after" index="7" name=""/>
+        <alias field="maxspeed" index="8" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
@@ -3975,7 +3975,6 @@ def my_form_open(dialog, layer, feature):
       </conditionalstyles>
       <defaults>
         <default field="lanes" expression=""/>
-        <default field="maxspeed" expression=""/>
         <default field="oneway" expression=""/>
         <default field="tunnel" expression=""/>
         <default field="pro_lanes" expression=""/>
@@ -3983,6 +3982,7 @@ def my_form_open(dialog, layer, feature):
         <default field="sideoffset" expression=""/>
         <default field="p_before" expression=""/>
         <default field="p_after" expression=""/>
+        <default field="maxspeed" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "lanes", '&lt;NULL>' )</previewExpression>
     </maplayer>
