@@ -1,7 +1,7 @@
   /***
 * Name: ReChamp
 * Author: Arnaud Grignard, Tri Nguyen-Huu, Patrick Taillandier, Nicolas Ayoub 
-* Description: ReChamp - 2019
+* Description: ReChamp - 2020 - CityScope Champs Elysées - Pavillon de l'Arsenal
 * Tags: Tag1, Tag2, TagN
 ***/
 
