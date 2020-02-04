@@ -7,11 +7,7 @@
 
 model ReChamp
 
-global schedules:  (station where (each.type="metro")) + road + intersection + culture + (benchmark_mode ? (benchmark_ag where (each.name = "other")): []) + 
-					car + (benchmark_mode ? (benchmark_ag where (each.name = "car")): [])+
-					bus + (benchmark_mode ? (benchmark_ag where (each.name = "bus")): [])+
-					bike + (benchmark_mode ? (benchmark_ag where (each.name = "bike")): [])+
-					pedestrian + (benchmark_mode ? (benchmark_ag where (each.name = "pedestrian")): []) {
+global schedules:  (station where (each.type="metro")) + road + intersection + culture + car + bus + bike +	pedestrian {
 	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
@@ -206,22 +202,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int crossOverUsage;
 	
 	
-	bool benchmark_mode <- false;
-	float display_time_global;
-	float display_time_sequence;
-	float global_time_global;
-	float global_time_sequence;
-	int nb_cycles_sequence <- 100;
-	float total_time_global;
-	float total_time_sequence;
-	float t_ref;
-	float t_ref_inter;
-	float t_re_init <- machine_time;
-	map<string,float> tmps_state;
-	float t_driving;
-	float t_compute_path;
-	float t_other;
-	
+
+	float t_re_init <- machine_time;	
 	
 	float time_between_clean <- 2 * (60.0 * 60 * 1000);
 	
@@ -497,13 +479,6 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
-		if (benchmark_mode) {
-			create benchmark_ag with:[name::"car"];
-			create benchmark_ag with:[name::"bus"];
-			create benchmark_ag with:[name::"bike"];
-			create benchmark_ag with:[name::"pedestrian"];
-			create benchmark_ag with:[name::"other"];
-		}
 
 //		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
 //		driving_road_network <- driving_road_network with_weights general_speed_map; 
@@ -527,6 +502,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	      type <- "bike";
 	      speed<-2+rnd(maxSpeed);
 		  location<-any_location_in(one_of(building));	
+		  //location<-any_location_in(one_of(origin_destination_shapefile.contents));
 		}
 	
 		 //Create Bus
@@ -539,8 +515,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		    if(n=0){currentStoryTellingState<-0;}
 			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;crossOverSoftMob<-crossOverTime;}
-			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
 	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
@@ -548,60 +524,6 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		} else {
 			return mobilityRatioFuture;
 		}
-	}
-	
-	reflex record_time when: benchmark_mode{
-		
-		if (t_ref_inter > 0) {
-			float t_display <- machine_time - t_ref_inter;
-			display_time_global <- display_time_global + t_display ;
-			display_time_sequence <- display_time_sequence + t_display;
-			
-		}
-		if (t_ref = 0) {
-			t_ref <- machine_time;
-		}
-		float t_cycle <- machine_time - t_ref;
-		
-		total_time_sequence <- total_time_sequence + t_cycle;
-		total_time_global <- total_time_global + t_cycle;
-		
-		if cycle > 0 and (cycle mod nb_cycles_sequence = 0) {
-			write "\n******************* CYCLE : " + cycle + " *******************" ;
-			write "total time: " + (total_time_global/ 1000.0) + "-> 100%";
-			write "global reflex total: "+ (global_time_global/ 1000.0) with_precision 3+ "-> " + (global_time_global/total_time_global * 100.0) with_precision 3+"%";
-			write "display total: "+ (display_time_global/ 1000.0) with_precision 3+ "-> " + (display_time_global/total_time_global * 100.0) with_precision 3+"%";
-			ask benchmark_ag  {
-				write name + " total: "+ (total_time/ 1000.0) with_precision 3+ "-> " + (total_time/total_time_global * 100.0) with_precision 3+"%";
-			}
-			write "--------------------------------------" ;
-			
-			write "sequence time: " + (total_time_sequence/ 1000.0) with_precision 3+ "-> 100%";	
-			write "global reflex sequence time: "+ (global_time_sequence/ 1000.0) with_precision 3+ "-> " + (global_time_sequence/total_time_sequence * 100.0) with_precision 3+"%";
-			write "display sequence time: "+ (display_time_sequence/ 1000.0) with_precision 3+ "-> " + (display_time_sequence/total_time_sequence * 100.0) with_precision 3+"%";
-			ask benchmark_ag  {
-				write name + " sequence: "+ (sequence_time/ 1000.0) with_precision 3+ "-> " + (sequence_time/total_time_sequence * 100.0) with_precision 3 +"%";
-				sequence_time <- 0.0;
-			}
-			loop st over: tmps_state.keys {
-				write "Pedestrian - " + st + " : " + (tmps_state[st]/ 1000.0);  
-				tmps_state[st] <- 0.0;
-			}
-			write "Car - driving " + (t_driving/ 1000.0);  
-			t_driving <- 0.0;
-			write "Car - compute path " + (t_compute_path/ 1000.0);  
-			t_compute_path <- 0.0;
-			write "Car - other " + (t_other/ 1000.0);  
-			t_other <- 0.0;
-			
-				
-			total_time_sequence <- 0.0;
-			global_time_sequence <- 0.0;
-			display_time_sequence <- 0.0;
-			
-		}
-		t_ref <- machine_time;
-		t_ref_inter <- t_ref;
 	}
 	
 	reflex chrono {
@@ -1033,13 +955,6 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			}
 		}
 	}
-	
-	reflex record_time_end when: benchmark_mode{
-		float t_cycle <- machine_time - t_ref_inter;
-		global_time_sequence <- global_time_sequence + t_cycle;
-		global_time_global <- global_time_global + t_cycle;
-		t_ref_inter <- machine_time;
-	}
 }
 
 species culture schedules:[]{
@@ -1360,7 +1275,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0;//0.5;
+	float proba_wandering <- 0.0;//0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1392,7 +1307,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	state walk_to_objective initial: true{
 		
 		enter {
-			float t<- machine_time;
 			walking <- true;
 			wandering <- false;
 			to_culture <- false;
@@ -1419,9 +1333,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 					}
 				}
 			}
-			tmps_state[state] <- tmps_state[state] + (machine_time - t);
 		}
-		float t2<- machine_time;
 		if current_edge != nil{
 			//old code for pedestrian crossing
 //			intersection i <- first(road(current_edge).ped_xing where(distance_to(each,self)<10));
@@ -1478,12 +1390,10 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		exit {
 			walking <- false;
 		}
-		tmps_state[state] <- tmps_state[state] + (machine_time - t2);	
 	}
 	
 	
 	state stroll_in_city {
-		float t <- machine_time;
 		enter {
 			current_path <- nil;
 			current_edge <- nil;
@@ -1502,12 +1412,10 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			test_ped <- false;
 			stroling_in_city<-false;
 		}
-		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	
 	state stroll_in_park {
-		float t <- machine_time;
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
@@ -1519,7 +1427,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		exit{
 		  stroling_in_park<-false;	
 		}
-		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	state outside_sim {
@@ -1529,7 +1436,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	
 	//ce mot existe ?
 	state queueing {
-		float t <- machine_time;
 		enter {
 			queuing<-true;
 			ask culture(target_place) {
@@ -1543,12 +1449,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			ready_to_visit <- false;
 			queuing<-false;
 		}
-		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	state visiting_place {
-		float t <- machine_time;
-		
 		enter {
 			visiting <- true;
 			visiting_time <- rnd(10,120)  #mn;
@@ -1560,7 +1463,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		exit {
 			visiting <- false;
 		}
-		tmps_state[state] <- tmps_state[state] + (machine_time - t);
 	}
 	
 	reflex compute_offset{
@@ -1650,6 +1552,8 @@ species bike skills:[moving] schedules:[]{
 	float maxSpeed<-10#km/#h;
 	reflex choose_target when: my_target = nil {
 		my_target <- any_location_in(one_of(bikelane));
+		
+		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
@@ -1695,17 +1599,6 @@ species bus skills:[moving] schedules:[]{
 		if(showSharedMobilityTrajectory){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,busTrajectoryTransparency);	
 	  }
-	}
-}
-
-species benchmark_ag schedules:[]{
-	float sequence_time;
-	float total_time;
-	reflex record_time {
-		float t_cycle <- machine_time - t_ref_inter;
-		sequence_time <- sequence_time + t_cycle;
-		total_time <- total_time + t_cycle;
-		t_ref_inter <- machine_time;
 	}
 }
 
@@ -1767,8 +1660,7 @@ species car skills:[advanced_driving] schedules:[]{
 	
 	
 	reflex leave when: final_target = nil  {
-		float t <- benchmark_mode ? machine_time : 0.0;
-	  	if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
+		if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
 			if current_road != nil {
 				ask current_road as road {
 					do unregister(myself);
@@ -1807,14 +1699,11 @@ species car skills:[advanced_driving] schedules:[]{
 			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 		}
 		path_updated <- true;
-
-		if benchmark_mode{t_compute_path <- t_compute_path + machine_time - t;}
 	}
 	
 	
 	reflex fade when: (fade_count > 0){
-		float t <- benchmark_mode ? machine_time : 0.0;
-	  	fade_count <- fade_count - 1;
+	 	fade_count <- fade_count - 1;
 		if fade_count = 0{
 			if current_road != nil {
 				ask current_road as road {
@@ -1847,17 +1736,13 @@ species car skills:[advanced_driving] schedules:[]{
 	
 	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
-	  	float t <- benchmark_mode ? machine_time : 0.0;
 //	  	if (current_path = nil) {
 //			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 //		}
-		if benchmark_mode{t_compute_path <- t_compute_path + machine_time - t; t <- machine_time;}
 	  	do drive;	
-	  	if benchmark_mode{t_driving <- t_driving + machine_time - t;t <- machine_time;}
 	}
 	
 	reflex compute_offset_and_trail{
-		float t <- benchmark_mode ? machine_time : 0.0;
 		if smoothTrajectory{
 			if path_updated or old_indexes[1] != current_index or old_indexes[2] != segment_index_on_road{
 
@@ -1888,14 +1773,10 @@ species car skills:[advanced_driving] schedules:[]{
 	    		current_trajectory >> first(current_trajectory);
        		}
         	current_trajectory << location+current_offset;
-        	if benchmark_mode{t_other <- t_other + machine_time - t;}
 		}
 		old_location <- copy(location);
 		old_indexes <- [int(starting_intersection), current_index,segment_index_on_road]; 
 		path_updated <- false;
-
-		 if benchmark_mode{t_other <- t_other + machine_time - t;}
-
 	}
 	
 	
@@ -2349,17 +2230,14 @@ experiment debug_xp type: gui autorun:true{
 
 	}
 	
-experiment ReChamp_benchmark parent: ReChamp autorun:true{
-	action _init_ {
-		create simulation with:[benchmark_mode::true];
-	}
-}
-
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-		display champ type:opengl background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-camera_pos: {2006.1487,1691.5843,2551.75} camera_look_pos: {2006.1487,1691.5398,-0.003} camera_up_vector: {0.0,1.0,0.0}{
+
+		display champ type:java2D background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+	   	{
+
 	   	    species graphicWorld aspect:base;	    	
 		    species building aspect: base;
 			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
