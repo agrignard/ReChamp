@@ -183,7 +183,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	float minSpeedPeople<-2 #km/#h;
 	float maxSpeedPeople<-5 #km/#h;
 	
-	
+	float proba_hot_target <- 0.9; //proba to choose a hot target for bikes.
 	float proba_used_od <-0.7;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
@@ -201,7 +201,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int crossOverNature;
 	int crossOverUsage;
 	
-	
+	list<bikelane> hot_bike_lanes;
 
 	float t_re_init <- machine_time;	
 	
@@ -457,6 +457,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		create bikelane from:bikelane_shapefile{
 			color<-type_colors["bike"];
 		}
+		ask coldSpot {
+			ask bikelane overlapping self {
+				is_cold_spot <- true;
+			}
+		}
+		hot_bike_lanes <- bikelane where not each.is_cold_spot;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
 		}
@@ -1216,6 +1222,7 @@ species road  skills: [skill_road] schedules:[] {
 
 species bikelane{
 	bool from_road <- true;
+	bool is_cold_spot <- false;
 	int lanes;
 	aspect base {
 		if(showBikeLane and not from_road){
@@ -1557,7 +1564,12 @@ species bike skills:[moving] schedules:[]{
 	list<point> current_trajectory;
 	float maxSpeed<-10#km/#h;
 	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(bikelane));
+		if (flip(proba_hot_target)) {
+			my_target <- any_location_in(one_of(hot_bike_lanes));
+		} else {
+			my_target <- any_location_in(one_of(bikelane));
+		}
+		
 		
 		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
