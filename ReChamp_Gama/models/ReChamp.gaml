@@ -517,6 +517,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	      type <- "bike";
 	      speed<-2+rnd(maxSpeed);
 		  location<-any_location_in(one_of(building));	
+		  //location<-any_location_in(one_of(origin_destination_shapefile.contents));
 		}
 	
 		 //Create Bus
@@ -529,8 +530,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		    if(n=0){currentStoryTellingState<-0;}
 			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;crossOverSoftMob<-crossOverTime;}
-			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
 	}
 	map<string,float> get_mobility_ratio {
 		if (currentSimuState = 0) {
@@ -1535,6 +1536,8 @@ species bike skills:[moving] schedules:[]{
 	float maxSpeed<-10#km/#h;
 	reflex choose_target when: my_target = nil {
 		my_target <- any_location_in(one_of(bikelane));
+		
+		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
 	reflex move{
 	  do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
