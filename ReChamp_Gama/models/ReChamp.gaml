@@ -2143,11 +2143,11 @@ species intersection skills: [skill_road_node] schedules:[]{
 			draw circle(5) color: color_fire;
 			
 		}
-		if is_green and master_intersection{
+		/*if is_green and master_intersection{
 			loop r over: ped_xing_block{
 			draw r.shape color: #red;
 			}
-		}
+		}*/
 	}
 }
 
