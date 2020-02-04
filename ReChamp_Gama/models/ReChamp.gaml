@@ -2236,7 +2236,7 @@ experiment ReChamp type: gui autorun:true{
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1812.4353,1521.5935,2609.8917} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
-	   	 keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
+	   	 //keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
 	   	{
 
 	   	    species graphicWorld aspect:base;	    	
