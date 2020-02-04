@@ -1275,7 +1275,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.0;//0.5;
+	float proba_wandering <- 0.5;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1402,6 +1402,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 			tmp <- current_path;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
@@ -1419,6 +1422,9 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
+			shape.attributes["reverse"] <- nil;
+			shape.attributes["index_on_path"] <- nil;
+			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
