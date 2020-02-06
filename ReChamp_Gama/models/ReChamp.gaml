@@ -213,6 +213,15 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		ask car {
 			do remove_and_die;
 		} 
+		ask road where (each.lanes > 0){
+			loop i from: 0 to:length(agents_on) -1{
+				loop  j from: 0 to:length(agents_on[i]) -1 {
+					agents_on[i][j] <- [];
+				}
+				 
+			}
+			all_agents <- [];
+		}
 		ask bus {
 			do die;
 		}
