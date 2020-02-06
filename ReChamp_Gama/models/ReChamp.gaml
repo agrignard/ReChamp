@@ -42,7 +42,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	file Waiting_line_shapefile <- shape_file("../includes/GIS/Waiting_line.shp");
 
 	geometry shape <- envelope(shape_file_bounds);
-	graph people_graph;
+	list<graph> people_graph;
 	graph bike_graph;
 	graph bus_graph;
 	
@@ -112,7 +112,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 
-	
+	bool showPedBlock parameter: 'Show Pedestrian Blocking' category: "Debug" <-true;
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
 	
@@ -192,8 +192,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
 	map<int,list<road>> blocked_roads;
-//	map<int,map<int,list<road>>> blocked_roads_at_phase;
-//	map<int,map<int,intersection>> master_intersections;
+	list<map<list<list<road>>>> ped_blocking_roads <- list_with(stateNumber, nil);//indices: simuState, groupe, phase;
+	map<int,int> phase_per_group;
 	
 	point source;
 	point destination;
@@ -290,7 +290,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 			lanes <- lanes_nb[currentSimuState];
 			switch oneway {
@@ -303,8 +303,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 						is_tunnel <- myself.is_tunnel;
 						oneway <- myself.oneway;
 						sidewalk_size<-myself.sidewalk_size;
-						p_before <- 0;
-						p_after <- 0;
+						ped_way <- [0,0];
 					}
 				}
 
@@ -338,7 +337,10 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		
 		//creation of the road network using the road and intersection agents
 		graph tmp <- as_driving_graph(road, intersection) use_cache false;
-		people_graph <- as_edge_graph(road) use_cache false;
+		loop j from: 0 to:  stateNumber-1{
+			people_graph << as_edge_graph(road where (each.ped_way[j] != 0)) use_cache false;
+		}
+		
 		
 		// unused code ?
 //		vertices <- list<intersection>(tmp.vertices);
@@ -689,7 +691,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			stop << [];
 		}
 		
-		
+		// init traffic lights
 		loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {
 			list<intersection> gp <- traffic_signals where(each.group = i);
 			rgb col <- rnd_color(255);
@@ -711,72 +713,134 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 					}else{
 						if green{do to_red;}else{do to_green;}
 					}
-				counter <- cpt_init;	
+				counter <- cpt_init;
 				}
 			}
-			
-			
-			ask gp {
-				point centroide <- mean (gp collect (each).location);
-				loop rd over: roads_in {
-					bool inward <- distance_to(centroide, first(rd.shape.points)) > distance_to(centroide, last(rd.shape.points));
-					if inward {
-						road(rd).ped_xing << self;
-					}
-				}
-				loop rd over: roads_out {
-					bool outward <- distance_to(centroide, first(rd.shape.points)) < distance_to(centroide, last(rd.shape.points));
-					if outward {
-						road(rd).ped_xing << self;
-					}
-				}
-			}
-			
-			loop i1 over: gp{
-				list<intersection> i_group <- intersection where (each.group = i and each.phase = i1.phase) - i1;
-				loop i2 over: i_group{
-					path p <- path_between(people_graph,i1,i2);
-			//		path p <- path_between(driving_road_network[0],i1,i2);
-//					if int(i1) = 163{write ""+ i1+" to "+i2+" phase "+i1.phase+" path "+p.edges;}			
-					bool add_next_road <- true; 
-					loop r over: list<road>(p.edges){
-						r.tl_group <- i;
-//						if int(i1)= 163{
-//							write r;
-////							write ""+r.target_node+" "+intersection(r.target_node).phase;
-////							write ""+r.source_node+" "+intersection(r.source_node).phase;
-////							write 		(intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase);
-//						}
-						
-						if (intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase){
-							add_next_road <- false;
-						}
-//						if int(i1) = 163{
-//							write ""+r+" "+add_next_road;
-//						}
-						if add_next_road{
-							i1.ped_xing_block <- i1.ped_xing_block + r;
-						}
-					}
-	//				if int(i1) =163{write i1.ped_xing_block;}
-				}
-				i1.ped_xing_block <- remove_duplicates(i1.ped_xing_block);
-			}
-			
-			blocked_roads <<i:: road where(each.tl_group = i);
-			map<int, intersection> m;		
-			loop ph over: remove_duplicates(gp accumulate(each.phase)){
-				intersection i1 <- first(gp where(each.phase=ph));
-				i1.master_intersection <- true;
-				i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
-//				list<road> lr <- [];	
-//				loop i1 over: gp where(each.phase = ph){
-//					lr <- lr + i1.ped_xing_block;
-//				}
-//				m << ph::lr;
-			}		
 		}
 		
+//		// init pedestrian crossings
+//		list<graph> tmp_car_graph;
+//		loop j from: 0 to:  stateNumber-1{
+//			tmp_car_graph << as_edge_graph(road where (each.lanes_nb[j] != 0)) use_cache false;
+//		}
+//		
+//		loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {	
+//			list<intersection> gp <- traffic_signals where(each.group = i);
+//			loop i1 over: gp{
+//				list<intersection> i_group <- intersection where (each.group = i and each.phase = i1.phase) - i1;
+//				loop i2 over: i_group{
+//					int truc <-0; //MARKER FOR UPDATING NEXT LINE
+//					path p <- path_between(tmp_car_graph[0],i1,i2);
+//			//		path p <- path_between(driving_road_network[0],i1,i2);
+//	
+////					if i=12{
+////						write ""+ i1+" to "+i2+" phase "+i1.phase;
+////						write " path "+p.edges;
+////					}
+//					bool add_next_road <- true; 
+//					if i1.location = first(road(first(p.edges)).shape.points) and i2.location = last(road(last(p.edges)).shape.points){// do not add path if the path does not strictly joins the two intersections
+//						loop r over: list<road>(p.edges){
+//							r.tl_group <- i;
+//	//						if int(i1)= 163{
+//	//							write r;
+//	////							write ""+r.target_node+" "+intersection(r.target_node).phase;
+//	////							write ""+r.source_node+" "+intersection(r.source_node).phase;
+//	////							write 		(intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase);
+//	//						}
+//							
+//							if (intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase){
+//								add_next_road <- false;
+//							}
+//	//						if int(i1) = 163{
+//	//							write ""+r+" "+add_next_road;
+//	//						}
+//							if add_next_road{
+//								i1.ped_xing_block <- i1.ped_xing_block + r;
+//							}
+//						}
+//					}
+////					if int(i1) = 163{write ""+ i1+" to "+i2+" phase "+i1.phase+" path "+p.edges;}			
+//					
+//				
+//					
+//					
+//					
+//	//				if int(i1) =163{write i1.ped_xing_block;}
+//				}
+//				i1.ped_xing_block <- remove_duplicates(i1.ped_xing_block);
+//			}
+//			
+//			blocked_roads <<i:: road where(each.tl_group = i);
+//			map<int, intersection> m;		
+//			loop ph over: remove_duplicates(gp accumulate(each.phase)){
+//				intersection i1 <- first(gp where(each.phase=ph));
+//				i1.master_intersection <- true;
+//				i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
+////				list<road> lr <- [];	
+////				loop i1 over: gp where(each.phase = ph){
+////					lr <- lr + i1.ped_xing_block;
+////				}
+////				m << ph::lr;
+//			}		
+//		}
+
+		// init pedestrian crossings
+//		phase_per_group <- list_with(length((remove_duplicates(traffic_signals collect(each.group)) - 0)),0);
+		graph tmp_car_graph;
+		loop j from: 0 to:  stateNumber-1{
+			tmp_car_graph <- as_edge_graph(road where (each.lanes_nb[j] != 0)) use_cache false;
+			loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {	// loop over traffic signals groups
+				list<intersection> gp <- traffic_signals where(each.group = i);
+				int nb_phases <- length(remove_duplicates(gp collect(each.phase)));
+				list<list<road>> roads_per_phase <- list_with(nb_phases,[]);
+				loop i1 over: gp{
+					list<intersection> i_group <- intersection where (each.group = i and each.phase = i1.phase) - i1;
+					loop i2 over: i_group{
+						path p <- path_between(tmp_car_graph,i1,i2);
+						bool add_next_road <- true; 
+						if i1.location = first(road(first(p.edges)).shape.points) and i2.location = last(road(last(p.edges)).shape.points){// do not add path if the path does not strictly joins the two intersections
+							loop r over: list<road>(p.edges){
+								r.tl_group <- i;
+								if (intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase){
+									add_next_road <- false;
+								}
+								if add_next_road{
+									roads_per_phase[i1.phase-1] << r;
+								}
+							}
+						}
+					}
+				}
+				loop k from: 0 to: length(roads_per_phase)-1{
+					roads_per_phase[k] <- remove_duplicates(roads_per_phase[k]);
+				}
+				put roads_per_phase at: i in: ped_blocking_roads[j];
+				map<int, intersection> m;		
+				loop ph over: remove_duplicates(gp accumulate(each.phase)){
+					intersection i1 <- first(gp where(each.phase=ph));
+					i1.master_intersection <- true;
+					i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
+				}		
+			}
+		}
+		
+		list<int> signals_indexes <- (remove_duplicates(traffic_signals collect(each.group)) - 0);
+		loop i over: signals_indexes{
+			blocked_roads <<i:: road where(each.tl_group = i);
+		}
+		loop r over: road where(max(each.lanes_nb)=0){
+			loop i over: signals_indexes{
+				loop r2 over: road where(each.tl_group = i){
+					if intersects(r,r2){
+						put blocked_roads[i]+r at: i in: blocked_roads;
+					}
+				}
+			}
+		}
+				
+
+		
+		//init traffic lights that are not in main area
 		list<list<intersection>> groupes <- traffic_signals where (each.group = 0) simple_clustering_by_distance dist_group_traffic_light;
 		loop gp over: groupes {
 			rgb col <- rnd_color(255);
@@ -889,6 +953,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		}
 	}
 	
+
+	
 //	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
 //		
 //		list<intersection> nodes <- [];
@@ -981,12 +1047,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 				do die;
 			}
 		}
-		if(currentSimuState=0){
-			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
-		}
-		if(currentSimuState=1){
-			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
-		}
+//		if(currentSimuState=0){
+//			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
+//		}
+//		if(currentSimuState=1){
+//			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
+//		}
 		
 		
 		int nb_bikes <- length(bike);
@@ -1163,10 +1229,10 @@ species road  skills: [skill_road] schedules:[] {
 	int time_accept <- 100;
 	int cpt_accept;
 	float sidewalk_size;
-	int p_before;
-	int p_after;
-	list<int> nb_car_max <- [1 + round(shape.perimeter * p_before / 10), 1 +round(shape.perimeter * p_after / 10)] ;
-	list<intersection> ped_xing;
+	list<int> ped_way;
+//	int p_before;
+//	int p_after;
+	list<int> nb_car_max <- lanes_nb accumulate (1 + round(shape.perimeter * each / 10));//	[1 + round(shape.perimeter * lanes_nb[0] / 10), 1 +round(shape.perimeter * p_after / 10)] ;
 	
 	bool has_traffic_jam {
 		list<agent> ags <- all_agents;
@@ -1197,7 +1263,7 @@ species road  skills: [skill_road] schedules:[] {
 	//action (pas jolie jolie) qui change le nombre de voie d'une route.
 	action change_number_of_lanes(int new_number) {
 		if new_number = 0{
-			to_display <- true;
+			to_display <- false;
 		}else {
 			to_display <- true;
 			int prev <- lanes;
@@ -1368,6 +1434,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	point target_offset;
 	
 	bool blocked <- false;
+	list<list<int>> blocked_at_phase;
 	float blocked_timer <- 2#mn;
 	bool test_ped;
 	bool show_story;
@@ -1404,8 +1471,8 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			} else {
 				if flip(proba_wandering) {
 	//				test_ped <- true;
-					target <- any_location_in(agent(one_of(people_graph.edges)));
-					target <- first(road(one_of(people_graph.edges)).shape.points);
+					target <- any_location_in(agent(one_of(people_graph[currentSimuState].edges)));
+					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
 					// FIXME speed_walk_current à uniformiser
 					speed_walk_current <- speed_walk_current/ 3.0; // 
@@ -1424,25 +1491,14 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		}
 		float t2<- machine_time;
 		if current_edge != nil{
-			//old code for pedestrian crossing
-//			intersection i <- first(road(current_edge).ped_xing where(distance_to(each,self)<10));
-//			point p1 <- destination - location;
-//			if i != nil and (p1.x*(i.location - location).x+p1.y*(i.location - location).y > 0) and not(i.is_green) {
-//				
-//				
-//			}else{
-//				do goto target: target on:people_graph speed: speed_walk_current;
-//			//	if !wandering {do goto target: target on:people_graph speed: speed_walk_current;}
-//			}
-
 			blocked <- false;
 		//	bool blocked <- false;
 			if road(current_edge).tl_group != 0{
+				//FIXME A REMPLACER PAR HEADING ?
 				point p1 <- (destination - location)/norm(destination-location)*10;
 				// FIXME CHARGER DES LE DEBUT LA LISTE DE ROUTES
 				int r_id <- 0;
-			//	list<road> lr <- blocked_roads[road(current_edge).tl_group];
-				list<road> lr <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
+				list<road> lr <- ped_blocking_roads[currentSimuState][road(current_edge).tl_group][phase_per_group[road(current_edge).tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
 				loop while: !blocked and r_id < length(lr){
 					if intersects(polyline([location+current_offset, location+current_offset+p1]),lr[r_id].shape){
 						blocked <- true;
@@ -1451,25 +1507,25 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 				}
 			}
 			if !blocked{
-				do goto target: target on:people_graph speed: speed_walk_current;
+				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
 			}else{
 				blocked_timer <- blocked_timer - step;
 			}
 			if blocked_timer < 0{//action de debouchage un peu bourrine pour les piétons un peu perdus qui n'arrivent plus à traverser une rue
 				blocked_timer <- 2#mn;
-				do goto target: target on:people_graph speed: speed_walk_current;
+				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
 			}
 //			point p1 <- destination - location;
 //			if i != nil and (p1.x*(i.location - location).x+p1.y*(i.location - location).y > 0) and not(i.is_green) {
 //				
 //				
 //			}else{
-//				do goto target: target on:people_graph speed: speed_walk_current;
-////			//	if !wandering {do goto target: target on:people_graph speed: speed_walk_current;}
+//				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
+////			//	if !wandering {do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;}
 //			}
 		}else{
-			do goto target: target on:people_graph speed: speed_walk_current;
-		//	if !wandering {do goto target: target on:people_graph speed: speed_walk_current;}
+			do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
+		//	if !wandering {do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;}
 		}
 		transition to: stroll_in_city when: not to_exit and wandering;// and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
@@ -1495,8 +1551,8 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 			tmp <- current_path;
 		}
 		stroll_time <- stroll_time - step;
-		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
-		do wander on: people_graph;
+		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph[currentSimuState];
+		do wander on: people_graph[currentSimuState];
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
@@ -1616,13 +1672,18 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	  		draw circle(10) at: location+current_offset empty: true color: #white;
 	  		draw line([location+current_offset+{1,-1}*5*sqrt(2),location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
 	  		draw line([location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)},location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
-	  		string text1 <- "Jean-Claude Régnault, 3 ans";
+	  		string text1 <- "Jean-Claude Régnault, 27 ans";
 	  		string text2 <- "Touriste";
 	  		string text3 <-"Se rend au Grand Palais";
 	  		draw text1 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} rotate: angle color:#white font:font("Helvetica", 15 , #plain);
 	  		draw text2 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-20 * sin(angle),20*cos(angle)} rotate: angle color:#white;
 	  		draw text3 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-30 * sin(angle),30*cos(angle)} rotate: angle color:#white;
 	  	}
+//	  	if show_story{
+//			loop r over: people_graph[currentSimuState]{
+//				draw 2 around(road(r).shape) color: #cyan;
+//			}
+//		}
 	}
 	
 	aspect profile{
@@ -2193,13 +2254,18 @@ species intersection skills: [skill_road_node] schedules:[]{
 
 
 	action to_green {
-		if not is_free {
-			stop[0] <- ways2;
+		if active{
+			if not is_free {
+				stop[0] <- ways2;
+			}
+			color_fire <- #green;
+			is_green <- true;
 		}
-		color_fire <- #green;
-		is_green <- true;
+		
 		
 		if master_intersection{
+			put self.phase at: self.group in: phase_per_group;
+			//phase_per_group[self.group-1] <- self.phase;
 			if length(blocked_roads)>0{
 				loop r over: blocked_roads[self.group] {
 					r.ped_block <- false;
@@ -2215,11 +2281,13 @@ species intersection skills: [skill_road_node] schedules:[]{
 	}
 
 	action to_red {
-		if not is_free {
-			stop[0] <- ways1;
+		if active{
+			if not is_free {
+				stop[0] <- ways1;
+			}
+			color_fire <- #red;
+			is_green <- false;
 		}
-		color_fire <- #red;
-		is_green <- false;
 	}
 	
 	action change_activity{
@@ -2231,7 +2299,8 @@ species intersection skills: [skill_road_node] schedules:[]{
 		}
 	}
 
-	reflex dynamic_node when: active and is_traffic_signal {
+//	reflex dynamic_node when: active and is_traffic_signal {
+	reflex dynamic_node when: is_traffic_signal {
 		counter <- counter + step;
 		if (is_free) {
 			cpt_free <- cpt_free+ step;
@@ -2252,18 +2321,35 @@ species intersection skills: [skill_road_node] schedules:[]{
 	}
 
 	aspect default {
-		if showTrafficSignal{
+		if showTrafficSignal and !is_traffic_signal{
 			draw circle(3#m) color: color;
 		}
-		if (active and is_traffic_signal and showTrafficSignal) {
-			draw circle(5) color: color_fire;
-			
-		}
-		if is_green and master_intersection{
-			loop r over: ped_xing_block{
-			draw r.shape color: #red;
+		if (is_traffic_signal and showTrafficSignal) {
+			if active{
+				draw circle(5) color: color_fire;
+			}else{
+				draw circle(5) color: #white empty: true;
 			}
 		}
+		
+//		if int(self)=1{
+//			loop i over: blocked_roads.keys{
+//				loop r over: blocked_roads[i]{
+//					draw 5 around(r.shape) color: #yellow;
+//				}
+//			}
+//			loop i over: phase_per_group.keys{
+//				draw square(50) at: location;
+//				loop r over: ped_blocking_roads[currentSimuState][i][phase_per_group[i]-1]{
+//					draw 3 around(r.shape) color: #cyan;
+//				}
+//			}
+//		}
+//		if showPedBlock and is_green and master_intersection{
+//			loop r over: ped_xing_block{
+//			draw r.shape color: #red;
+//			}
+//		}
 	}
 }
 
