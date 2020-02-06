@@ -1283,7 +1283,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.7;
+	float proba_wandering <- 0.3;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1291,7 +1291,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	
 	bool blocked <- false;
 	float blocked_timer <- 2#mn;
-	bool test_ped;
 	bool show_story;
 	
 	bool waiting_at_traffic_light <- false;
@@ -1324,7 +1323,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-	//				test_ped <- true;
 					target <- any_location_in(agent(one_of(people_graph.edges)));
 					target <- first(road(one_of(people_graph.edges)).shape.points);
 					wandering <- true;
@@ -1411,7 +1409,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	state stroll_in_city {
 		enter {
 			do goto target: self.location;
-			test_ped <- true;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 			tmp <- copy(current_path);
@@ -1424,7 +1421,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
-			test_ped <- false;
 			stroling_in_city<-false;
 		}
 	}
@@ -1520,9 +1516,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 //			 	draw polyline([location+current_offset, location+p1+current_offset]) color: #cyan  ;
 //			 }
 			 
-		}
-		if test_ped{
-			draw square(peopleSize*3) color:#green at:walking ? location+current_offset :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
