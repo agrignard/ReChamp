@@ -1525,12 +1525,12 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	  		draw circle(10) at: location+current_offset empty: true color: #white;
 	  		draw line([location+current_offset+{1,-1}*5*sqrt(2),location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
 	  		draw line([location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)},location+current_offset+{1,-1}*30*sqrt(2)]) color: #white;
-	  		string text1 <- "Jean-Claude Régnault, 3 ans";
+	  		string text1 <- "Jean-Claude Régnault, 27 ans";
 	  		string text2 <- "Touriste";
 	  		string text3 <-"Se rend au Grand Palais";
 	  		draw text1 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} rotate: angle color:#white font:font("Helvetica", 15 , #plain);
-	  		draw text2 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-20 * sin(angle),20*cos(angle)} rotate: angle color:#white;
-	  		draw text3 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-30 * sin(angle),30*cos(angle)} rotate: angle color:#white;
+	  		draw text2 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-40 * sin(angle),40*cos(angle)} rotate: angle color:#white;
+	  		draw text3 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-80 * sin(angle),80*cos(angle)} rotate: angle color:#white;
 	  	}
 	}
 	
