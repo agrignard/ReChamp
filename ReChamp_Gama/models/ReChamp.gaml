@@ -2331,7 +2331,7 @@ experiment ReChamp2Proj parent:ReChamp autorun:true{
 	
 	output {	
 		layout #horizontal;
-		display indicator type:java2D background:#black draw_env:false fullscreen:false toolbar:false
+		display indicator type:java2D background:#black draw_env:false fullscreen:0 toolbar:false
 		//camera_pos: {1812.4353,1521.574,1490.9658} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
 		{
 		    graphics 'dashboardbackground'{
