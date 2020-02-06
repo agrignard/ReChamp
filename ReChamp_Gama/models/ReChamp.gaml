@@ -7,7 +7,7 @@
 
 model ReChamp
 
-global schedules:  (station where (each.type="metro")) + road + intersection + culture + car + bus + bike +	pedestrian {
+global {//schedules:  station + road + intersection + culture + car + bus + bike +	pedestrian {
 	//EXISTING SHAPEFILE (FROM OPENDATA and OPENSTREETMAP)
 	file shape_file_bounds <- file("../includes/GIS/TableBounds.shp");
 	file buildings_shapefile <- file("../includes/GIS/buildings.shp");
@@ -183,7 +183,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	float minSpeedPeople<-2 #km/#h;
 	float maxSpeedPeople<-5 #km/#h;
 	
-	
+	float proba_hot_target <- 0.9; //proba to choose a hot target for bikes.
 	float proba_used_od <-0.7;
 	float factor_avoid_tj <- 2.0;
 	float proba_avoid_tj <- 0.5;
@@ -201,7 +201,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	int crossOverNature;
 	int crossOverUsage;
 	
-	
+	list<bikelane> hot_bike_lanes;
 
 	float t_re_init <- machine_time;	
 	
@@ -457,6 +457,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 		create bikelane from:bikelane_shapefile{
 			color<-type_colors["bike"];
 		}
+		ask coldSpot {
+			ask bikelane overlapping self {
+				is_cold_spot <- true;
+			}
+		}
+		hot_bike_lanes <- bikelane where not each.is_cold_spot;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
 		}
@@ -891,7 +897,12 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 			}
 		}
 	  	
-		
+		if(currentSimuState=0){
+			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
+		}
+		if(currentSimuState=1){
+			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
+		}
 		int nb_people <- length(pedestrian);
 		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
 		//FIXME see issue #59 
@@ -902,11 +913,8 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 				do die;
 			}
 		}
-		if(currentSimuState=0){
-			people_graph <- as_edge_graph(road where (each.p_before=1)) use_cache false;
-		}
-		if(currentSimuState=1){
-			people_graph <- as_edge_graph(road where (each.p_after=1)) use_cache false;
+		ask pedestrian where (each.state = "stroll_in_city"){
+			do reinit_path;
 		}
 		
 		
@@ -957,7 +965,7 @@ global schedules:  (station where (each.type="metro")) + road + intersection + c
 	}
 }
 
-species culture schedules:[]{
+species culture {//schedules:[]{
 	list<string> state;
 	string type;
 	string style;
@@ -1055,7 +1063,7 @@ species park {
 }
 
 
-species road  skills: [skill_road] schedules:[] {
+species road  skills: [skill_road]{// schedules:[] {
 	int id;
 	int tl_group;
 	bool ped_block <- false;
@@ -1216,6 +1224,7 @@ species road  skills: [skill_road] schedules:[] {
 
 species bikelane{
 	bool from_road <- true;
+	bool is_cold_spot <- false;
 	int lanes;
 	aspect base {
 		if(showBikeLane and not from_road){
@@ -1236,15 +1245,14 @@ species bus_line{
 	}
 }
 
-species station schedules: [] {
+species station {//schedules: [] {
 	rgb color;
 	string type;
 	int capacity;
 	float capacity_pca;
 	float delay <- rnd(2.0,8.0) #mn ;
-	
 	//Create people going in and out of metro station
-	reflex add_people when: (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
+	reflex add_people when: (type = "metro") and (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
 		
 		create pedestrian number:rnd(0,10)*int(capacity){
 			type<-"people";
@@ -1265,7 +1273,7 @@ species station schedules: [] {
 	}
 }
 
-species pedestrian skills:[moving] control: fsm schedules:[]{
+species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	path tmp;
 	string type;
 	agent target_place;
@@ -1275,7 +1283,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	float speed_walk <- rnd(minSpeedPeople,maxSpeedPeople);// #km/#h;
 	bool to_exit <- false;
 	float proba_sortie <- 0.3;
-	float proba_wandering <- 0.0;
+	float proba_wandering <- 0.3;
 	float proba_culture <- 0.7;
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
@@ -1283,7 +1291,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	
 	bool blocked <- false;
 	float blocked_timer <- 2#mn;
-	bool test_ped;
 	bool show_story;
 	
 	bool waiting_at_traffic_light <- false;
@@ -1316,7 +1323,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-	//				test_ped <- true;
 					target <- any_location_in(agent(one_of(people_graph.edges)));
 					target <- first(road(one_of(people_graph.edges)).shape.points);
 					wandering <- true;
@@ -1392,19 +1398,22 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		}
 	}
 	
-	
+	action reinit_path{
+	//	current_path <- nil;
+		current_edge <- nil;
+		shape.attributes["reverse"] <- nil;
+		shape.attributes["index_on_path"] <- nil;
+		shape.attributes["index_on_path_segment"] <- nil;
+		
+	}
 	state stroll_in_city {
 		enter {
-			current_path <- nil;
-			current_edge <- nil;
 			do goto target: self.location;
-			test_ped <- true;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
-			tmp <- current_path;
-			shape.attributes["reverse"] <- nil;
-			shape.attributes["index_on_path"] <- nil;
-			shape.attributes["index_on_path_segment"] <- nil;
+			tmp <- copy(current_path);
+			current_path <- nil;
+			do reinit_path;
 		}
 		stroll_time <- stroll_time - step;
 		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph;
@@ -1412,7 +1421,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
-			test_ped <- false;
 			stroling_in_city<-false;
 		}
 	}
@@ -1422,9 +1430,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
-			shape.attributes["reverse"] <- nil;
-			shape.attributes["index_on_path"] <- nil;
-			shape.attributes["index_on_path_segment"] <- nil;
 		}
 		stroll_time <- stroll_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
@@ -1499,7 +1504,7 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	
 	aspect base{
 		if(showPeople){
-			point p1 <- (destination - location)/norm(destination-location)*10;
+			//point p1 <- (destination - location)/norm(destination-location)*10;
 			 draw square(peopleSize) color:type_colors[type] at:walking ? location+current_offset :location rotate: angle;
 //			 if !blocked{
 //			 	draw square(peopleSize) color:type_colors[type] at:walking ? location+current_offset :location rotate: angle;	
@@ -1511,9 +1516,6 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 //			 	draw polyline([location+current_offset, location+p1+current_offset]) color: #cyan  ;
 //			 }
 			 
-		}
-		if test_ped{
-			draw square(peopleSize*3) color:#green at:walking ? location+current_offset :location rotate: angle;	
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
@@ -1551,13 +1553,18 @@ species pedestrian skills:[moving] control: fsm schedules:[]{
 	}
 }
 
-species bike skills:[moving] schedules:[]{
+species bike skills:[moving] {//schedules:[]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
 	float maxSpeed<-10#km/#h;
 	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(bikelane));
+		if (flip(proba_hot_target)) {
+			my_target <- any_location_in(one_of(hot_bike_lanes));
+		} else {
+			my_target <- any_location_in(one_of(bikelane));
+		}
+		
 		
 		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
@@ -1581,7 +1588,7 @@ species bike skills:[moving] schedules:[]{
 }
 
 
-species bus skills:[moving] schedules:[]{
+species bus skills:[moving] {//schedules:[]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
@@ -1609,7 +1616,7 @@ species bus skills:[moving] schedules:[]{
 }
 
 
-species car skills:[advanced_driving] schedules:[]{		
+species car skills:[advanced_driving] {//schedules:[]{		
 	bool to_update <- false;
 	bool test_car <- false;
 	point target_offset <- {0,0};
@@ -2027,7 +2034,7 @@ species signals_zone{
 		}
 }
 
-species intersection skills: [skill_road_node] schedules:[]{
+species intersection skills: [skill_road_node] {//schedules:[]{
 	bool master_intersection <- false;
 	rgb color <- #white; //used for integrity tests
 	list<bool> reachable_by_all <- list_with(stateNumber,false);
@@ -2143,11 +2150,11 @@ species intersection skills: [skill_road_node] schedules:[]{
 			draw circle(5) color: color_fire;
 			
 		}
-		if is_green and master_intersection{
+		/*if is_green and master_intersection{
 			loop r over: ped_xing_block{
 			draw r.shape color: #red;
 			}
-		}
+		}*/
 	}
 }
 
