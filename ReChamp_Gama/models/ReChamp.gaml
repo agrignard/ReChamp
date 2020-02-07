@@ -1040,6 +1040,7 @@ species culture {//schedules:[]{
 	string type;
 	string style;
 	float capacity;
+	string visible;
 	float capacity_per_min <- 1.0;
 	geometry queue;
 	list<pedestrian> people_waiting;
@@ -1088,7 +1089,7 @@ species culture {//schedules:[]{
 	}
 	
 	aspect base {
-		if(showUsage and (currentSimuState_str in state)){
+		if(showUsage and (currentSimuState_str in state) and visible="yes" ){
 		  draw shape color: usage_colors[type];	
 		  if(showWaitingLine){
 		    draw queue color: #white;	
@@ -2342,7 +2343,7 @@ experiment ReChamp type: gui autorun:true{
 	output {
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-		keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
+		//keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
 		//jcdejc//keystone: [{-0.014738965813206717,-0.20627849103413565,0.0},{-0.21815858242101588,1.2218738054155063,0.0},{1.2011252888238215,1.1272618466329627,0.0},{1.0170732004605543,-0.200356051098873,0.0}]
 	   	//<jc keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
 	   	{
