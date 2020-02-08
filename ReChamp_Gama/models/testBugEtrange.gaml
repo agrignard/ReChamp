@@ -108,7 +108,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 
-	bool showPedBlock parameter: 'Show Pedestrian Blocking' category: "Debug" <-false;
+	bool showPedBlock parameter: 'Show Pedestrian Blocking' category: "Debug" <-true;
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
 	
@@ -168,11 +168,10 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	list<park> activated_parks;
 	list<culture> activated_cultures;
 	
-	
 	int chrono_size <- 30;
 	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
 	float m_time <- 0.0;
-	list<float> chrono <- [];//list_with(chrono_size,0.0);
+	list<float> chrono <- [];
 	
 	float meanSpeedCar<-15 #km/#h;
 	float deviationSpeedCar<-10 #km/#h;
@@ -461,18 +460,25 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
+		//bike_graph<- bike_graph use_cache false;
 		
 		bus_graph <- (as_edge_graph(road)) use_cache false;
+		//bus_graph<- bus_graph use_cache false;
 		
-		//Graphical Species (gif loader)
+			//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 		
 
+//		map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 10) *(each.shape.perimeter / each.maxspeed) / (1+each.lanes)));
+//		driving_road_network <- driving_road_network with_weights general_speed_map; 
 	}
 	
 	
 	action init_agents {
 		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
+		
+		
+//		ask first(5,car){test_car <- true;}
 		
 		//Create Pedestrian
 		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
@@ -624,6 +630,71 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 		
+//		// init pedestrian crossings
+//		list<graph> tmp_car_graph;
+//		loop j from: 0 to:  stateNumber-1{
+//			tmp_car_graph << as_edge_graph(road where (each.lanes_nb[j] != 0)) use_cache false;
+//		}
+//		
+//		loop i over: (remove_duplicates(traffic_signals collect(each.group)) - 0) {	
+//			list<intersection> gp <- traffic_signals where(each.group = i);
+//			loop i1 over: gp{
+//				list<intersection> i_group <- intersection where (each.group = i and each.phase = i1.phase) - i1;
+//				loop i2 over: i_group{
+//					int truc <-0; //MARKER FOR UPDATING NEXT LINE
+//					path p <- path_between(tmp_car_graph[0],i1,i2);
+//			//		path p <- path_between(driving_road_network[0],i1,i2);
+//	
+////					if i=12{
+////						write ""+ i1+" to "+i2+" phase "+i1.phase;
+////						write " path "+p.edges;
+////					}
+//					bool add_next_road <- true; 
+//					if i1.location = first(road(first(p.edges)).shape.points) and i2.location = last(road(last(p.edges)).shape.points){// do not add path if the path does not strictly joins the two intersections
+//						loop r over: list<road>(p.edges){
+//							r.tl_group <- i;
+//	//						if int(i1)= 163{
+//	//							write r;
+//	////							write ""+r.target_node+" "+intersection(r.target_node).phase;
+//	////							write ""+r.source_node+" "+intersection(r.source_node).phase;
+//	////							write 		(intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase);
+//	//						}
+//							
+//							if (intersection(r.target_node).phase != 0 and intersection(r.target_node).phase != i1.phase) or (intersection(r.source_node).phase != 0 and intersection(r.source_node).phase != i1.phase){
+//								add_next_road <- false;
+//							}
+//	//						if int(i1) = 163{
+//	//							write ""+r+" "+add_next_road;
+//	//						}
+//							if add_next_road{
+//								i1.ped_xing_block <- i1.ped_xing_block + r;
+//							}
+//						}
+//					}
+////					if int(i1) = 163{write ""+ i1+" to "+i2+" phase "+i1.phase+" path "+p.edges;}			
+//					
+//				
+//					
+//					
+//					
+//	//				if int(i1) =163{write i1.ped_xing_block;}
+//				}
+//				i1.ped_xing_block <- remove_duplicates(i1.ped_xing_block);
+//			}
+//			
+//			blocked_roads <<i:: road where(each.tl_group = i);
+//			map<int, intersection> m;		
+//			loop ph over: remove_duplicates(gp accumulate(each.phase)){
+//				intersection i1 <- first(gp where(each.phase=ph));
+//				i1.master_intersection <- true;
+//				i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
+////				list<road> lr <- [];	
+////				loop i1 over: gp where(each.phase = ph){
+////					lr <- lr + i1.ped_xing_block;
+////				}
+////				m << ph::lr;
+//			}		
+//		}
 
 		// init pedestrian crossings
 //		phase_per_group <- list_with(length((remove_duplicates(traffic_signals collect(each.group)) - 0)),0);
@@ -660,7 +731,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				loop ph over: remove_duplicates(gp accumulate(each.phase)){
 					intersection i1 <- first(gp where(each.phase=ph));
 					i1.master_intersection <- true;
-//					i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
+					i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
 				}		
 			}
 		}
@@ -793,7 +864,26 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			do update;
 		}
 	}
+	
 
+	
+//	list<intersection> nodes_for_path (intersection source, intersection target, file ssp){
+//		
+//		list<intersection> nodes <- [];
+//		int id <- source.id;
+//		int target_id <- target.id;
+//		int cpt <- 0;
+//		loop while: id != target_id {
+//			nodes << intersection(vertices[id]);
+//			id <- int(ssp[target_id, id]);
+//			cpt <- cpt +1;
+//			if (id = -1 or cpt > 50000) {
+//				return list<intersection>([]);
+//			}
+//		}
+//		nodes<<target;
+//		return nodes;
+//	}
 	
 	action manage_waiting_line {
 		loop wl over: Waiting_line_shapefile.contents {
@@ -835,6 +925,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
+		//proba_choose_culture <- activated_cultures as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
 
 		int nb_cars <- length(car);
@@ -933,6 +1024,8 @@ species culture {//schedules:[]{
 	list<point> positions;
 	geometry waiting_area;
 	
+	//float queue_length <- 10.0;
+	
 	action default_queue {
 		point pt <- any_location_in(shape.contour);
 	 	float vect_x <- (location.x - pt.x) ; 
@@ -1020,7 +1113,7 @@ species park {
 species road  skills: [skill_road]{// schedules:[] {
 	int id;
 	int tl_group;
-	//bool ped_block <- false;
+	bool ped_block <- false;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
 	string mode;
@@ -1040,6 +1133,8 @@ species road  skills: [skill_road]{// schedules:[] {
 	int cpt_accept;
 	float sidewalk_size;
 	list<int> ped_way;
+//	int p_before;
+//	int p_after;
 	list<int> nb_car_max <- lanes_nb accumulate (1 + round(shape.perimeter * each / 10));//	[1 + round(shape.perimeter * lanes_nb[0] / 10), 1 +round(shape.perimeter * p_after / 10)] ;
 	
 	bool has_traffic_jam {
@@ -1061,7 +1156,7 @@ species road  skills: [skill_road]{// schedules:[] {
 			cpt_accept <- 0;
 			
 		}
-		if false and (target_node != nil and (intersection(target_node).is_traffic_signal) and cpt_accept > time_accept) {// FIXME false a enlever apres les tests
+		if false and (target_node != nil and (intersection(target_node).is_traffic_signal) and cpt_accept > time_accept) {//false a enlever apres les tests
 			ask intersection(target_node) {
 				do free;
 			}
@@ -1123,12 +1218,54 @@ species road  skills: [skill_road]{// schedules:[] {
 			return offset_list[currentSimuState][min(current_lane,lanes_nb[currentSimuState] -1)];
 		}
 	}
+
+// ne pas enlever tout de suite au cas ou ce soit necessaire pour d'autres tests	
+//	action essai(int cs){
+//		point offset2 <- {0,0};
+//
+//			if cs < length(self.angles) {
+//				float a <- self.angles[cs];
+//				if mod(a,180) < 5 or mod(a,180)> 175{
+//					offset2 <-  vec_ref[cs][1]*compute_offset(2);
+//				}else{
+//					//offset2 <-  vec_ref[cs][1]*compute_offset(2);
+//					offset2 <- (vec_ref[cs][0]-vec_ref[cs+1][0])*compute_offset(2)/sin(a);
+//				}
+//				draw line([shape.points[cs+1],shape.points[cs+1]+offset2*3])color: #green;
+//				return offset2;
+//			}else{
+//				list ll <-	intersection(target_node).roads_out;
+//				road r <- nil;
+//				if length(ll)> 0{r <- road(first(ll));}
+//				if r != nil{
+//					float a <- angle_between(last(shape.points),shape.points[length(shape.points)-2],r.shape.points[1]);
+//					if !is_number(a){//probleme de precision avec angle_between qui renvoie un #nan
+//						a <- 180.0;
+//					}
+//					if mod(a,180) < 5 or mod(a,180)> 175{
+//						offset2 <- vec_ref[cs][1]*compute_offset(2);
+//					}else{
+//						offset2 <- (vec_ref[cs][0]*r.compute_offset(2)-r.vec_ref[0][0]*compute_offset(2))/sin(a);
+//					}
+//					draw line([last(shape.points),last(shape.points)+offset2*3])color: #yellow;
+//					return offset2;
+//				}else{
+//					return {0,0};
+//				}
+//			}
+//	}
 	
 	
 	aspect base {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
+//			loop i from: 0 to: length(vec_ref)-1 step: 1{
+//				do essai(i);
+//			}
 		}
+//		if ped_block{
+//			draw shape color: #red;
+//		}
 	}
 }
 
@@ -1185,7 +1322,6 @@ species station {//schedules: [] {
 
 species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	path tmp;
-	float val;
 	string type;
 	agent target_place;
 	point target;
@@ -1235,6 +1371,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
+	//				test_ped <- true;
 					target <- any_location_in(agent(one_of(people_graph[currentSimuState].edges)));
 					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
@@ -1254,11 +1391,16 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		}
 		if current_edge != nil{
 			blocked <- false;
+		//	bool blocked <- false;
 			if road(current_edge).tl_group != 0{
 				//FIXME A REMPLACER PAR HEADING ?
 				point p1 <- (destination - location)/norm(destination-location)*10;
 				// FIXME CHARGER DES LE DEBUT LA LISTE DE ROUTES
 				int r_id <- 0;
+				map<list<list<road>>> m <- ped_blocking_roads[currentSimuState];
+				list<list<road>> l <- m[road(current_edge).tl_group];
+				write ""+phase_per_group[road(current_edge).tl_group]+" "+road(current_edge).tl_group;
+				list<road> l2 <- l[phase_per_group[road(current_edge).tl_group]-1];
 				list<road> lr <- ped_blocking_roads[currentSimuState][road(current_edge).tl_group][phase_per_group[road(current_edge).tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
 				loop while: !blocked and r_id < length(lr){
 					if intersects(polyline([location+current_offset, location+current_offset+p1]),lr[r_id].shape){
@@ -1276,8 +1418,17 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				blocked_timer <- 2#mn;
 				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
 			}
+//			point p1 <- destination - location;
+//			if i != nil and (p1.x*(i.location - location).x+p1.y*(i.location - location).y > 0) and not(i.is_green) {
+//				
+//				
+//			}else{
+//				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
+////			//	if !wandering {do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;}
+//			}
 		}else{
 			do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
+		//	if !wandering {do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;}
 		}
 		transition to: stroll_in_city when: not to_exit and wandering;// and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
@@ -1307,6 +1458,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			do reinit_path;
 		}
 		stroll_time <- stroll_time - step;
+		// do wander amplitude:10.0 speed:2.0#km/#h;// on: people_graph[currentSimuState];
 		do wander on: people_graph[currentSimuState];
 		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
@@ -1384,7 +1536,8 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		if (current_edge = nil) {
 			return {0,0};
 		} else {
-			val <- side*(1.5+((road(current_edge).oneway='no')?(road(current_edge).lanes*3 + 0.25):(0.5*road(current_edge).lanes*3)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));
+			float val <- side*((road(current_edge).lanes +1)*3 + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));// + ((applyFuzzyness) ? rnd(-fuzzyness, fuzzyness): 0);
+	//		float val <- 0;
 	// valeur a modifier, valeur doit etre independante de la simu
 			return{cos(heading + 90) * val, sin(heading + 90) * val};
 
@@ -1393,23 +1546,18 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	
 	aspect base{
 		if(showPeople){
-			 draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;
-			 if state="walk_to_objective"{
-			 	draw square(peopleSize) color:#blue at:walking ? location+current_offset :location rotate: angle;
-			 }
+			//point p1 <- (destination - location)/norm(destination-location)*10;
+			 draw square(peopleSize) color:type_colors[type] at:walking ? location+current_offset :location rotate: angle;
+//			 if !blocked{
+//			 	draw square(peopleSize) color:type_colors[type] at:walking ? location+current_offset :location rotate: angle;	
+//				 draw square(1) color: type_colors[type] at: destination+current_offset;
+//			 	draw polyline([location+current_offset, location+p1+current_offset]) color: type_colors[type]  ;
+//			 }	else{
+//			 	draw square(peopleSize) color:#cyan at:walking ? location+current_offset :location rotate: angle;	
+//				 draw square(1) color: #cyan at: destination+current_offset;
+//			 	draw polyline([location+current_offset, location+p1+current_offset]) color: #cyan  ;
+//			 }
 			 
-			 point p1 <- (destination - location)/norm(destination-location)*10;
-			 if showPedBlock{
-				 if !blocked{
-				 	draw square(peopleSize) color:type_colors[type] at:location+current_offset  rotate: angle;	
-					 draw square(1) color: type_colors[type] at: location+p1+current_offset;
-				 	draw polyline([location+current_offset, location+p1+current_offset]) color: type_colors[type]  ;
-				 }	else{
-				 	draw square(peopleSize) color:#cyan at: location+current_offset rotate: angle;	
-					 draw square(1) color: #cyan at: location+p1+current_offset;
-				 	draw polyline([location+current_offset, location+p1+current_offset]) color: #cyan  ;
-				 }
-			 }
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
@@ -1426,10 +1574,14 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	  		draw text2 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-40 * sin(angle),40*cos(angle)} rotate: angle color:#white;
 	  		draw text3 at: location+current_offset+{1,-1}*30*sqrt(2)+{40*cos(angle),40*sin(angle)} + {-80 * sin(angle),80*cos(angle)} rotate: angle color:#white;
 	  	}
+//	  	if show_story{
+//			loop r over: people_graph[currentSimuState]{
+//				draw 2 around(road(r).shape) color: #cyan;
+//			}
+//		}
 	}
 	
 	aspect profile{
-//		#FIXME all those attributes are redundant with states
 		 if (walking){
 		   draw square(peopleSize) color:type_colors[type] at:walking ? calcul_loc() :location rotate: angle;		
 		 }
@@ -1529,6 +1681,7 @@ species car skills:[advanced_driving] {//schedules:[]{
 	list<point> current_trajectory;
 	point old_location;
 	list<list<point>> trail;
+//	list<list<point>> trail <- [[]];
 	list<point> last_locations;
 	intersection starting_intersection;
 	point target;
@@ -1634,6 +1787,7 @@ species car skills:[advanced_driving] {//schedules:[]{
 			current_lane <- 0;
 			current_trajectory <- [];
 			trail <- [];
+		//	trail <- [[]];
 			current_offset <- {0,0};
 
 			path_updated <- true;
@@ -1642,6 +1796,9 @@ species car skills:[advanced_driving] {//schedules:[]{
 	
 	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
+//	  	if (current_path = nil) {
+//			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
+//		}
 	  	do drive;	
 	}
 	
@@ -1948,6 +2105,7 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 	bool active <- true;
 	list<bool> activityStates <- list_with(stateNumber, true);
 	bool is_free <- false;
+	list<road> ped_xing_block <- [];
 	
 	action free {
 		is_free <- true;
@@ -1984,7 +2142,19 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 		
 		
 		if master_intersection{
-			put self.phase at: self.group in: phase_per_group;				
+			put self.phase at: self.group in: phase_per_group;
+			//phase_per_group[self.group-1] <- self.phase;
+			if length(blocked_roads)>0{
+				loop r over: blocked_roads[self.group] {
+					r.ped_block <- false;
+				}
+			}			
+			
+		}
+
+		
+		loop r over: ped_xing_block{
+			r.ped_block <- true;
 		}
 	}
 
@@ -2007,6 +2177,7 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 		}
 	}
 
+//	reflex dynamic_node when: active and is_traffic_signal {
 	reflex dynamic_node when: is_traffic_signal {
 		counter <- counter + step;
 		if (is_free) {
@@ -2039,19 +2210,24 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 				draw circle(5) color: #white empty: true;
 			}
 		}
-		if showPedBlock  and master_intersection {
-				loop r over: blocked_roads[self.group]{
-					draw 3 around(r.shape) color: #yellow;
-				}
-				loop r over: ped_blocking_roads[currentSimuState][self.group][phase_per_group[self.group]-1]{
-				draw 2 around(r.shape) color: #cyan;
-				}
+		if false and showPedBlock and int(self)=1 and cycle > 5 {
+			loop i over: phase_per_group.keys{
+				loop r over: ped_blocking_roads[currentSimuState][i][phase_per_group[i]-1]{
+					draw 3 around(r.shape) color: #cyan;
+				}	
 			}
+//			loop i over: blocked_roads.keys{
+//				loop r over: blocked_roads[i]{
+//					draw 5 around(r.shape) color: #yellow;
+//				}
+//			}
+		}
+		
 		
 	}
 	
 		
-
+	
 }
 
 species coldSpot{
