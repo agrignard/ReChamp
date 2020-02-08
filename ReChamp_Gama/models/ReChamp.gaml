@@ -1260,9 +1260,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		if current_edge != nil{
 			blocked <- false;
 			if road(current_edge).tl_group != 0{
-				//FIXME A REMPLACER PAR HEADING ?
 				point p1 <- (destination - location)/norm(destination-location)*10;
-				// FIXME CHARGER DES LE DEBUT LA LISTE DE ROUTES
 				int r_id <- 0;
 				list<road> lr <- ped_blocking_roads[currentSimuState][road(current_edge).tl_group][phase_per_group[road(current_edge).tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
 				loop while: !blocked and r_id < length(lr){
@@ -1405,15 +1403,9 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			 
 			 point p1 <- (destination - location)/norm(destination-location)*10;
 			 if showPedBlock{
-				 if !blocked{
-				 	draw square(peopleSize) color:type_colors[type] at:location+current_offset  rotate: angle;	
-					 draw square(1) color: type_colors[type] at: location+p1+current_offset;
-				 	draw polyline([location+current_offset, location+p1+current_offset]) color: type_colors[type]  ;
-				 }	else{
-				 	draw square(peopleSize) color:#cyan at: location+current_offset rotate: angle;	
-					 draw square(1) color: #cyan at: location+p1+current_offset;
-				 	draw polyline([location+current_offset, location+p1+current_offset]) color: #cyan  ;
-				 }
+			 	draw square(peopleSize) color:blocked?#cyan:type_colors[type] at:location+current_offset  rotate: angle;	
+				draw square(1) color: blocked?#cyan:type_colors[type] at: location+p1+current_offset;
+				draw polyline([location+current_offset, location+p1+current_offset]) color: blocked?#cyan:type_colors[type]  ;
 			 }
 		}
 		if(showPeopleTrajectory and showPeople){
