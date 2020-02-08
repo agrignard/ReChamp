@@ -1994,8 +1994,8 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 				stop[0] <- ways2;
 			}
 			color_fire <- #green;
-			is_green <- true;
 		}
+		is_green <- true;
 		
 		
 		if master_intersection{
@@ -2009,8 +2009,8 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 				stop[0] <- ways1;
 			}
 			color_fire <- #red;
-			is_green <- false;
 		}
+		is_green <- false;
 	}
 	
 	action change_activity{
