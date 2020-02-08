@@ -69,6 +69,11 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int carTrajectoryLength <-20 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 100;
 	int bikeTrajectory <-50 parameter: 'Bike Trajectory' category: "Trajectory" min: 0 max: 100;
 	int busTrajectoryLength<-50 parameter: 'Bus Trajectory' category: "Trajectory" min: 0 max: 100;
+	
+	
+	bool heatmap parameter: 'Pollution' category: "Simu" <-false;
+	float pollution_max_level <- 100.0;
+	int spread_factor <- 1;
 
 	
 
@@ -1089,7 +1094,7 @@ species culture {//schedules:[]{
 	}
 	
 	aspect base {
-		if(showUsage and (currentSimuState_str in state) and visible="yes" ){
+		if(showUsage and (currentSimuState_str in state)  ){
 		  draw shape color: usage_colors[type];	
 		  if(showWaitingLine){
 		    draw queue color: #white;	
@@ -1814,11 +1819,29 @@ species car skills:[advanced_driving] {//schedules:[]{
 		}
 	}
 	
+	action updatePollutionMap{
+		if(current_path != nil)
+		{
+			list<cell> tmp <- cell overlapping(shape);
+		
+			if(tmp != []){
+				ask tmp {
+					pollution_level <- pollution_level + 3;
+					if(pollution_level > pollution_max_level)
+					{
+						pollution_level <- pollution_max_level;
+					}
+				}
+			}	
+		}
+	}
+	
 	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
 //	  	if (current_path = nil) {
 //			current_path <- compute_path(graph: driving_road_network[currentSimuState], target: target_intersection);
 //		}
+        do updatePollutionMap;
 	  	do drive;	
 	}
 	
@@ -2261,6 +2284,64 @@ species coldSpot{
 		}
 }
 
+
+
+
+grid cell height: 100 width: 100 neighbors: 4 {
+	
+	float pollution_level <- 0.0 ;
+	list neighbours of: cell <- (self neighbors_at 1) of_species cell;  
+
+	rgb pollution_color <- rgb(255,255,255);
+	float transparency <- 0.75;
+
+	reflex update_color when:heatmap{
+		pollution_color <-  rgb(transparency *30,transparency *109,transparency *255);
+	}
+	
+	reflex update_transparency when:heatmap {
+		if(current_date.hour > 22){
+			do raz;
+		} else {
+			transparency <- float(pollution_level) / pollution_max_level;
+		}
+	}
+	
+	//TODO not working
+	
+	reflex spread{
+			float tmp_pollution <- pollution_level;
+			float pollution_spread <- pollution_level * spread_factor/100.0;
+			
+			pollution_level <- pollution_level - pollution_spread;
+			pollution_spread <- pollution_spread / 4;
+			
+			loop n over: neighbours {
+				n.pollution_level <- n.pollution_level + pollution_spread;
+			}
+	}
+	
+	
+	action raz {
+		pollution_level <- 0.0;
+	}
+	
+	aspect pollution{
+		if(heatmap)
+		{
+			draw shape color:rgb(pollution_color, transparency) border:rgb(pollution_color, transparency) empty:true;
+		}
+	}
+	
+	aspect pollutionFull{
+		if(heatmap)
+		{
+			draw shape color:rgb(pollution_color, transparency);
+		}
+	}
+}
+
+
 experiment debug_xp type: gui autorun:true{
 	action _init_ {
 		create simulation with: [showCar::true, showPeople::true,showBike:: true, showSharedMobility::true, showNature::true,showUsage::true,
@@ -2363,6 +2444,7 @@ experiment ReChamp type: gui autorun:true{
 			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
+			species cell aspect:pollution;
 
 									
 			graphics 'tablebackground'{
@@ -2387,8 +2469,7 @@ experiment ReChamp type: gui autorun:true{
 					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
 					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
 					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-				}
-					
+				}	
 			}
 
 			
@@ -2404,6 +2485,7 @@ experiment ReChamp type: gui autorun:true{
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
 			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event ['5'] action: {if(heatmap){ask cell{do raz;}}}; // clean heatmap (if heatmap)
 			
 			//event["l"] action: {drawLegend<-!drawLegend;};
 			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
