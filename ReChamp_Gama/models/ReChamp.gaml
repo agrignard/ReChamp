@@ -203,6 +203,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int crossOverNature;
 	int crossOverUsage;
 	
+	geometry zone_geo;
+	
 	list<bikelane> hot_bike_lanes;
 
 	float t_re_init <- machine_time;	
@@ -227,6 +229,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				if (p != nil){p.state << "present";}
 			}
 		}
+		
+		zone_geo <- envelope(park where (each.zone =1));
+		
 		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),zone:int(read("zone")),interior:bool(read("interior"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
@@ -408,7 +413,12 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		ask culture{
 			do init_arrival_position;
 		}
-		
+		ask park{
+			closest_roads <- road at_distance 25;
+			if closest_roads = []{
+				write "Error: no access road to park "+int(self);
+			}
+		}
 
 	//	do check_signals_integrity;
 		
@@ -563,8 +573,11 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				target <- (any_location_in(target_place));
 				location<-copy(target);
 				state <- "stroll";
+				zone <- park(target_place).zone;
 			} else {
-				location<-any_location_in(one_of(station where (each.capacity=5)));//capacity 5 = stations on Champs Elysees
+				station s <- one_of(station where (each.capacity=5));
+				location<-any_location_in(s);//capacity 5 = stations on Champs Elysees
+				zone <- s.zone;
 			}
 			if flip(0.5){
 				side<-1;
@@ -963,10 +976,8 @@ species culture {//schedules:[]{
 	
 	action add_people(pedestrian the_tourist) {
 		if (length(waiting_tourists) < length(positions)) {
-			//the_tourist.location <- positions[length(waiting_tourists)];
 			the_tourist.target <- positions[length(waiting_tourists)];
 		} else {
-			//the_tourist.location  <- any_location_in(waiting_area);
 			the_tourist.target  <- any_location_in(waiting_area);
 		}
 		waiting_tourists << the_tourist;
@@ -980,7 +991,6 @@ species culture {//schedules:[]{
 		if (not empty(waiting_tourists)) {
 			loop i from: 0 to: length(waiting_tourists) - 1 {
 				if (i < length(positions)) {
-				//	waiting_tourists[i].location <- positions[i];
 					waiting_tourists[i].target <- positions[i];
 				}
 			}
@@ -996,7 +1006,6 @@ species culture {//schedules:[]{
 		    draw queue color: #white;	
 		  }
 		} 
-		draw circle(5) color: #yellow at: arrival_position[currentSimuState]; 	
 	}
 }
 
@@ -1027,6 +1036,7 @@ species park {
 	string type; 
 	int zone;
 	rgb color <- #darkgreen  ;
+	list<road> closest_roads;
 	
 	aspect base {
 		if(showNature and (currentSimuState_str in state)){
@@ -1149,6 +1159,10 @@ species road  skills: [skill_road]{// schedules:[] {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
 		}
+		
+//		if int(self)=1{
+//			draw 5 around(zone_geo) color: #yellow;
+//		}
 	}
 }
 
@@ -1190,6 +1204,7 @@ species station {//schedules: [] {
 		create pedestrian number:rnd(1,4)*int(capacity){
 			type<-"people";
 			location <- myself.location + {rnd(3),rnd(3)};
+			zone <- myself.zone;
 			if flip(0.5){
 				side<-1;
 			}else{
@@ -1213,6 +1228,7 @@ species station {//schedules: [] {
 }
 
 species pedestrian skills:[moving] control: fsm {//schedules:[]{
+	int zone;
 	string type;
 	agent target_place;
 	point target;
@@ -1235,6 +1251,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	bool waiting_at_traffic_light <- false;
 	bool wandering <- false;
 	bool to_culture <- false;
+	bool to_park <- false;
 	bool visiting <- false;
 	bool queuing <- false;
 	bool ready_to_visit <- false;
@@ -1253,40 +1270,72 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	state walk_to_objective initial: true{
 		
 		enter {
+			do reinit_path;
 			target <- nil;
 			walking <- true;
 			wandering <- false;
 			to_culture <- false;
 			float speed_walk_current <- speed_walk;
 			if flip(proba_sortie) {
-				target <- (station where (each.type="metro") closest_to self).location;
+				if currentSimuState = 0 {
+					target <- (station where (each.type="metro" and each.zone = zone) closest_to self).location;
+				}else{
+					target <- (station where (each.type="metro") closest_to self).location;
+				}
+				
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-					target <- any_location_in(agent(one_of(people_graph[currentSimuState].edges)));
+					// FIXME empecher de passer de zone 1 à zone 0
+					//bool acceptable <- false;
+					road r <- one_of(people_graph[currentSimuState].edges);
+					loop while: (currentSimuState = 0) and ((zone = 0 and r overlaps zone_geo) or (zone = 1 and not(r overlaps zone_geo))){
+						r <- one_of(people_graph[currentSimuState].edges);
+					//	if (currentSimuState = 1) or (zone = 1 and r overlaps zone_geo) or (zone = 0 and not(r overlaps zone_geo))
+					}
+					target <- any_location_in(r);
 					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
 					// FIXME speed_walk_current à uniformiser
 					speed_walk_current <- speed_walk_current/ 3.0; // 
 				} else {
 					if flip(proba_culture) {
-						target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
+						if currentSimuState = 0 {
+							bool same_zone <- false;
+							loop while: same_zone = false{
+								target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
+								same_zone <- culture(target_place).zone = zone;
+							}
+						}else{
+							target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
+						}
 						to_culture <- true;
-						//target <- first(culture(target_place).positions);
 						target <- culture(target_place).arrival_position[currentSimuState];
 					} else {
-						target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-						target <- (target_place closest_points_with self) [0] ;
+						to_park <- true;
+						if currentSimuState = 0 {
+							bool same_zone <- false;
+							loop while: same_zone = false{
+								target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+								same_zone <- park(target_place).zone = zone;
+							}
+						}else{
+							target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+						}
+						road r <- closest_to(park(target_place).closest_roads, target_place);
+						target <- closest_points_with(r,target_place) [0] ;
 					}
 				}
 			}
 		}
-		if current_edge != nil{
+		road r <- road(copy(current_edge));
+		if r != nil{
 			blocked <- false;
-			if road(current_edge).tl_group != 0{
+			int gr <- r.tl_group;
+			if gr != 0{
 				point p1 <- (destination - location)/norm(destination-location)*10;
 				int r_id <- 0;
-				list<road> lr <- ped_blocking_roads[currentSimuState][road(current_edge).tl_group][phase_per_group[road(current_edge).tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
+				list<road> lr <- ped_blocking_roads[currentSimuState][r.tl_group][phase_per_group[r.tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
 				loop while: !blocked and r_id < length(lr){
 					if intersects(polyline([location+current_offset, location+current_offset+p1]),lr[r_id].shape){
 						blocked <- true;
@@ -1317,7 +1366,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	}
 	
 	action reinit_path{
-	//	current_path <- nil;
+		current_path <- nil;
 		current_edge <- nil;
 		shape.attributes["reverse"] <- nil;
 		shape.attributes["index_on_path"] <- nil;
@@ -1330,7 +1379,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
 			path tmp <- copy(current_path);
-			current_path <- nil;
 			do reinit_path;
 		}
 		stroll_time <- stroll_time - step;
@@ -1347,13 +1395,25 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		enter {
 			stroll_time <- rnd(1, 10) #mn;
 			stroling_in_park<-true;
+			target <- closest_points_with(target_place,self) [0] ;
+			do reinit_path;
 		}
-		stroll_time <- stroll_time - step;
-		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
-		do updatefuzzTrajectory;
+		if to_park{
+			do goto target: target;
+			if location = target{
+				to_park <- false;
+				do reinit_path;
+			}
+		}else{
+			stroll_time <- stroll_time - step;
+			do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
+			do updatefuzzTrajectory;
+		}
+		
 		transition to: walk_to_objective when: stroll_time = 0;
+		
 		exit{
-		  stroling_in_park<-false;	
+			stroling_in_park<-false;	
 		}
 	}
 	
@@ -1370,6 +1430,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				do add_people(myself);
 			}
 		}
+		do reinit_path;
 		do goto target: target;
 		
 		transition to: visiting_place when: ready_to_visit;
@@ -1409,10 +1470,11 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	}
 	
 	point calcul_loc {
-		if (current_edge = nil or not(state in ["walk_to_objective","stroll_in_city"])) {
+		road ce <- road(copy(current_edge));
+		if (ce = nil or not(state in ["walk_to_objective","stroll_in_city"])) {
 			return {0,0};
 		} else {
-			float val <- side*(1.5+((road(current_edge).oneway='no')?(road(current_edge).lanes*3 + 0.25):(0.5*road(current_edge).lanes*3)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));
+			float val <- side*(1.5+(ce.oneway='no'?(ce.lanes*3 + 0.25):(0.5*ce.lanes*3)) + ((currentSimuState=1) ? (offset*ce.sidewalk_size) : (offset*ce.sidewalk_size)/2));
 	// valeur a modifier, valeur doit etre independante de la simu
 			return{cos(heading + 90) * val, sin(heading + 90) * val};
 
@@ -1422,18 +1484,16 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	aspect base{
 		if(showPeople){
 			if not(visiting) or not(culture(target_place).interior){
-//				if state="queuing"{
-//					draw square(peopleSize) color:type_colors[type] at: location  rotate: angle;
-//				}else{
-					draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;
-			//	}	
+				//draw square(peopleSize) color:zone=0?type_colors[type]:#cyan at: location+current_offset  rotate: angle;	
+				draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;	
 			}
-			if target != nil{
-				draw square(2) color:#green at: target  rotate: angle;
-			}
-			if state="queueing"{
-				draw square(peopleSize/2) color:#blue at:walking ? location+current_offset :location rotate: angle;
-			}	 
+//			if target != nil and to_park{
+//				draw square(peopleSize/2) color:#green at: location+current_offset  rotate: angle;
+//				draw square(2) color:#green at: target  rotate: angle;
+//			}
+//			if state="queueing"{
+//				draw square(peopleSize/2) color:#blue at:walking ? location+current_offset :location rotate: angle;
+//			}	 
 			point p1 <- (destination - location)/norm(destination-location)*10;
 			if showPedBlock{
 				draw square(peopleSize) color:blocked?#cyan:type_colors[type] at:location+current_offset  rotate: angle;	
