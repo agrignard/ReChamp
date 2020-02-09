@@ -209,38 +209,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	float time_between_clean <- 2 * (60.0 * 60 * 1000);
 	
-	reflex reset_simulation when: (machine_time - t_re_init) >  time_between_clean{
-		t_re_init <- machine_time;
-		write "CLEAN";
-		ask car {
-			do remove_and_die;
-		} 
-		ask road where (each.lanes > 0){
-			loop i from: 0 to:length(agents_on) -1{
-				loop  j from: 0 to:length(agents_on[i]) -1 {
-					agents_on[i][j] <- [];
-				}
-				 
-			}
-			all_agents <- [];
-		}
-		ask bus {
-			do die;
-		}
-		ask bike {
-			do die;
-		}
-		ask culture {
-			people_waiting <- [];
-			waiting_tourists <- [];
-		}
-		ask pedestrian {
-			do die;
-		}
-		ask experiment {do compact_memory;}
-		do init_agents;
-	}
-	
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
@@ -457,11 +425,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 		
 		//------------------- AGENT ---------------------------------------- //
-		
 		do updateSimuState;
-		
-		do init_agents;
-		
+				
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
 		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
 		
@@ -471,47 +436,40 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
-		
-
 	}
 	
 	
-	action init_agents {
-		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
-		
-		//Create Pedestrian
-		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
-		ask one_of(pedestrian){
-			show_story <- true;
+	reflex reset_simulation when: (machine_time - t_re_init) >  time_between_clean{
+		t_re_init <- machine_time;
+		write "CLEAN";
+		ask car {
+			do remove_and_die;
+		} 
+		ask road where (each.lanes > 0){
+			loop i from: 0 to:length(agents_on) -1{
+				loop  j from: 0 to:length(agents_on[i]) -1 {
+					agents_on[i][j] <- [];
+				}
+				 
+			}
+			all_agents <- [];
 		}
-		
-        //Create Bike
-	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
-	      type <- "bike";
-	      speed<-2+rnd(maxSpeed);
-		  location<-any_location_in(one_of(building));	
-		  //location<-any_location_in(one_of(origin_destination_shapefile.contents));
+		ask bus {
+			do die;
 		}
-	
-		 //Create Bus
-	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
-	      type <- "bus";
-		  location<-any_location_in(one_of(road));	
+		ask bike {
+			do die;
 		}
-	}
-	action updateStoryTelling (int n){
-		    if(n=0){currentStoryTellingState<-0;}
-			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
-			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-false;showUsage<-false;crossOverSoftMob<-crossOverTime;}
-			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
-	}
-	map<string,float> get_mobility_ratio {
-		if (currentSimuState = 0) {
-			return mobilityRatioNow;
-		} else {
-			return mobilityRatioFuture;
+		ask culture {
+			people_waiting <- [];
+			waiting_tourists <- [];
 		}
+		ask pedestrian {
+			do die;
+		}
+		ask experiment {do compact_memory;}
+		//do init_agents;
+		do updateSimuState;
 	}
 	
 	reflex chrono {
@@ -535,6 +493,87 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		if (crossOverUsage>0){crossOverUsage<-crossOverUsage-1;}
 	}
 	
+	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
+		loop j from: 0 to:  stateNumber-1{
+			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(0.1+each.lanes_nb[j])^2));
+			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "NBAStarApprox";
+		}
+	}
+	
+	reflex updateSimuState when:updateSim=true{
+		currentSimuState <- (currentSimuState + 1) mod stateNumber;
+		do updateSimuState;
+	}
+
+	reflex update_pedestrian{
+		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
+	//	write ""+ length(pedestrian)+ "/"+nb_people_target;
+		loop while: (length(pedestrian) < nb_people_target) {
+			ask one_of(station where(each.capacity=5)){	
+				do add_people;
+			}
+		} 
+	}
+
+	reflex update_cars {
+		ask first(100,shuffle(car where(each.to_update))){
+			do update;
+		}
+	}
+	
+	reflex globalUpdate{
+		if(speedUpSim){
+			if(step>speedUpSpeedMin){
+			 step<-step-speedUpSpeedDecrease;	
+			}
+		}
+	}
+	
+	
+	
+//	action init_agents {
+//		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
+//		//Create Pedestrian
+//		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
+//		write length(pedestrian);
+//		ask one_of(pedestrian){
+//			show_story <- true;
+//		}
+//		
+//        //Create Bike
+//	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
+//	      type <- "bike";
+//	      speed<-2+rnd(maxSpeed);
+//		  location<-any_location_in(one_of(building));	
+//		  //location<-any_location_in(one_of(origin_destination_shapefile.contents));
+//		}
+//	
+//		 //Create Bus
+//	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
+//	      type <- "bus";
+//		  location<-any_location_in(one_of(road));	
+//		}
+//	}
+	
+	
+	action updateStoryTelling (int n){
+		    if(n=0){currentStoryTellingState<-0;}
+			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
+			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-false;showUsage<-false;crossOverSoftMob<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
+	}
+	
+	
+	map<string,float> get_mobility_ratio {
+		if (currentSimuState = 0) {
+			return mobilityRatioNow;
+		} else {
+			return mobilityRatioFuture;
+		}
+	}
+	
+
 	
 	action create_pedestrian(int nb) {
 		create pedestrian number:nb{
@@ -556,6 +595,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		  	
 		}
 	}
+	
 	action create_cars(int nb) {
 		create car number:nb{
 		 	type <- "car";
@@ -683,9 +723,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				}
 			}
 		}
-				
 
-		
 		//init traffic lights that are not in main area
 		list<list<intersection>> groupes <- traffic_signals where (each.group = 0) simple_clustering_by_distance dist_group_traffic_light;
 		loop gp over: groupes {
@@ -782,22 +820,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 	}
 	
-	reflex update_driving_graph when: cycle > 0 and every(10 #cycle){
-		loop j from: 0 to:  stateNumber-1{
-			map general_speed_map <- road as_map (each::((each.hot_spot ? 1 : 50) * (each.shape.perimeter / (max(1,each.mean_speed)) ^factor_avoid_tj)/(0.1+each.lanes_nb[j])^2));
-			driving_road_network[j] <- driving_road_network[j] with_weights general_speed_map  with_optimizer_type "NBAStarApprox";
-		}
-	}
-	reflex updateSimuState when:updateSim=true{
-		currentSimuState <- (currentSimuState + 1) mod stateNumber;
-		do updateSimuState;
-	}
 
-	reflex update_cars {
-		ask first(100,shuffle(car where(each.to_update))){
-			do update;
-		}
-	}
 
 	
 	action manage_waiting_line {
@@ -864,8 +887,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	  	
 
 		int nb_people <- length(pedestrian);
-		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
-		//FIXME see issue #59 
+		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]); 
 		if (nb_people_target > nb_people) {
 			do create_pedestrian(nb_people_target - nb_people);
 		} else if (nb_people_target < nb_people) {
@@ -916,13 +938,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 		return [reachable, can_reach];
 	}
-	reflex globalUpadte{
-		if(speedUpSim){
-			if(step>speedUpSpeedMin){
-			 step<-step-speedUpSpeedDecrease;	
-			}
-		}
-	}
+
 }
 
 species culture {//schedules:[]{
@@ -1161,36 +1177,42 @@ species bus_line{
 }
 
 species station {//schedules: [] {
-	rgb color;
+	rgb color <- #white;
 	string type;
 	int capacity;
-	float capacity_pca;
+//	float capacity_pca;
 	float delay <- rnd(2.0,8.0) #mn ;
+	
 	//Create people going in and out of metro station
-	reflex add_people when: (type = "metro") and (length(pedestrian) < nbAgent*mobilityRatioNow["people"]) and every(delay){
-		
-		create pedestrian number:rnd(0,10)*int(capacity){
+	action add_people{
+//		int nb <- rnd(0,10)*int(capacity);
+//		write "create "+ nb+" at station "+int(self);
+		create pedestrian number:rnd(1,4)*int(capacity){
 			type<-"people";
-			location<-any_location_in(myself);
+			location <- myself.location + {rnd(3),rnd(3)};
+			if flip(0.5){
+				side<-1;
+			}else{
+				side<--1;
+			}
 		}
 	}
+	
 	aspect base {
 		if(showStation){
 		  	if(type="metro"){
 		  	  draw circle(20) - circle(16) color:#blue;	
-		  	  draw circle(16) color:#white;	
+		  	  draw circle(16) color:color;	
 		  	}
 		  	if(type="bus"){
 		  	  draw circle(20) - circle(16) color:#yellow;	
-		  	  draw circle(16) color:#white;		
+		  	  draw circle(16) color:color;		
 		  	}
-		  }	
+		}	
 	}
 }
 
 species pedestrian skills:[moving] control: fsm {//schedules:[]{
-	path tmp;
-	float val;
 	string type;
 	agent target_place;
 	point target;
@@ -1305,7 +1327,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			do goto target: self.location;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
-			tmp <- copy(current_path);
+			path tmp <- copy(current_path);
 			current_path <- nil;
 			do reinit_path;
 		}
@@ -1371,7 +1393,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	
 	reflex compute_offset{
 		target_offset <- calcul_loc();
-		current_offset <- current_offset + (target_offset - current_offset)*0.3;
+		current_offset <- current_offset + (target_offset - current_offset)*0.15;
 		if(showPeopleTrajectory){
 			loop while:(length(current_trajectory) > peopleTrajectoryLength)
 		  	{
@@ -1387,7 +1409,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		if (current_edge = nil) {
 			return {0,0};
 		} else {
-			val <- side*(1.5+((road(current_edge).oneway='no')?(road(current_edge).lanes*3 + 0.25):(0.5*road(current_edge).lanes*3)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));
+			float val <- side*(1.5+((road(current_edge).oneway='no')?(road(current_edge).lanes*3 + 0.25):(0.5*road(current_edge).lanes*3)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));
 	// valeur a modifier, valeur doit etre independante de la simu
 			return{cos(heading + 90) * val, sin(heading + 90) * val};
 
