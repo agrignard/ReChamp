@@ -1242,6 +1242,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
 	point target_offset;
+	int fade_count <- 5;
 	
 	bool blocked <- false;
 	list<list<int>> blocked_at_phase;
@@ -1349,7 +1350,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				blocked_timer <- blocked_timer - step;
 			}
 			if blocked_timer < 0{//action de debouchage un peu bourrine pour les piétons un peu perdus qui n'arrivent plus à traverser une rue
-				blocked_timer <- 2#mn;
+				blocked_timer <- 3#mn;
 				do goto target: target on:people_graph[currentSimuState] speed: speed_walk_current;
 			}
 		}else{
@@ -1419,7 +1420,10 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	
 	state outside_sim {
 		do updatefuzzTrajectory;
-		do die;
+		fade_count <- fade_count - 1;
+		if fade_count = 0 {
+			do die;
+		}
 	}
 	
 	//ce mot existe ?
@@ -1485,7 +1489,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		if(showPeople){
 			if not(visiting) or not(culture(target_place).interior){
 				//draw square(peopleSize) color:zone=0?type_colors[type]:#cyan at: location+current_offset  rotate: angle;	
-				draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;	
+				draw square(peopleSize) color:rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
 			}
 //			if target != nil and to_park{
 //				draw square(peopleSize/2) color:#green at: location+current_offset  rotate: angle;
