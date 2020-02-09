@@ -212,7 +212,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
-		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
+		create park from: (Nature_Future_shapefile) with: [type:string(read ("type")),zone:int(read("zone"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
@@ -227,7 +227,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				if (p != nil){p.state << "present";}
 			}
 		}
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity"))]{
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),zone:int(read("zone")),interior:bool(read("interior"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
@@ -405,9 +405,14 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			possible_targets[j] <- intersection - input_intersections[j];
 		}	
 
+		ask culture{
+			do init_arrival_position;
+		}
+		
+
 	//	do check_signals_integrity;
 		
-		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))];
+		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity")), zone:int(read("zone"))];
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -835,6 +840,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			if (target_place in to_remove) {
 				do die;
 			}
+			if to_culture{
+				target <- culture(target_place).arrival_position[currentSimuState];
+			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
@@ -916,6 +924,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 }
 
 species culture {//schedules:[]{
+	int zone <- 0;
+	bool interior;
 	list<string> state;
 	string type;
 	string style;
@@ -926,6 +936,7 @@ species culture {//schedules:[]{
 	list<pedestrian> people_waiting;
 	list<pedestrian> waiting_tourists;
 	list<point> positions;
+	list<point> arrival_position;
 	geometry waiting_area;
 	
 	action default_queue {
@@ -942,14 +953,25 @@ species culture {//schedules:[]{
 		positions <- queue points_on (2.0); 
 		waiting_area <- (last(positions) + 10.0)  - (queue + 1.0);
 	}
+	
+	action init_arrival_position{
+		loop s from: 0 to: stateNumber-1{
+			road r <- closest_to(list<road>(people_graph[s].edges), first(positions));
+			arrival_position << last(closest_points_with(first(positions),r.shape));
+		}
+	}
+	
 	action add_people(pedestrian the_tourist) {
 		if (length(waiting_tourists) < length(positions)) {
-			the_tourist.location <- positions[length(waiting_tourists)];
+			//the_tourist.location <- positions[length(waiting_tourists)];
+			the_tourist.target <- positions[length(waiting_tourists)];
 		} else {
-			the_tourist.location  <- any_location_in(waiting_area);
+			//the_tourist.location  <- any_location_in(waiting_area);
+			the_tourist.target  <- any_location_in(waiting_area);
 		}
 		waiting_tourists << the_tourist;
 	}
+	
 	
 	reflex manage_visitor when: not empty(waiting_tourists) and every(60 / capacity_per_min) {
 		pedestrian the_tourist <- first(waiting_tourists);
@@ -958,7 +980,8 @@ species culture {//schedules:[]{
 		if (not empty(waiting_tourists)) {
 			loop i from: 0 to: length(waiting_tourists) - 1 {
 				if (i < length(positions)) {
-					waiting_tourists[i].location <- positions[i];
+				//	waiting_tourists[i].location <- positions[i];
+					waiting_tourists[i].target <- positions[i];
 				}
 			}
 		
@@ -972,7 +995,8 @@ species culture {//schedules:[]{
 		  if(showWaitingLine){
 		    draw queue color: #white;	
 		  }
-		}  	
+		} 
+		draw circle(5) color: #yellow at: arrival_position[currentSimuState]; 	
 	}
 }
 
@@ -1001,6 +1025,7 @@ species building {
 species park {
 	list<string> state;
 	string type; 
+	int zone;
 	rgb color <- #darkgreen  ;
 	
 	aspect base {
@@ -1151,6 +1176,7 @@ species bus_line{
 }
 
 species station {//schedules: [] {
+	int zone <- 0;
 	rgb color <- #white;
 	string type;
 	int capacity;
@@ -1227,6 +1253,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	state walk_to_objective initial: true{
 		
 		enter {
+			target <- nil;
 			walking <- true;
 			wandering <- false;
 			to_culture <- false;
@@ -1245,7 +1272,8 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 					if flip(proba_culture) {
 						target_place <- proba_choose_culture.keys[rnd_choice(proba_choose_culture.values)];
 						to_culture <- true;
-						target <- first(culture(target_place).positions);
+						//target <- first(culture(target_place).positions);
+						target <- culture(target_place).arrival_position[currentSimuState];
 					} else {
 						target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
 						target <- (target_place closest_points_with self) [0] ;
@@ -1342,10 +1370,11 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				do add_people(myself);
 			}
 		}
+		do goto target: target;
+		
 		transition to: visiting_place when: ready_to_visit;
 		do updatefuzzTrajectory;
 		exit {
-			visiting <- false;
 			ready_to_visit <- false;
 			queuing<-false;
 		}
@@ -1380,7 +1409,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	}
 	
 	point calcul_loc {
-		if (current_edge = nil) {
+		if (current_edge = nil or not(state in ["walk_to_objective","stroll_in_city"])) {
 			return {0,0};
 		} else {
 			float val <- side*(1.5+((road(current_edge).oneway='no')?(road(current_edge).lanes*3 + 0.25):(0.5*road(current_edge).lanes*3)) + ((currentSimuState=1) ? (offset*road(current_edge).sidewalk_size) : (offset*(road(current_edge).sidewalk_size)/2)));
@@ -1392,17 +1421,25 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	
 	aspect base{
 		if(showPeople){
-			 draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;
-			 if state="walk_to_objective"{
-			 	draw square(peopleSize) color:#blue at:walking ? location+current_offset :location rotate: angle;
-			 }
-			 
-			 point p1 <- (destination - location)/norm(destination-location)*10;
-			 if showPedBlock{
-			 	draw square(peopleSize) color:blocked?#cyan:type_colors[type] at:location+current_offset  rotate: angle;	
+			if not(visiting) or not(culture(target_place).interior){
+//				if state="queuing"{
+//					draw square(peopleSize) color:type_colors[type] at: location  rotate: angle;
+//				}else{
+					draw square(peopleSize) color:type_colors[type] at: location+current_offset  rotate: angle;
+			//	}	
+			}
+			if target != nil{
+				draw square(2) color:#green at: target  rotate: angle;
+			}
+			if state="queueing"{
+				draw square(peopleSize/2) color:#blue at:walking ? location+current_offset :location rotate: angle;
+			}	 
+			point p1 <- (destination - location)/norm(destination-location)*10;
+			if showPedBlock{
+				draw square(peopleSize) color:blocked?#cyan:type_colors[type] at:location+current_offset  rotate: angle;	
 				draw square(1) color: blocked?#cyan:type_colors[type] at: location+p1+current_offset;
 				draw polyline([location+current_offset, location+p1+current_offset]) color: blocked?#cyan:type_colors[type]  ;
-			 }
+			}
 		}
 		if(showPeopleTrajectory and showPeople){
 	       draw line(current_trajectory+[location+current_offset]) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,peopleTrajectoryTransparency);	
