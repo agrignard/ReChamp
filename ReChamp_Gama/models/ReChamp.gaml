@@ -439,7 +439,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	}
 	
 	
-	reflex reset_simulation when: (machine_time - t_re_init) >  time_between_clean{
+	reflex reset_simulation when: (machine_time - t_re_init) > time_between_clean{
 		t_re_init <- machine_time;
 		write "CLEAN";
 		ask car {
@@ -528,32 +528,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 	}
-	
-	
-	
-//	action init_agents {
-//		do create_cars(round(nbAgent*world.get_mobility_ratio()["car"]));
-//		//Create Pedestrian
-//		do create_pedestrian(round(nbAgent*world.get_mobility_ratio()["people"]));
-//		write length(pedestrian);
-//		ask one_of(pedestrian){
-//			show_story <- true;
-//		}
-//		
-//        //Create Bike
-//	    create bike number:round(nbAgent*world.get_mobility_ratio()["bike"]){
-//	      type <- "bike";
-//	      speed<-2+rnd(maxSpeed);
-//		  location<-any_location_in(one_of(building));	
-//		  //location<-any_location_in(one_of(origin_destination_shapefile.contents));
-//		}
-//	
-//		 //Create Bus
-//	    create bus number:round(nbAgent*mobilityRatioNow["bus"]){
-//	      type <- "bus";
-//		  location<-any_location_in(one_of(road));	
-//		}
-//	}
 	
 	
 	action updateStoryTelling (int n){
