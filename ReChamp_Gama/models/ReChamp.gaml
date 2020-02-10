@@ -418,12 +418,14 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		create bikelane from:bikelane_shapefile{
 			color<-type_colors["bike"];
 		}
-		ask coldSpot {
-			ask bikelane overlapping self {
-				is_cold_spot <- true;
+		ask signals_zone {
+			ask (bikelane overlapping self) where not each.from_road {
+				if (myself covers self) {
+					is_hot_spot <- true;
+				}
 			}
 		}
-		hot_bike_lanes <- bikelane where not each.is_cold_spot;
+		hot_bike_lanes <- bikelane where each.is_hot_spot;
 		create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
 		}
@@ -432,7 +434,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		do updateSimuState;
 				
 		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
-		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::each.shape.perimeter * (each.from_road ? 10.0 : 0.0));
+		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));
 		
 		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
 		
@@ -1157,7 +1159,7 @@ species road  skills: [skill_road]{// schedules:[] {
 
 species bikelane{
 	bool from_road <- true;
-	bool is_cold_spot <- false;
+	bool is_hot_spot <- false;
 	int lanes;
 	aspect base {
 		if(showBikeLane and not from_road){
