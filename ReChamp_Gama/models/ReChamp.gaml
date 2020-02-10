@@ -112,7 +112,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Debug" <-false;
 	
 	
-	bool oneButtonInterface;// parameter: 'Interface' category: "Interface" <-false;		
+	bool oneButtonInterface<-true;// parameter: 'Interface' category: "Interface" <-false;		
 	
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
