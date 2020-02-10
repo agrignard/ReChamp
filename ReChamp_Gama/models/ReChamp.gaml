@@ -63,6 +63,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool showCarTrajectory parameter: 'Car Trajectory' category: "Trajectory" <-true;
 	bool showBikeTrajectory parameter: 'Bike Trajectory' category: "Trajectory" <-true;
 	bool showSharedMobilityTrajectory parameter: 'SharedMobility Trajectory' category: "Trajectory" <-true;
+	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
+	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-true;
 	
 	int trajectorySizeMax<-100;
 	int peopleTrajectoryLength <-50 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max:100;
@@ -70,29 +72,26 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int bikeTrajectory <-50 parameter: 'Bike Trajectory' category: "Trajectory" min: 0 max: 100;
 	int busTrajectoryLength<-50 parameter: 'Bus Trajectory' category: "Trajectory" min: 0 max: 100;
 	
+	float peopleTrajectoryTransparency <-0.5;// parameter: 'People Trajectory transparency ' category: "Trajectory" min: 0.0 max: 1.0;
+	float carTrajectoryTransparency <-0.5;// parameter: 'Car Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
+	float bikeTrajectoryTransparency <-0.5;// parameter: 'Bike Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
+	float busTrajectoryTransparency <-0.5;// parameter: 'Bus Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
 	
-	bool heatmap parameter: 'Pollution' category: "Simu" <-false;
+	bool drawLegend parameter: 'Legend' category: "Simulation" <-false;
+	
+	bool heatmap parameter: 'Pollution' category: "Simulation" <-false;
 	float pollution_max_level <- 100.0;
 	int spread_factor <- 1;
 	bool applyFuzzyness<-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
 	float traffic_light_duration <-70#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
-	float speedUpSpeedMax <-50#sec parameter: 'Speedup Max' category: "SpeedUp" min: 1#sec max:200#sec;
-	float speedUpSpeedMin <-2.5#sec parameter: 'Speedup Min' category: "SpeedUp" min: 0.1#sec max: 20#sec;
-	float speedUpSpeedDecrease <-2#sec parameter: 'Speedup Decrement' category: "SpeedUp" min: 1#sec max: 20#sec;
-	
-	bool speedUpSim parameter: 'speedUpSim' category: "SpeedUp" <-true;
+	float speedUpSpeedMax <-50#sec;// parameter: 'Speedup Max' category: "Simulation" min: 1#sec max:200#sec;
+	float speedUpSpeedMin <-2.5#sec;// parameter: 'Speedup Min' category: "Simulation" min: 0.1#sec max: 20#sec;
+	float speedUpSpeedDecrease <-2#sec;// parameter: 'Speedup Decrement' category: "Simulation" min: 1#sec max: 20#sec;
+	bool speedUpSim;// parameter: 'speedUpSim' category: "Simulation" <-true;
 	
 
-	bool smoothTrajectory parameter: 'Smooth Trajectory' category: "Trajectory" <-true;
-	bool new_trail parameter: 'New trail drawing' category: "Trajectory" <-true;
-	float peopleTrajectoryTransparency <-0.5 parameter: 'People Trajectory transparency ' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float carTrajectoryTransparency <-0.5 parameter: 'Car Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float bikeTrajectoryTransparency <-0.5 parameter: 'Bike Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-	float busTrajectoryTransparency <-0.5 parameter: 'Bus Trajectory transparency Before' category: "Trajectory Transparency" min: 0.0 max: 1.0;
-
-	
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
 	bool showBusLane parameter: 'Bus Lane' category: "Parameters" <-false;
 	bool showStation parameter: 'Station' category: "Parameters" <-false;
@@ -103,19 +102,18 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool showWaitingLine parameter: 'Waiting Line (x)' category: "Parameters" <-false;
 	bool showIntervention parameter: 'Intervention (i)' category: "Parameters" <-false;
 	bool showBackground <- false parameter: "Background (Space)" category: "Parameters";
-	float factor<-0.8;
-
 	float peopleSize <-(3.0)#m parameter: 'People size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float carSize <-(3.0)#m parameter: 'Car size' category: "Parameters" min: 0.5#m max: 5.0#m;
-	float bikeSize <-(1.66)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
+	float bikeSize <-(2)#m parameter: 'Bike size' category: "Parameters" min: 0.5#m max: 5.0#m;
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 
 	bool showPedBlock parameter: 'Show Pedestrian Blocking' category: "Debug" <-false;
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
-	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
+	bool showHotSpot  parameter: 'HotSpot (h)' category: "Debug" <-false;
 	
-	bool oneButtonInterface parameter: 'Interface' category: "Interface" <-false;		
-	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
+	
+	bool oneButtonInterface;// parameter: 'Interface' category: "Interface" <-false;		
+	
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
 	file dashboardbackground_before <- file('../includes/PNG/radar_plot/radar_plot.001.jpeg');
@@ -2336,22 +2334,24 @@ experiment ReChamp type: gui autorun:true{
 			}
 			
 			graphics "legend"{
+				
 				if(drawLegend){
 					point lengendBox<-{360,100};
-					point posIn<-{world.shape.width*0.4, world.shape.height*0.7};
-					draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (angle), (lengendBox.x*0.9)/2 * sin(angle)} rotate:angle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
-					float space<-world.shape.width * 0.025;
+					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
+					int legendAngle<-0;
+					//draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (legendAngle), (lengendBox.x*0.9)/2 * sin(legendAngle)} rotate:legendAngle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
+					float space<-world.shape.width * 0.05;
 					float circleSize<-world.shape.width * 0.0025;
 					int fontSize<-10;
 					point textOffset<-{10,10};
 				    draw circle(circleSize) color: type_colors["car"] at: posIn;
-					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:angle;
-					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (angle), space * sin(angle)};
-					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (angle), space * sin(angle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (angle), space * sin(angle)}*2;
-					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (angle), space * sin(angle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
-					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (angle), space * sin(angle)}*3;
-					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (angle), space * sin(angle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:angle;
+					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
+					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2;
+					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3;
+					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
 				}	
 			}
 
@@ -2368,10 +2368,6 @@ experiment ReChamp type: gui autorun:true{
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
 			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
 			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			event ['5'] action: {if(heatmap){ask cell{do raz;}}}; // clean heatmap (if heatmap)
-			
-			//event["l"] action: {drawLegend<-!drawLegend;};
-			//event["1"] action: {if(currentSimuState!=1){currentSimuState<-1;updateSim<-true;}};
 			
 			event["1"] action: {ask world{do updateStoryTelling (1);}};
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
