@@ -74,10 +74,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool heatmap parameter: 'Pollution' category: "Simu" <-false;
 	float pollution_max_level <- 100.0;
 	int spread_factor <- 1;
-
-	
-
-	bool applyFuzzyness parameter: 'fuzzyNess' category: "People" <-true;
+	bool applyFuzzyness<-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
 	float traffic_light_duration <-70#sec parameter: 'Traffic light duration' category: "Simulation" min: 1#sec max: 300#sec;
@@ -117,11 +114,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool drawLegend parameter: 'Legend' category: "Debug (l)" <-false;
 	
-	bool oneButtonInterface parameter: 'Interface' category: "Interface" <-false;
-	
-
-	
-	
+	bool oneButtonInterface parameter: 'Interface' category: "Interface" <-false;		
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Parameters" <-false;
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
@@ -1598,7 +1591,7 @@ species bus skills:[moving] {//schedules:[]{
 		if(showSharedMobility){
 		 draw rectangle(busSize,busSize*3) color:type_colors[type] rotate:heading-90;	
 		}	
-		if(showSharedMobilityTrajectory){
+		if(showSharedMobilityTrajectory and showSharedMobility){
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,busTrajectoryTransparency);	
 	  }
 	}
@@ -2190,7 +2183,7 @@ grid cell height: 100 width: 100 neighbors: 4 {
 	}
 	
 	reflex update_transparency when:heatmap {
-		if(current_date.hour > 22){
+		if((cycle mod 100)=0){
 			do raz;
 		} else {
 			transparency <- float(pollution_level) / pollution_max_level;
