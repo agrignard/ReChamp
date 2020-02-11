@@ -750,11 +750,16 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			loop i over: signals_indexes{
 				loop r2 over: road where(each.tl_group = i){
 					if intersects(r,r2){
+						r.tl_group <- i;
 						put blocked_roads[i]+r at: i in: blocked_roads;
 					}
 				}
 			}
 		}
+		loop i over: signals_indexes{
+			put remove_duplicates(blocked_roads[i]) at: i in: blocked_roads;
+		}
+		
 
 		//init traffic lights that are not in main area
 		list<list<intersection>> groupes <- traffic_signals where (each.group = 0) simple_clustering_by_distance dist_group_traffic_light;
@@ -1277,10 +1282,6 @@ species station {//schedules: [] {
 		  	  draw circle(16) color:color;		
 		  	}
 		}
-//		draw 3 around closest_roads color: #yellow;
-//		if length(closest_roads) = 0{
-//			draw circle(20) color: #yellow;
-//		}	
 	}
 }
 
@@ -1391,7 +1392,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			if gr != 0{
 				point p1 <- (destination - location)/norm(destination-location)*10;
 				int r_id <- 0;
-				list<road> lr <- ped_blocking_roads[currentSimuState][r.tl_group][phase_per_group[r.tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
+				list<road> lr <- ped_blocking_roads[currentSimuState][r.tl_group][phase_per_group[r.tl_group]-1];  
 				loop while: !blocked and r_id < length(lr){
 					if intersects(polyline([location+current_offset, location+current_offset+p1]),lr[r_id].shape){
 						blocked <- true;
