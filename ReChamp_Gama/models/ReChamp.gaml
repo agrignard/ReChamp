@@ -1016,7 +1016,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color:rgb(75,75,75) empty:true depth:0;	
+		  draw shape color:#white/*rgb(75,75,75)*/ empty:false depth:depth;	
 		}
 	}
 }
@@ -2328,7 +2328,7 @@ experiment ReChamp type: gui autorun:true{
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
-				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
+				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
 			graphics "legend"{
@@ -2355,7 +2355,7 @@ experiment ReChamp type: gui autorun:true{
 
 			
 			event["p"] action: {showPeople<-!showPeople;};
-			event["c"] action: {showCar<-!showCar;};
+			//event["c"] action: {showCar<-!showCar;};
 			event["v"] action: {showBike<-!showBike;};
 			event["b"] action: {showSharedMobility<-!showSharedMobility;};
 			event["n"] action: {showNature<-!showNature;};
