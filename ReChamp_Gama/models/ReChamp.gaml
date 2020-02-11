@@ -238,7 +238,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 		
 		
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),interior:bool(read("interior"))]{
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),interior:bool(read("interior")),capacity_per_min:float(read ("c_per_min"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
