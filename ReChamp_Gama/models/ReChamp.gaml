@@ -21,6 +21,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");
+	file zone_shapefile <- file("../includes/GIS/zones.shp");
 
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
@@ -194,7 +195,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int crossOverNature;
 	int crossOverUsage;
 	
-	geometry zone_geo;
+	list<geometry> zones <- [shape];
+	list<bool> active_zoning <- [true,false];
 	
 	list<bikelane> hot_bike_lanes;
 	float t_re_init <- machine_time;	
@@ -203,13 +205,30 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
+		
+		loop z over: zone_shapefile.contents {
+			zones << geometry(z);	
+		}
+		geometry g <- geometry(shape_file_bounds);
+		loop z from: 1 to: length(zones)-1{
+			g <- g - zones[z];
+		}
+		zones[0] <- g;
+		
+		
+		
 		create park from: (Nature_Future_shapefile) with: [type:string(read ("type")),zone:int(read("zone"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
 			}
-			
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
 		}
+		
 		loop g over: Nature_Now_shapefile {
 			
 			if (g != nil and not empty(g)) and (g overlaps world) {
@@ -219,12 +238,16 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 		
-		zone_geo <- envelope(park where (each.zone =1));
 		
 		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),zone:int(read("zone")),interior:bool(read("interior"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
+			}
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
 			}
 		}
 		loop g over: Usage_Now_shapefile where (each != nil and each.area > 0) {
@@ -244,6 +267,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
+		
+		
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
@@ -269,6 +294,11 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 
 		ask road{
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
 			loop i from: 0 to: length(shape.points) -2{
 				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
 				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
@@ -844,9 +874,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			if (target_place in to_remove) {
 				do die;
 			}
-			if to_culture{
-				target <- culture(target_place).arrival_position[currentSimuState];
-			}
+//			if to_culture{
+//				target <- culture(target_place).arrival_position[currentSimuState];
+//			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
@@ -1041,10 +1071,9 @@ species park {
 species road  skills: [skill_road]{// schedules:[] {
 	int id;
 	int tl_group;
-	//bool ped_block <- false;
+	int zone <- 0;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
-	string mode;
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
@@ -1151,9 +1180,12 @@ species road  skills: [skill_road]{// schedules:[] {
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
 		}
 		
-//		if int(self)=1{
-//			draw 5 around(zone_geo) color: #yellow;
-//		}
+		if int(self)=1{
+			loop z from:0 to: length(zones)-1{
+				list<rgb> tmp <- brewer_colors("Set2");
+				draw 3 around(zones[z]) color: tmp[z];
+			}
+		}
 	}
 }
 
@@ -1278,13 +1310,13 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-					// FIXME empecher de passer de zone 1 à zone 0
-					//bool acceptable <- false;
-					road r <- one_of(people_graph[currentSimuState].edges);
-					loop while: (currentSimuState = 0) and ((zone = 0 and r overlaps zone_geo) or (zone = 1 and not(r overlaps zone_geo))){
+					road r;
+					if !active_zoning[currentSimuState]{
 						r <- one_of(people_graph[currentSimuState].edges);
-					//	if (currentSimuState = 1) or (zone = 1 and r overlaps zone_geo) or (zone = 0 and not(r overlaps zone_geo))
+					}else{
+						r <- one_of(people_graph[currentSimuState].edges where(road(each).zone = self.zone));// a optimiser en prechargeant les listes de road ?
 					}
+								
 					target <- any_location_in(r);
 					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
@@ -1370,7 +1402,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			do goto target: self.location;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
-			path tmp <- copy(current_path);
+		//	path tmp <- copy(current_path);
 			do reinit_path;
 		}
 		stroll_time <- stroll_time - step;
