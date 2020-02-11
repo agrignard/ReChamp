@@ -78,7 +78,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float bikeTrajectoryTransparency <-0.5;// parameter: 'Bike Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
 	float busTrajectoryTransparency <-0.5;// parameter: 'Bus Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
 	
-	bool drawLegend parameter: 'Legend' category: "Simulation" <-false;
+	bool drawLegend parameter: 'Legend' category: "Simulation" <-true;
 	
 	bool heatmap parameter: 'Pollution' category: "Simulation" <-false;
 	float pollution_max_level <- 100.0;
@@ -2300,21 +2300,25 @@ experiment ReChamp type: gui autorun:true{
 
 									
 			graphics 'tablebackground'{
-				draw geometry(shape_file_bounds) color:#white empty:true;
+				//draw geometry(shape_file_bounds) color:#white empty:true;
 				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
+			graphics 'info'{
+				if(drawLegend){
+				  draw string(currentSimuState = 0 ? "EXISTANT" : "VISION") font:font("Helvetica", 20 , #bold) rotate:angle at:{world.shape.width*0.74,world.shape.height*0.74} color:#white empty:true;	
+				}
+			}
+			
 			graphics "legend"{
-				
 				if(drawLegend){
 					point lengendBox<-{350,90};
 					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
 					int legendAngle<-0;
-					//draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (legendAngle), (lengendBox.x*0.9)/2 * sin(legendAngle)} rotate:legendAngle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
-					float space<-world.shape.width * 0.05;
+					float space<-world.shape.width * 0.03;
 					float circleSize<-world.shape.width * 0.0025;
 					int fontSize<-10;
-					point textOffset<-{10,10};
+					point textOffset<-{-20,30};
 				    draw circle(circleSize) color: type_colors["car"] at: posIn;
 					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
 					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
