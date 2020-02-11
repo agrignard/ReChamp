@@ -90,7 +90,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float speedUpSpeedMax <-50#sec;// parameter: 'Speedup Max' category: "Simulation" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-2.5#sec;// parameter: 'Speedup Min' category: "Simulation" min: 0.1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec;// parameter: 'Speedup Decrement' category: "Simulation" min: 1#sec max: 20#sec;
-	bool speedUpSim;// parameter: 'speedUpSim' category: "Simulation" <-true;
+	bool speedUpSim<-true;// parameter: 'speedUpSim' category: "Simulation" <-true;
 	
 
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -574,10 +574,20 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	action updateStoryTelling (int n){
 		    if(n=0){currentStoryTellingState<-0;}
-			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
+		    //old interface
+			/*if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-false;showUsage<-false;crossOverSoftMob<-crossOverTime;}
 			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}*/
+			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
+			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;crossOverUsage<-crossOverTime;}
+			if(showCar=false and showPeople= false and showSharedMobility=false and showNature=false and showUsage = false){
+				showBuilding<-true;
+			}else{
+				showBuilding<-false;
+			}
 	}
 	
 	
@@ -2273,93 +2283,14 @@ grid cell height: 100 width: 100 neighbors: 4 {
 	}
 }
 
-
-experiment debug_xp type: gui autorun:true{
-	action _init_ {
-		create simulation with: [showCar::true, showPeople::true,showBike:: true, showSharedMobility::true, showNature::true,showUsage::true,
-			showCarTrajectory::false, showPeopleTrajectory::false, showBikeTrajectory::false, showSharedMobilityTrajectory::false,
-			showBikeLane::true, showBusLane::true, showStation::true,showTrafficSignal::true, showRoad::true, showBuilding::false,
-			showWaitingLine::true
-		];
-	
-	}
-	output {
-		display champ 
-	   	{
-	   	    species park aspect: base transparency:0.5;
-			species culture aspect: base transparency:0.5;
-			species road aspect: base;
-			species bus_line aspect: base;
-			species intersection;
-			species car aspect:base transparency:0.5;
-			species pedestrian aspect:base transparency:0.2;
-			species bike aspect:base transparency:0.5;
-			species bus aspect:base transparency:0.5;
-			species station aspect: base;
-			species bikelane aspect:base;
-			
-			graphics "shortest_path" {
-				if (shortest_path != nil and shortest_path.shape != nil) {
-					draw shortest_path.shape + 1 color: #magenta;
-				}
-				if (source != nil) {
-					draw circle(10) at:source color: #yellow;
-				}
-				if (destination != nil) {
-					draw circle(10) at:destination color: #cyan;
-				}
-			}
-//			graphics "origin" {
-//				loop pt over: origin_intersections[currentSimuState] {
-//					draw circle(10) color: #magenta at: pt.location;
-//				}
-//			}
-//			graphics "destination" {
-//				loop pt over: destination_intersections[currentSimuState] {
-//					draw circle(10) color: #cyan at: pt.location;
-//				}
-//			}
-			
-			event mouse_down action:{
-				if (test_path and (#user_location != nil)) {
-					if (source = nil) { 
-						source <- (list(intersection) with_min_of (each distance_to #user_location)).location;
-					}
-					else if (destination = nil) {
-						destination <- (list(intersection) with_min_of (each distance_to #user_location)).location;
-					} 
-					if (source != nil and destination != nil) {
-						shortest_path <- driving_road_network[currentSimuState] path_between(source, destination);
-						source <- nil;
-						destination <- nil;
-					}
-					
-				} 
-			};
-			event["p"] action: {
-				test_path<-not test_path; 
-				if not test_path {
-					shortest_path <- nil;
-					source <- nil;
-					destination <- nil;
-				}
-			};	
-			event["z"] action: {updateSim<-true;};			
-		}
-	}
-	
-
-	}
-	
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.6275008497918038,0.0},{1.6027163338888177,1.3323244500497453,0.0},{0.9827035047669871,-0.2279083086443815,0.0}]
-		//keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
-		//jcdejc//keystone: [{-0.014738965813206717,-0.20627849103413565,0.0},{-0.21815858242101588,1.2218738054155063,0.0},{1.2011252888238215,1.1272618466329627,0.0},{1.0170732004605543,-0.200356051098873,0.0}]
-	   	//<jc keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
+		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
+		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
+
 	   	{
 
 	   	    species graphicWorld aspect:base;	    	
@@ -2388,7 +2319,7 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 			graphics "legend"{
 				
 				if(drawLegend){
-					point lengendBox<-{360,100};
+					point lengendBox<-{350,90};
 					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
 					int legendAngle<-0;
 					//draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (legendAngle), (lengendBox.x*0.9)/2 * sin(legendAngle)} rotate:legendAngle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
@@ -2417,9 +2348,13 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["m"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
+			//old interface		
+			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//new interface	
+			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
 			
 			event["1"] action: {ask world{do updateStoryTelling (1);}};
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
@@ -2435,12 +2370,12 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 }
 	
 
-experiment ReChamp2Proj parent:ReChamp autorun:true{	
+experiment ReChamp2Proj  parent: ReChamp autorun:true{	
 	
 	output {	
-		layout #horizontal;
 		display indicator type:opengl background:#black draw_env:false fullscreen:0 toolbar:false
-		camera_pos: {1812.4353,1521.5721,1384.5794} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		camera_pos: {1812.4353,1521.57,1260.6049} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		keystone: [{0.0,0.0,0.0},{0.04939455407469323,0.9929027711998522,0.0},{0.9474300817347908,1.0014194457600294,0.0},{1.0,0.0,0.0}]
 		{
 		    graphics 'dashboardbackground'{
 		    	if(oneButtonInterface){
