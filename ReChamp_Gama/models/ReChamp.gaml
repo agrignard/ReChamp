@@ -89,7 +89,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float speedUpSpeedMax <-50#sec;// parameter: 'Speedup Max' category: "Simulation" min: 1#sec max:200#sec;
 	float speedUpSpeedMin <-2.5#sec;// parameter: 'Speedup Min' category: "Simulation" min: 0.1#sec max: 20#sec;
 	float speedUpSpeedDecrease <-2#sec;// parameter: 'Speedup Decrement' category: "Simulation" min: 1#sec max: 20#sec;
-	bool speedUpSim;// parameter: 'speedUpSim' category: "Simulation" <-true;
+	bool speedUpSim<-true;// parameter: 'speedUpSim' category: "Simulation" <-true;
 	
 
 	bool showBikeLane  parameter: 'Bike Lane' category: "Parameters" <-false;
@@ -2303,10 +2303,10 @@ experiment ReChamp type: gui autorun:true{
 	output {
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
-keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.6275008497918038,0.0},{1.6027163338888177,1.3323244500497453,0.0},{0.9827035047669871,-0.2279083086443815,0.0}]
-		//keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
-		//jcdejc//keystone: [{-0.014738965813206717,-0.20627849103413565,0.0},{-0.21815858242101588,1.2218738054155063,0.0},{1.2011252888238215,1.1272618466329627,0.0},{1.0170732004605543,-0.200356051098873,0.0}]
-	   	//<jc keystone: [{-0.13581443244429375,0.046729851601918004,0.0},{-0.041202131190965566,1.060229586509137,0.0},{0.9549828566617228,1.0228457052276037,0.0},{1.01042070229401,0.033576265703510244,0.0}]
+		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
+		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
+
+		
 	   	{
 
 	   	    species graphicWorld aspect:base;	    	
@@ -2335,7 +2335,7 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 			graphics "legend"{
 				
 				if(drawLegend){
-					point lengendBox<-{360,100};
+					point lengendBox<-{350,90};
 					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
 					int legendAngle<-0;
 					//draw rectangle (lengendBox.x,lengendBox.y) at:posIn +{(lengendBox.x*0.9)/2* cos (legendAngle), (lengendBox.x*0.9)/2 * sin(legendAngle)} rotate:legendAngle empty:true color:#gray;//+{lengendBox.x/2* cos (angle), lengendBox.x/2 * sin(angle)} color:#white rotate:angle empty:true;
@@ -2382,12 +2382,12 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 }
 	
 
-experiment ReChamp2Proj parent:ReChamp autorun:true{	
+experiment ReChamp2Proj  parent: ReChamp autorun:true{	
 	
 	output {	
-		layout #horizontal;
 		display indicator type:opengl background:#black draw_env:false fullscreen:0 toolbar:false
-		camera_pos: {1812.4353,1521.5721,1384.5794} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		camera_pos: {1812.4353,1521.57,1260.6049} camera_look_pos: {1812.4353,1521.548,0.0} camera_up_vector: {0.0,1.0,0.0}
+		keystone: [{0.0,0.0,0.0},{0.04939455407469323,0.9929027711998522,0.0},{0.9474300817347908,1.0014194457600294,0.0},{1.0,0.0,0.0}]
 		{
 		    graphics 'dashboardbackground'{
 		    	if(oneButtonInterface){
