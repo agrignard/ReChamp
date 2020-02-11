@@ -2329,7 +2329,7 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 									
 			graphics 'tablebackground'{
 				draw geometry(shape_file_bounds) color:#white empty:true;
-				draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
+				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
 			}
 			
 			graphics "legend"{
@@ -2356,7 +2356,7 @@ keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.
 
 			
 			event["p"] action: {showPeople<-!showPeople;};
-			event["c"] action: {showCar<-!showCar;};
+			//event["c"] action: {showCar<-!showCar;};
 			event["v"] action: {showBike<-!showBike;};
 			event["b"] action: {showSharedMobility<-!showSharedMobility;};
 			event["n"] action: {showNature<-!showNature;};
