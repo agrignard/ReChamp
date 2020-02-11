@@ -21,6 +21,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");
+	file zone_shapefile <- file("../includes/GIS/zones.shp");
 
 	//GENERATED SHAPEFILE (FROM QGIS)
 	//INTERVENTION
@@ -194,7 +195,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int crossOverNature;
 	int crossOverUsage;
 	
-	geometry zone_geo;
+	list<geometry> zones <- [shape];
+	list<bool> active_zoning <- [true,false];
 	
 	list<bikelane> hot_bike_lanes;
 	float t_re_init <- machine_time;	
@@ -203,13 +205,30 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	init {
 		
 		//------------------ STATIC AGENT ----------------------------------- //
-		create park from: (Nature_Future_shapefile) with: [type:string(read ("type")),zone:int(read("zone"))] {
+		
+		loop z over: zone_shapefile.contents {
+			zones << geometry(z);	
+		}
+		geometry g <- geometry(shape_file_bounds);
+		loop z from: 1 to: length(zones)-1{
+			g <- g - zones[z];
+		}
+		zones[0] <- g;
+		
+		
+		
+		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
 			}
-			
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
 		}
+		
 		loop g over: Nature_Now_shapefile {
 			
 			if (g != nil and not empty(g)) and (g overlaps world) {
@@ -219,12 +238,16 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 		
-		zone_geo <- envelope(park where (each.zone =1));
 		
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),zone:int(read("zone")),interior:bool(read("interior"))]{
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),interior:bool(read("interior"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
+			}
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
 			}
 		}
 		loop g over: Usage_Now_shapefile where (each != nil and each.area > 0) {
@@ -244,6 +267,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		create building from: buildings_shapefile with: [depth:float(read ("H_MOY"))];
 		create intersection from: nodes_shapefile with: [is_traffic_signal::(read("type") = "traffic_signals"),  is_crossing :: (string(read("crossing")) = "traffic_signals"), group :: int(read("group")), phase :: int(read("phase"))];
 		create signals_zone from: signals_zone_shapefile;
+		
+		
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
 		create road from: roads_shapefile with: [ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
@@ -269,6 +294,11 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 
 		ask road{
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
 			loop i from: 0 to: length(shape.points) -2{
 				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
 				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
@@ -411,7 +441,13 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	//	do check_signals_integrity;
 		
-		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity")), zone:int(read("zone"))];
+		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))]{
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
+		}
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -513,9 +549,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	reflex update_pedestrian{
 		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
-	//	write ""+ length(pedestrian)+ "/"+nb_people_target;
 		loop while: (length(pedestrian) < nb_people_target) {
-			ask one_of(station where(each.capacity=5)){	
+			ask one_of(station){	
 				do add_people;
 			}
 		} 
@@ -556,27 +591,30 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	
 	action create_pedestrian(int nb) {
-		create pedestrian number:nb{
-		  current_trajectory <- [];
-		  type <- "people";
-			if flip(0.3) {
-				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-				target <- (any_location_in(target_place));
-				location<-copy(target);
-				state <- "stroll";
-				zone <- park(target_place).zone;
-			} else {
-				station s <- one_of(station where (each.capacity=5));
-				location<-any_location_in(s);//capacity 5 = stations on Champs Elysees
-				zone <- s.zone;
-			}
+		int n_ped <- int(0.3*nb);
+		// create 30% in a park and 70% at subway stations
+		create pedestrian number: n_ped{
+			current_trajectory <- [];
+		  	type <- "people";
+			target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+			target <- (any_location_in(target_place));
+			location<-copy(target);
+			state <- "stroll";
+			zone <- park(target_place).zone;
 			if flip(0.5){
 				side<-1;
 			}else{
 				side<--1;
-			}
-		  	
+			}	  	
 		}
+		
+		loop while: n_ped < nb {
+			station s <- one_of(station);
+			ask s{	
+				n_ped <- n_ped + add_people();
+			}
+			//n_ped <- n_ped + s.capac
+		} 		
 	}
 	
 	action create_cars(int nb) {
@@ -844,9 +882,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			if (target_place in to_remove) {
 				do die;
 			}
-			if to_culture{
-				target <- culture(target_place).arrival_position[currentSimuState];
-			}
+//			if to_culture{
+//				target <- culture(target_place).arrival_position[currentSimuState];
+//			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
@@ -1041,10 +1079,9 @@ species park {
 species road  skills: [skill_road]{// schedules:[] {
 	int id;
 	int tl_group;
-	//bool ped_block <- false;
+	int zone <- 0;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
 	rgb color;
-	string mode;
 	float capacity;		
 	string oneway;
 	bool hot_spot <- false;
@@ -1150,9 +1187,13 @@ species road  skills: [skill_road]{// schedules:[] {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
 		}
-		
+	
+	// piece of code used for zone testing. Do not remove	
 //		if int(self)=1{
-//			draw 5 around(zone_geo) color: #yellow;
+//			loop z from:0 to: length(zones)-1{
+//				list<rgb> tmp <- brewer_colors("Set2");
+//				draw 3 around(zones[z]) color: tmp[z];
+//			}
 //		}
 	}
 }
@@ -1189,19 +1230,21 @@ species station {//schedules: [] {
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
-	action add_people{
-//		int nb <- rnd(0,10)*int(capacity);
-//		write "create "+ nb+" at station "+int(self);
-		create pedestrian number:rnd(1,4)*int(capacity){
-			type<-"people";
-			location <- myself.location + {rnd(3),rnd(3)};
-			zone <- myself.zone;
-			if flip(0.5){
-				side<-1;
-			}else{
-				side<--1;
+	int add_people{
+		int nb_created <- rnd(int(capacity/4),capacity);
+		if capacity > 0{
+			create pedestrian number:nb_created{
+				type<-"people";
+				location <- myself.location + {rnd(3),rnd(3)};
+				zone <- myself.zone;
+				if flip(0.5){
+					side<-1;
+				}else{
+					side<--1;
+				}
 			}
 		}
+		return nb_created;
 	}
 	
 	aspect base {
@@ -1278,13 +1321,13 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
-					// FIXME empecher de passer de zone 1 à zone 0
-					//bool acceptable <- false;
-					road r <- one_of(people_graph[currentSimuState].edges);
-					loop while: (currentSimuState = 0) and ((zone = 0 and r overlaps zone_geo) or (zone = 1 and not(r overlaps zone_geo))){
+					road r;
+					if !active_zoning[currentSimuState]{
 						r <- one_of(people_graph[currentSimuState].edges);
-					//	if (currentSimuState = 1) or (zone = 1 and r overlaps zone_geo) or (zone = 0 and not(r overlaps zone_geo))
+					}else{
+						r <- one_of(people_graph[currentSimuState].edges where(road(each).zone = self.zone));// a optimiser en prechargeant les listes de road ?
 					}
+								
 					target <- any_location_in(r);
 					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
@@ -1370,7 +1413,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			do goto target: self.location;
 			stroll_time <- rnd(1, 10)#mn;
 			stroling_in_city<-true;
-			path tmp <- copy(current_path);
+		//	path tmp <- copy(current_path);
 			do reinit_path;
 		}
 		stroll_time <- stroll_time - step;
@@ -2301,12 +2344,9 @@ experiment debug_xp type: gui autorun:true{
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
-
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
 		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
-
-		
 	   	{
 
 	   	    species graphicWorld aspect:base;	    	
