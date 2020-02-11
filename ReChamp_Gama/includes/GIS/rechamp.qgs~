@@ -20,7 +20,7 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="PCA_CE_EXP_PRO_USAGE20200209015720422" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_USAGE.shp" name="PCA_CE_EXP_PRO_USAGE">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="PCA_CE_EXP_PRO_NATURE20200209015535692" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_NATURE.shp" name="PCA_CE_EXP_PRO_NATURE">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="PCA_CE_EXP_PRO_NATURE20200209015535692" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_NATURE.shp" name="PCA_CE_EXP_PRO_NATURE">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="nodes_OSM20200113191108013" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/nodes_OSM.shp" name="nodes_OSM">
@@ -44,10 +44,10 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="TableBounds20200108144231333" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/TableBounds.shp" name="TableBounds">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="water20200108144231271" source="C:\Users\Tri\Documents\GitHub\ReChamp\ReChamp_Gama\includes\GIS\old_GIS\water.shp" name="water">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="water20200108144231271" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/old_GIS/water.shp" name="water">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="Intervention20200108144222712" source="C:\Users\Tri\Documents\GitHub\ReChamp\ReChamp_Gama\includes\GIS\old_GIS\Intervention.shp" name="Intervention">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="Intervention20200108144222712" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/old_GIS/Intervention.shp" name="Intervention">
       <customproperties>
         <property key="legend/expressionFilter" value=""/>
         <property key="legend/expressionFilterEnabled" value="false"/>
@@ -56,13 +56,13 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="signals_zone20200114000826225" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/signals_zone.shp" name="signals_zone">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="green_space20200108144222681" source="C:\Users\Tri\Documents\GitHub\ReChamp\ReChamp_Gama\includes\GIS\old_GIS\green_space.shp" name="green_space">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="green_space20200108144222681" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/old_GIS/green_space.shp" name="green_space">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="reseau_cyclable20200108144222649" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/reseau-cyclable.shp" name="reseau-cyclable">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="lignes_metro_RER20200108144222603" source="C:\Users\Tri\Documents\GitHub\ReChamp\ReChamp_Gama\includes\GIS\old_GIS\lignes_metro_RER.shp" name="lignes_metro_RER">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="lignes_metro_RER20200108144222603" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/old_GIS/lignes_metro_RER.shp" name="lignes_metro_RER">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="lignes_bus20200108144222571" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/lignes_bus.shp" name="lignes_bus">
@@ -74,7 +74,7 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="buildings20200108144206146" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/buildings.shp" name="buildings">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="ilots20200108144222696" source="C:\Users\Tri\Documents\GitHub\ReChamp\ReChamp_Gama\includes\GIS\old_GIS\ilots.shp" name="ilots">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="ilots20200108144222696" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/old_GIS/ilots.shp" name="ilots">
       <customproperties/>
     </layer-tree-layer>
   </layer-tree-group>
@@ -82,10 +82,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649784.16505666333250701</xmin>
-      <ymin>6862588.85558613203465939</ymin>
-      <xmax>650721.20045705395750701</xmax>
-      <ymax>6863372.62560566328465939</ymax>
+      <xmin>649943.9002147363498807</xmin>
+      <ymin>6862823.67019117809832096</ymin>
+      <xmax>650412.4179149316623807</xmax>
+      <ymax>6863215.55520094372332096</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -138,8 +138,8 @@
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="Géométries_simples20200108174539424"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="Champs_Mobility_Now220200108175607380"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="signals_in_use20200113235221805"/>
-      <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="memory_20200108173833058"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:4326" srcDatumTransform="-1" destDatumTransform="-1" layerid="zones20200211125501795"/>
+      <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="memory_20200108173833058"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="COMMERCE_NON_ALIMENTAIRE20200108144206099"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="stations_metro_simple20200209002056850"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="Intervention20200108144222712"/>
@@ -203,9 +203,9 @@
         <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_USAGE20200209015720422" visible="1"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="PCA_CE_EXP_PRO_NATURE" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="PCA_CE_EXP_PRO_NATURE" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_NATURE20200209015535692" visible="1"/>
+        <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_NATURE20200209015535692" visible="0"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="nodes_OSM" showFeatureCount="0">
@@ -3857,7 +3857,7 @@ def my_form_open(dialog, layer, feature):
         <edittype widgetv2type="TextEdit" name="capacity">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
-        <edittype widgetv2type="TextEdit" name="zone">
+        <edittype widgetv2type="TextEdit" name="main">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
       </edittypes>
@@ -3924,7 +3924,7 @@ def my_form_open(dialog, layer, feature):
         <alias field="id" index="3" name=""/>
         <alias field="type" index="4" name=""/>
         <alias field="capacity" index="5" name=""/>
-        <alias field="zone" index="6" name=""/>
+        <alias field="main" index="6" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
@@ -3959,7 +3959,7 @@ def my_form_open(dialog, layer, feature):
         <default field="id" expression=""/>
         <default field="type" expression=""/>
         <default field="capacity" expression=""/>
-        <default field="zone" expression=""/>
+        <default field="main" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "stop_name", '&lt;NULL>' )</previewExpression>
     </maplayer>
@@ -4474,6 +4474,7 @@ def my_form_open(dialog, layer, feature):
       <SingleCategoryDiagramRenderer diagramType="Histogram" sizeLegend="0" attributeLegend="1">
         <DiagramCategory penColor="#000000" labelPlacementMethod="XHeight" penWidth="0" diagramOrientation="Up" sizeScale="0,0,0,0,0,0" minimumSize="0" barWidth="5" penAlpha="255" maxScaleDenominator="1e+08" backgroundColor="#ffffff" transparency="0" width="15" scaleDependency="Area" backgroundAlpha="255" angleOffset="1440" scaleBasedVisibility="0" enabled="0" height="15" lineSizeScale="0,0,0,0,0,0" sizeType="MM" lineSizeType="MM" minScaleDenominator="inf">
           <fontProperties description="MS Shell Dlg 2,7.5,-1,5,50,0,0,0,0,0" style=""/>
+          <attribute field="" color="#000000" label=""/>
         </DiagramCategory>
         <symbol alpha="1" clip_to_extent="1" type="marker" name="sizeSymbol">
           <layer pass="0" class="SimpleMarker" locked="0">
@@ -4499,7 +4500,7 @@ def my_form_open(dialog, layer, feature):
         </symbol>
       </SingleCategoryDiagramRenderer>
       <DiagramLayerSettings yPosColumn="-1" showColumn="-1" linePlacementFlags="10" placement="0" dist="0" xPosColumn="-1" priority="0" obstacle="0" zIndex="0" showAll="1"/>
-      <annotationform></annotationform>
+      <annotationform>.</annotationform>
       <aliases>
         <alias field="id" index="0" name=""/>
         <alias field="0" index="1" name=""/>
@@ -4516,10 +4517,10 @@ def my_form_open(dialog, layer, feature):
           <column width="-1" hidden="0" type="field" name="1"/>
         </columns>
       </attributetableconfig>
-      <editform></editform>
+      <editform>.</editform>
       <editforminit/>
       <editforminitcodesource>0</editforminitcodesource>
-      <editforminitfilepath></editforminitfilepath>
+      <editforminitfilepath>.</editforminitfilepath>
       <editforminitcode><![CDATA[# -*- coding: utf-8 -*-
 """
 Les formulaires QGIS peuvent avoir une fonction Python qui sera appelée à l'ouverture du formulaire.
