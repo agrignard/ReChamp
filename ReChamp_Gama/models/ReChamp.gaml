@@ -573,10 +573,20 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	action updateStoryTelling (int n){
 		    if(n=0){currentStoryTellingState<-0;}
-			if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
+		    //old interface
+			/*if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-false;showUsage<-false;crossOverSoftMob<-crossOverTime;}
 			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}*/
+			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
+			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
+			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;crossOverNature<-crossOverTime;}
+			if(n=4){currentStoryTellingState<-4;showUsage<-!showUsage;crossOverUsage<-crossOverTime;}
+			if(showCar=false and showPeople= false and showSharedMobility=false and showNature=false and showUsage = false){
+				showBuilding<-true;
+			}else{
+				showBuilding<-false;
+			}
 	}
 	
 	
@@ -2263,84 +2273,6 @@ grid cell height: 100 width: 100 neighbors: 4 {
 	}
 }
 
-
-experiment debug_xp type: gui autorun:true{
-	action _init_ {
-		create simulation with: [showCar::true, showPeople::true,showBike:: true, showSharedMobility::true, showNature::true,showUsage::true,
-			showCarTrajectory::false, showPeopleTrajectory::false, showBikeTrajectory::false, showSharedMobilityTrajectory::false,
-			showBikeLane::true, showBusLane::true, showStation::true,showTrafficSignal::true, showRoad::true, showBuilding::false,
-			showWaitingLine::true
-		];
-	
-	}
-	output {
-		display champ 
-	   	{
-	   	    species park aspect: base transparency:0.5;
-			species culture aspect: base transparency:0.5;
-			species road aspect: base;
-			species bus_line aspect: base;
-			species intersection;
-			species car aspect:base transparency:0.5;
-			species pedestrian aspect:base transparency:0.2;
-			species bike aspect:base transparency:0.5;
-			species bus aspect:base transparency:0.5;
-			species station aspect: base;
-			species bikelane aspect:base;
-			
-			graphics "shortest_path" {
-				if (shortest_path != nil and shortest_path.shape != nil) {
-					draw shortest_path.shape + 1 color: #magenta;
-				}
-				if (source != nil) {
-					draw circle(10) at:source color: #yellow;
-				}
-				if (destination != nil) {
-					draw circle(10) at:destination color: #cyan;
-				}
-			}
-//			graphics "origin" {
-//				loop pt over: origin_intersections[currentSimuState] {
-//					draw circle(10) color: #magenta at: pt.location;
-//				}
-//			}
-//			graphics "destination" {
-//				loop pt over: destination_intersections[currentSimuState] {
-//					draw circle(10) color: #cyan at: pt.location;
-//				}
-//			}
-			
-			event mouse_down action:{
-				if (test_path and (#user_location != nil)) {
-					if (source = nil) { 
-						source <- (list(intersection) with_min_of (each distance_to #user_location)).location;
-					}
-					else if (destination = nil) {
-						destination <- (list(intersection) with_min_of (each distance_to #user_location)).location;
-					} 
-					if (source != nil and destination != nil) {
-						shortest_path <- driving_road_network[currentSimuState] path_between(source, destination);
-						source <- nil;
-						destination <- nil;
-					}
-					
-				} 
-			};
-			event["p"] action: {
-				test_path<-not test_path; 
-				if not test_path {
-					shortest_path <- nil;
-					source <- nil;
-					destination <- nil;
-				}
-			};	
-			event["z"] action: {updateSim<-true;};			
-		}
-	}
-	
-
-	}
-	
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
@@ -2404,9 +2336,13 @@ experiment ReChamp type: gui autorun:true{
 			event["l"] action: {showBuilding<-!showBuilding;};
 			event["r"] action: {showRoad<-!showRoad;};
 			event["m"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};			
-			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
+			//old interface		
+			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//new interface	
+			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
 			
 			event["1"] action: {ask world{do updateStoryTelling (1);}};
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
