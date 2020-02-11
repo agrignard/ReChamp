@@ -217,7 +217,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 		
 		
-		create park from: (Nature_Future_shapefile) with: [type:string(read ("type")),zone:int(read("zone"))] {
+		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
 				do die;
@@ -239,7 +239,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		}
 		
 		
-		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),zone:int(read("zone")),interior:bool(read("interior"))]{
+		create culture from: Usage_Future_shapefile where (each != nil) with: [type:string(read ("type")),style:string(read ("style")),capacity:float(read ("capacity")),interior:bool(read("interior"))]{
 			state<<"future";
 			if (shape = nil or shape.area = 0) {
 				do die;
@@ -441,7 +441,13 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	//	do check_signals_integrity;
 		
-		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity")), zone:int(read("zone"))];
+		create station from: station_shapefile with: [type:string(read ("type")), capacity:int(read ("capacity"))]{
+			loop  i from: 1 to: length(zones)-1 {
+				if self overlaps zones[i]{
+					self.zone <- i;
+				}
+			}
+		}
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -1179,13 +1185,14 @@ species road  skills: [skill_road]{// schedules:[] {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
 		}
-		
-		if int(self)=1{
-			loop z from:0 to: length(zones)-1{
-				list<rgb> tmp <- brewer_colors("Set2");
-				draw 3 around(zones[z]) color: tmp[z];
-			}
-		}
+	
+	// piece of code used for zone testing. Do not remove	
+//		if int(self)=1{
+//			loop z from:0 to: length(zones)-1{
+//				list<rgb> tmp <- brewer_colors("Set2");
+//				draw 3 around(zones[z]) color: tmp[z];
+//			}
+//		}
 	}
 }
 
@@ -2334,7 +2341,7 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
-		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:java2D background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.6275008497918038,0.0},{1.6027163338888177,1.3323244500497453,0.0},{0.9827035047669871,-0.2279083086443815,0.0}]
 		//keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
 		//jcdejc//keystone: [{-0.014738965813206717,-0.20627849103413565,0.0},{-0.21815858242101588,1.2218738054155063,0.0},{1.2011252888238215,1.1272618466329627,0.0},{1.0170732004605543,-0.200356051098873,0.0}]
