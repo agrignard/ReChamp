@@ -1016,7 +1016,7 @@ species building {
 	rgb color <- rgb(75,75,75);
 	aspect base {
 		if(showBuilding){
-		  draw shape color:#white/*rgb(75,75,75)*/ empty:false depth:depth;	
+		  draw shape color:rgb(75,75,75) empty:true depth:0;	
 		}
 	}
 }
