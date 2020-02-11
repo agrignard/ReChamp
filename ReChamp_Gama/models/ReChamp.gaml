@@ -216,7 +216,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		zones[0] <- g;
 		
 		
-		
 		create park from: (Nature_Future_shapefile) with: [type:string(read ("type"))] {
 			state<<"future";
 			if (shape = nil or shape.area = 0 or not(shape overlaps world)) {
@@ -447,7 +446,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 					self.zone <- i;
 				}
 			}
+			do init_arrival_position;
 		}
+		
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
@@ -1226,8 +1227,16 @@ species station {//schedules: [] {
 	rgb color <- #white;
 	string type;
 	int capacity;
+	list<point> arrival_position;
 //	float capacity_pca;
 	float delay <- rnd(2.0,8.0) #mn ;
+	
+	action init_arrival_position{
+		loop s from: 0 to: stateNumber-1{
+			road r <- closest_to(list<road>(people_graph[s].edges), self.location);
+			arrival_position << last(closest_points_with(self.location,r.shape));
+		}
+	}
 	
 	//Create people going in and out of metro station
 	int add_people{
@@ -1257,7 +1266,11 @@ species station {//schedules: [] {
 		  	  draw circle(20) - circle(16) color:#yellow;	
 		  	  draw circle(16) color:color;		
 		  	}
-		}	
+		}
+//		draw 3 around closest_roads color: #yellow;
+//		if length(closest_roads) = 0{
+//			draw circle(20) color: #yellow;
+//		}	
 	}
 }
 
@@ -1276,7 +1289,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	float offset <- rnd(0.0,1.0);
 	point current_offset;
 	point target_offset;
-	int fade_count <- 5;
+	int fade_count <- 10;
 	
 	bool blocked <- false;
 	list<list<int>> blocked_at_phase;
@@ -1296,10 +1309,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	list<point> current_trajectory;
 	
 	int side;
-	
-	action updatefuzzTrajectory{
-	
-	}
+
 	
 	
 	state walk_to_objective initial: true{
@@ -1312,12 +1322,14 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 			to_culture <- false;
 			float speed_walk_current <- speed_walk;
 			if flip(proba_sortie) {
-				if currentSimuState = 0 {
+				if active_zoning[currentSimuState] {
+					target_place <- station where (each.type="metro" and each.zone = zone) closest_to self;
 					target <- (station where (each.type="metro" and each.zone = zone) closest_to self).location;
 				}else{
+					target_place <- station where (each.type="metro") closest_to self;
 					target <- (station where (each.type="metro") closest_to self).location;
 				}
-				
+				target <- station(target_place).arrival_position[currentSimuState];
 				to_exit <- true;
 			} else {
 				if flip(proba_wandering) {
@@ -1326,8 +1338,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 						r <- one_of(people_graph[currentSimuState].edges);
 					}else{
 						r <- one_of(people_graph[currentSimuState].edges where(road(each).zone = self.zone));// a optimiser en prechargeant les listes de road ?
-					}
-								
+					}		
 					target <- any_location_in(r);
 					target <- first(road(one_of(people_graph[currentSimuState].edges)).shape.points);
 					wandering <- true;
@@ -1393,8 +1404,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		transition to: stroll_in_city when: not to_exit and wandering;// and location = target;
 		transition to: stroll_in_park when: not to_exit and not wandering and not to_culture and location = target;
 		transition to: queueing when: not to_exit and to_culture and location = target;
-		transition to: outside_sim when:to_exit and location = target;
-		do updatefuzzTrajectory;		
+		transition to: outside_sim when:to_exit and location = target;	
 		exit {
 			walking <- false;
 		}
@@ -1418,7 +1428,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		}
 		stroll_time <- stroll_time - step;
 		do wander on: people_graph[currentSimuState];
-		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: stroll_time = 0;
 		exit{
 			stroling_in_city<-false;
@@ -1442,7 +1451,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		}else{
 			stroll_time <- stroll_time - step;
 			do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
-			do updatefuzzTrajectory;
 		}
 		
 		transition to: walk_to_objective when: stroll_time = 0;
@@ -1453,7 +1461,11 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	}
 	
 	state outside_sim {
-		do updatefuzzTrajectory;
+		enter{
+			target <- target_place.location;
+		}
+		do reinit_path;
+		do goto target: target;
 		fade_count <- fade_count - 1;
 		if fade_count = 0 {
 			do die;
@@ -1472,7 +1484,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		do goto target: target;
 		
 		transition to: visiting_place when: ready_to_visit;
-		do updatefuzzTrajectory;
 		exit {
 			ready_to_visit <- false;
 			queuing<-false;
@@ -1486,7 +1497,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		}
 		visiting_time <- visiting_time - step;
 		do wander bounds:target_place amplitude:10.0 speed:2.0#km/#h;
-		do updatefuzzTrajectory;
 		transition to: walk_to_objective when: visiting_time = 0;
 		exit {
 			visiting <- false;
@@ -1522,8 +1532,8 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 	aspect base{
 		if(showPeople){
 			if not(visiting) or not(culture(target_place).interior){
-				//draw square(peopleSize) color:zone=0?type_colors[type]:#cyan at: location+current_offset  rotate: angle;	
-				draw square(peopleSize) color:rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
+				draw square(peopleSize) color: rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
+			//	draw square(peopleSize) color: to_exit?rgb(#blue,fade_count/5):rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
 			}
 //			if target != nil and to_park{
 //				draw square(peopleSize/2) color:#green at: location+current_offset  rotate: angle;
@@ -2345,7 +2355,7 @@ experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
-		display champ type:java2D background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
+		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 keystone: [{0.09047397506498817,-0.1676682270643689,0.0},{-0.4157811354089528,1.6275008497918038,0.0},{1.6027163338888177,1.3323244500497453,0.0},{0.9827035047669871,-0.2279083086443815,0.0}]
 		//keystone: [{-0.013304996333086516,-0.20481627737204344,0.0},{-0.20955369224611214,1.2158602923283832,0.0},{1.2068926929794948,1.1345361821953643,0.0},{1.0159659955997027,-0.20180427329304296,0.0}]
 		//jcdejc//keystone: [{-0.014738965813206717,-0.20627849103413565,0.0},{-0.21815858242101588,1.2218738054155063,0.0},{1.2011252888238215,1.1272618466329627,0.0},{1.0170732004605543,-0.200356051098873,0.0}]
