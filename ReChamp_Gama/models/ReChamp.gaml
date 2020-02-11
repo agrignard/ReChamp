@@ -549,9 +549,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	reflex update_pedestrian{
 		int nb_people_target <- round(nbAgent * get_mobility_ratio()["people"]);
-	//	write ""+ length(pedestrian)+ "/"+nb_people_target;
 		loop while: (length(pedestrian) < nb_people_target) {
-			ask one_of(station where(each.capacity=5)){	
+			ask one_of(station){	
 				do add_people;
 			}
 		} 
@@ -592,27 +591,30 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	
 	action create_pedestrian(int nb) {
-		create pedestrian number:nb{
-		  current_trajectory <- [];
-		  type <- "people";
-			if flip(0.3) {
-				target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
-				target <- (any_location_in(target_place));
-				location<-copy(target);
-				state <- "stroll";
-				zone <- park(target_place).zone;
-			} else {
-				station s <- one_of(station where (each.capacity=5));
-				location<-any_location_in(s);//capacity 5 = stations on Champs Elysees
-				zone <- s.zone;
-			}
+		int n_ped <- int(0.3*nb);
+		// create 30% in a park and 70% at subway stations
+		create pedestrian number: n_ped{
+			current_trajectory <- [];
+		  	type <- "people";
+			target_place <- proba_choose_park.keys[rnd_choice(proba_choose_park.values)];
+			target <- (any_location_in(target_place));
+			location<-copy(target);
+			state <- "stroll";
+			zone <- park(target_place).zone;
 			if flip(0.5){
 				side<-1;
 			}else{
 				side<--1;
-			}
-		  	
+			}	  	
 		}
+		
+		loop while: n_ped < nb {
+			station s <- one_of(station);
+			ask s{	
+				n_ped <- n_ped + add_people();
+			}
+			//n_ped <- n_ped + s.capac
+		} 		
 	}
 	
 	action create_cars(int nb) {
@@ -1228,19 +1230,21 @@ species station {//schedules: [] {
 	float delay <- rnd(2.0,8.0) #mn ;
 	
 	//Create people going in and out of metro station
-	action add_people{
-//		int nb <- rnd(0,10)*int(capacity);
-//		write "create "+ nb+" at station "+int(self);
-		create pedestrian number:rnd(1,4)*int(capacity){
-			type<-"people";
-			location <- myself.location + {rnd(3),rnd(3)};
-			zone <- myself.zone;
-			if flip(0.5){
-				side<-1;
-			}else{
-				side<--1;
+	int add_people{
+		int nb_created <- rnd(int(capacity/4),capacity);
+		if capacity > 0{
+			create pedestrian number:nb_created{
+				type<-"people";
+				location <- myself.location + {rnd(3),rnd(3)};
+				zone <- myself.zone;
+				if flip(0.5){
+					side<-1;
+				}else{
+					side<--1;
+				}
 			}
 		}
+		return nb_created;
 	}
 	
 	aspect base {
