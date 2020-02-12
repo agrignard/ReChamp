@@ -352,6 +352,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			
 		}
 		
+
+		
 		ask bikelane{
 			loop i from: 0 to: length(shape.points) -2{
 				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
@@ -2463,7 +2465,7 @@ grid cell height: 100 width: 100 neighbors: 4 {
 	}
 }
 
-experiment ReChamp type: gui autorun:false{
+experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
