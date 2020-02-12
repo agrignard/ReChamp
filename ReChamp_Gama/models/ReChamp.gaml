@@ -169,7 +169,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	
 	int chrono_size <- 30;
-	bool fps_monitor parameter: 'Show fps' category: "Simu" <-true;
+	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
 	float m_time <- 0.0;
 	list<float> chrono <- [];//list_with(chrono_size,0.0);
 	
@@ -2581,7 +2581,7 @@ experiment testTri type: gui autorun:false{
 			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
 			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
 			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
+	//		species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
 			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
