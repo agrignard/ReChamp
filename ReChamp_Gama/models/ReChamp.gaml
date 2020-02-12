@@ -40,7 +40,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 
 	geometry shape <- envelope(shape_file_bounds);
 	list<graph> people_graph;
-	graph bike_graph;
+	list<graph> bike_graph;
 	graph bus_graph;
 	
 	list<graph> driving_road_network;
@@ -271,16 +271,18 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 		
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [bike_lane::int(read("bike_lane")),bus_lane::int(read("bus_lane")),ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [bike_lane::[int(read("bike_lane")),int(read("bike_l_aft"))],bus_lane::int(read("bus_lane")),ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 			lanes <- lanes_nb[currentSimuState];
 			create bikelane{
 				self.shape <- myself.shape;
-				if myself.bike_lane > 0 {is_bike_lane <- true;}
+				//if myself.bike_lane[0] > 0 {is_bike_lane <- true;}//#FIXME A CHANGER EN FONCTION DE LA SIMUL
+				allow_bikes <- myself.bike_lane collect(each != -2);//2 means bikes in two ways, 1 in the normal way, -1 in the reverse way and -2 no bikes. Yes this is ugly
+				is_bike_lane <- myself.bike_lane collect(each >0);
 				if myself.bus_lane > 0 {is_bus_lane <- true;}
 				offsets <- list_with(stateNumber,0);
 				loop j from: 0 to:  stateNumber-1{
-					if is_bike_lane{
+					if is_bike_lane[j]{
 						offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2+bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2+bikeSize/2);
 					}else if is_bus_lane{
 						offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j]+1 - 0.5)*carSize + 0.25+1):((0.5*myself.lanes_nb[j]+1 - 0.5)*carSize+1);
@@ -289,7 +291,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 					}	
 				}
 				
-			}	
+			}
+			
 			switch oneway {
 				match "no" {
 					create road {
@@ -302,13 +305,16 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 						sidewalk_size<-myself.sidewalk_size;
 						ped_way <- [0,0];
 					}
+					
 					create bikelane{
 						self.shape <- polyline(reverse(myself.shape.points));
-						if myself.bike_lane = -1 or myself.bike_lane = 2 {is_bike_lane <- true;}
+						allow_bikes <- myself.bike_lane collect(each != -2);
+						is_bike_lane <- myself.bike_lane collect(each = -1 or each = 2);
+						//if myself.bike_lane = -1 or myself.bike_lane = 2 {is_bike_lane <- true;}
 						if myself.bus_lane = -1 or myself.bus_lane = 2 {is_bus_lane <- true;}
 						offsets <- list_with(stateNumber,0);
 						loop j from: 0 to:  stateNumber-1{
-							if is_bike_lane{
+							if is_bike_lane[j]{
 								offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2+bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2+bikeSize/2);
 							}else if is_bus_lane{
 								offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j]+1 - 0.5)*carSize + 0.25+1):((0.5*myself.lanes_nb[j]+1 - 0.5)*carSize+1);
@@ -317,6 +323,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 							}	
 						}
 					}	
+					
+				
 				}
 
 				match "-1" {
@@ -518,8 +526,12 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 //		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));
 //		
 	//	bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
-		bike_graph <- directed((as_edge_graph(bikelane))) use_cache false;
-		bike_graph <- directed(bike_graph);
+		bike_graph <- list_with(stateNumber, nil);
+		loop j from: 0 to: stateNumber - 1{
+			bike_graph[j] <- directed((as_edge_graph(bikelane where (each.allow_bikes[j])))) use_cache false;
+			bike_graph[j] <- directed(bike_graph[j]);
+		}
+		
 		
 		//bus_graph <- (as_edge_graph(road)) use_cache false;
 		
@@ -1000,6 +1012,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				do die;
 			}
 		}
+		ask bike{
+			do reinit_path;
+		}
 //		ask bike[0]{
 //			write shape.attributes;
 //		}
@@ -1145,7 +1160,7 @@ species park {
 
 species road  skills: [skill_road]{// schedules:[] {
 	int id;
-	int bike_lane;
+	list<int> bike_lane;
 	int bus_lane;
 	int tl_group;
 	int zone <- 0;
@@ -1268,7 +1283,8 @@ species road  skills: [skill_road]{// schedules:[] {
 }
 
 species bikelane{
-	bool is_bike_lane <- false;
+	list<bool> allow_bikes;
+	list<bool> is_bike_lane <- [false,false];
 	bool is_bus_lane <- false;
 	bool from_road <- true;
 	bool is_hot_spot <- false;
@@ -1711,9 +1727,9 @@ species bike skills:[moving] {//schedules:[]{
 	}
 	reflex move{
 		if useNewBikeShp{
-			do goto on: bike_graph target: my_target speed: speed;// move_weights:weights_bikelane ;
+			do goto on: bike_graph[currentSimuState] target: my_target speed: speed;// move_weights:weights_bikelane ;
 		}else{
-			do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
+			do goto on: bike_graph[currentSimuState] target: my_target speed: speed move_weights:weights_bikelane ;
 		}
 		
 		if showNewBikeTrail{
@@ -1798,6 +1814,7 @@ species bike skills:[moving] {//schedules:[]{
 		shape.attributes["reverse"] <- nil;
 		shape.attributes["index_on_path"] <- nil;
 		shape.attributes["index_on_path_segment"] <- nil;
+		old_indexes <-[0, 1];
 	}
 	
 	
