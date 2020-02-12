@@ -18,7 +18,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	file bus_shapefile <- file("../includes/GIS/lignes_bus.shp");
 	file station_shapefile <- file("../includes/GIS/stations_metro_simple.shp");
-	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
+//	file bikelane_shapefile <- file("../includes/GIS/reseau-cyclable_reconnected.shp");
 	
 	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");
 	file zone_shapefile <- file("../includes/GIS/zones.shp");
@@ -70,8 +70,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	int trajectorySizeMax<-100;
 	int peopleTrajectoryLength <-50 parameter: 'People Trajectory length' category: "Trajectory" min: 0 max:100;
 	int carTrajectoryLength <-20 parameter: 'Car Trajectory length' category: "Trajectory" min: 0 max: 100;
-	int bikeTrajectory <-50 parameter: 'Bike Trajectory' category: "Trajectory" min: 0 max: 100;
-	int busTrajectoryLength<-50 parameter: 'Bus Trajectory' category: "Trajectory" min: 0 max: 100;
+	int bikeTrajectoryLength <-50 parameter: 'Bike Trajectory length' category: "Trajectory" min: 0 max: 100;
+	int busTrajectoryLength<-50 parameter: 'Bus Trajectory length' category: "Trajectory" min: 0 max: 100;
 	
 	float peopleTrajectoryTransparency <-0.5;// parameter: 'People Trajectory transparency ' category: "Trajectory" min: 0.0 max: 1.0;
 	float carTrajectoryTransparency <-0.5;// parameter: 'Car Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
@@ -109,6 +109,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float busSize <-(2.0)#m parameter: 'Bus size' category: "Parameters" min: 0.5#m max: 5.0#m;
 
 	bool showPedBlock parameter: 'Show Pedestrian Blocking' category: "Debug" <-false;
+	bool showNewBikeTrail parameter: 'Show new bike trail' category: "Debug" <-true;
+	bool useNewBikeShp parameter: 'Use new bike shapefile' category: "Debug" <-true;
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Debug" <-false;
 	
@@ -167,7 +169,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	
 	int chrono_size <- 30;
-	bool fps_monitor parameter: 'Show fps' category: "Simu" <-false;
+	bool fps_monitor parameter: 'Show fps' category: "Simu" <-true;
 	float m_time <- 0.0;
 	list<float> chrono <- [];//list_with(chrono_size,0.0);
 	
@@ -269,9 +271,25 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 		
 		//create road agents using the shapefile and using the oneway column to check the orientation of the roads if there are directed
-		create road from: roads_shapefile with: [ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
+		create road from: roads_shapefile with: [bike_lane::int(read("bike_lane")),bus_lane::int(read("bus_lane")),ped_way::[int(read("p_before")),int(read("p_after"))], lanes_nb::[int(read("lanes")),int(read("pro_lanes"))], oneway::string(read("oneway")), sidewalk_size::float(read("sideoffset")), is_tunnel::[(read("tunnel")="yes"?true:false),(read("pro_tunnel")="yes"?true:false)]] {
 			maxspeed <- (lanes = 1 ? 30.0 : (lanes = 2 ? 40.0 : 50.0)) °km / °h;
 			lanes <- lanes_nb[currentSimuState];
+			create bikelane{
+				self.shape <- myself.shape;
+				if myself.bike_lane > 0 {is_bike_lane <- true;}
+				if myself.bus_lane > 0 {is_bus_lane <- true;}
+				offsets <- list_with(stateNumber,0);
+				loop j from: 0 to:  stateNumber-1{
+					if is_bike_lane{
+						offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2+bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2+bikeSize/2);
+					}else if is_bus_lane{
+						offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j]+1 - 0.5)*carSize + 0.25+1):((0.5*myself.lanes_nb[j]+1 - 0.5)*carSize+1);
+					}else{
+						offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2-bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2-bikeSize/2);
+					}	
+				}
+				
+			}	
 			switch oneway {
 				match "no" {
 					create road {
@@ -284,6 +302,21 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 						sidewalk_size<-myself.sidewalk_size;
 						ped_way <- [0,0];
 					}
+					create bikelane{
+						self.shape <- polyline(reverse(myself.shape.points));
+						if myself.bike_lane = -1 or myself.bike_lane = 2 {is_bike_lane <- true;}
+						if myself.bus_lane = -1 or myself.bus_lane = 2 {is_bus_lane <- true;}
+						offsets <- list_with(stateNumber,0);
+						loop j from: 0 to:  stateNumber-1{
+							if is_bike_lane{
+								offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2+bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2+bikeSize/2);
+							}else if is_bus_lane{
+								offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j]+1 - 0.5)*carSize + 0.25+1):((0.5*myself.lanes_nb[j]+1 - 0.5)*carSize+1);
+							}else{
+								offsets[j] <- (myself.oneway='no')?((myself.lanes_nb[j] - 0.5)*carSize + 0.25+carSize/2-bikeSize/2):((0.5*myself.lanes_nb[j] - 0.5)*carSize+carSize/2-bikeSize/2);
+							}	
+						}
+					}	
 				}
 
 				match "-1" {
@@ -317,6 +350,14 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				angles << a;
 			}
 			
+		}
+		
+		ask bikelane{
+			loop i from: 0 to: length(shape.points) -2{
+				point vec_dir <- (shape.points[i+1]-shape.points[i])/norm(shape.points[i+1]-shape.points[i]);
+				point vec_ortho <- {vec_dir.y,-vec_dir.x}*(right_side_driving?-1:1);
+				vec_ref << [vec_dir,vec_ortho];
+			}
 		}
 		
 		//creation of the road network using the road and intersection agents
@@ -452,9 +493,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-		create bikelane from:bikelane_shapefile{
-			color<-type_colors["bike"];
-		}
+//		create bikelane from:bikelane_shapefile{
+//			color<-type_colors["bike"];
+//		}
 		ask signals_zone {
 			ask (bikelane overlapping self) where not each.from_road {
 				if (myself covers self) {
@@ -470,10 +511,13 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		//------------------- AGENT ---------------------------------------- //
 		do updateSimuState;
 				
-		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
-		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));
-		
-		bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
+			int repere <- 0;
+//		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
+//		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));
+//		
+	//	bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
+		bike_graph <- directed((as_edge_graph(bikelane))) use_cache false;
+		bike_graph <- directed(bike_graph);
 		
 		bus_graph <- (as_edge_graph(road)) use_cache false;
 		
@@ -823,40 +867,40 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	
 	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
-	action manage_cycle_network {
-
-		list<geometry> lines <- copy(bikelane_shapefile.contents);
-		list<geometry> lines2 <- (roads_shapefile.contents);
-		graph g <- as_edge_graph(lines);
-		loop v over: g.vertices {
-			if (g degree_of v) = 1{
-				geometry r <- lines2 closest_to v;
-				if (v distance_to r) < 20.0 {
-					point pt <- (v closest_points_with r)[1];
-					if (pt != first(r.points) and pt != last(r.points)) {
-						lines2 >> r;
-						list<geometry> sl <- r split_at pt;
-						lines2 <- lines2 + sl;
-					}
-					lines2 << line([v,pt]);
-				} 
-			}
-		}
-		lines2 <- lines2 where (each != nil  and each.perimeter > 0);
-		
-		lines <- lines + lines2;
-		lines <- clean_network(lines,3.0, true,true);
-		
-		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
-		create bikelane from:lines{
-			from_road <- not (shape.perimeter in ref) ;
-			color<-from_road ? #red : type_colors["bike"];
-		}
-		create bikelane from:list(road);
-		save bikelane type: shp to: "../includes/GIS/reseau-cyclable_reconnected.shp" with: [from_road::"from_road"];
-		
-	}
-	
+//	action manage_cycle_network {
+//
+//		list<geometry> lines <- copy(bikelane_shapefile.contents);
+//		list<geometry> lines2 <- (roads_shapefile.contents);
+//		graph g <- as_edge_graph(lines);
+//		loop v over: g.vertices {
+//			if (g degree_of v) = 1{
+//				geometry r <- lines2 closest_to v;
+//				if (v distance_to r) < 20.0 {
+//					point pt <- (v closest_points_with r)[1];
+//					if (pt != first(r.points) and pt != last(r.points)) {
+//						lines2 >> r;
+//						list<geometry> sl <- r split_at pt;
+//						lines2 <- lines2 + sl;
+//					}
+//					lines2 << line([v,pt]);
+//				} 
+//			}
+//		}
+//		lines2 <- lines2 where (each != nil  and each.perimeter > 0);
+//		
+//		lines <- lines + lines2;
+//		lines <- clean_network(lines,3.0, true,true);
+//		
+//		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
+//		create bikelane from:lines{
+//			from_road <- not (shape.perimeter in ref) ;
+//			color<-from_road ? #red : type_colors["bike"];
+//		}
+//		create bikelane from:list(road);
+//		save bikelane type: shp to: "../includes/GIS/reseau-cyclable_reconnected.shp" with: [from_road::"from_road"];
+//		
+//	}
+//	
 
 
 	
@@ -945,7 +989,8 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		if (nb_bikes_target > nb_bikes) {
 			create bike number:nb_bikes_target - nb_bikes{
 	      		type <- "bike";
-		  		location<-any_location_in(one_of(building));
+		  		//location<-any_location_in(one_of(building));
+		  		location<-any_location_in(one_of(bikelane));
 		  		speed<-2+rnd(maxSpeed);	
 			}
 		} else if (nb_bikes_target < nb_bikes) {
@@ -953,6 +998,10 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				do die;
 			}
 		}
+//		ask bike[0]{
+//			write shape.attributes;
+//		}
+	
 		
 		int nb_bus <- length(bus);
 		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
@@ -1094,6 +1143,8 @@ species park {
 
 species road  skills: [skill_road]{// schedules:[] {
 	int id;
+	int bike_lane;
+	int bus_lane;
 	int tl_group;
 	int zone <- 0;
 	list<bool> is_tunnel <- list_with(stateNumber,false);
@@ -1215,12 +1266,23 @@ species road  skills: [skill_road]{// schedules:[] {
 }
 
 species bikelane{
+	bool is_bike_lane <- false;
+	bool is_bus_lane <- false;
 	bool from_road <- true;
 	bool is_hot_spot <- false;
-	int lanes;
+	list<int> offsets;
+	list<list<point>> vec_ref;
+//	int lanes;
 	aspect base {
-		if(showBikeLane and not from_road){
-		  draw shape color: color width:1;	
+		if(showBikeLane){
+//			if is_bike_lane{
+//				draw shape color: #cyan width:1;	
+//			}else if is_bus_lane{
+//				draw shape color: #green width:1;	
+//			}else{
+//				draw shape color: #blue width:1;	
+//			}
+		  draw shape color: #blue width:1;	
 		}	
 	}
 }
@@ -1427,8 +1489,9 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		shape.attributes["reverse"] <- nil;
 		shape.attributes["index_on_path"] <- nil;
 		shape.attributes["index_on_path_segment"] <- nil;
-		
 	}
+	
+	
 	state stroll_in_city {
 		enter {
 			do goto target: self.location;
@@ -1598,35 +1661,155 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 }
 
 species bike skills:[moving] {//schedules:[]{
+	bool error <- false;
+	int last_reinit <- 0;
+	bool reseted <- false;
 	string type;
 	point my_target;
+	point old_location;
+	point offset;
+	list<int> old_indexes <-[0, 1]; //[old_current_index, old_segment_index_on_road]
 	list<point> current_trajectory;
 	float maxSpeed<-10#km/#h;
-	reflex choose_target when: my_target = nil {
-		if (flip(proba_hot_target)) {
-			my_target <- any_location_in(one_of(hot_bike_lanes));
-		} else {
+	list<list<point>> trail;
+
+	
+	
+	int iop;
+	int iops;
+	
+	reflex choose_target when: my_target = nil{//} and not(reseted) {
+//	write "\n";
+//		write self;
+	
+		last_reinit <- cycle;	
+	//	write "index "+shape.attributes['index_on_path'];
+		do reinit_path;
+	
+	//		ask world {do pause;}
+	//	write p;
+	//	write p2;
+	//	write "index2 "+shape.attributes['index_on_path'];
+	//	write "path "+shape.attributes['current_path'];
+		reseted <- true;
+		
+		
+		// A DECOMMENTER
+		
+//		if (flip(proba_hot_target)) {
+//			my_target <- any_location_in(one_of(hot_bike_lanes));
+//		} else {
+//			my_target <- any_location_in(one_of(bikelane));
+//		}
+		
 			my_target <- any_location_in(one_of(bikelane));
-		}
 		
-		
+		old_indexes <-[0, 1];
 		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
 	reflex move{
-	  do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
-	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > bikeTrajectory)
-  	    {
-        current_trajectory >> first(current_trajectory);
-        }
-        current_trajectory << location;
+		if useNewBikeShp{
+			do goto on: bike_graph target: my_target speed: speed;// move_weights:weights_bikelane ;
+		}else{
+			do goto on: bike_graph target: my_target speed: speed move_weights:weights_bikelane ;
+		}
+		
+		if showNewBikeTrail{
+			do compute_trail_and_offset;
+		}
+		
+		if location != old_location{
+//	  		new_path <- false;
+			
+	  		old_location <- copy(location);
+			old_indexes <- [int(shape.attributes['index_on_path']),int(shape.attributes['index_on_path_segment'])]; 
+	  	}
+		if (my_target = location) {my_target <- nil;}
+		if !showNewBikeTrail{
+			loop while:(length(current_trajectory) > bikeTrajectoryLength)
+	  	    {
+	        	current_trajectory >> first(current_trajectory);
+	        }
+        current_trajectory << location;		
+		}
+		
 	}
+	
+	reflex unblock when: current_path = nil {// #FIXME A MODIFER PROPREMENT
+	//	write "bloqué:"+self;
+		trail <- [];
+		location<-any_location_in(one_of(bikelane));
+		my_target <- nil;
+//		do reinit_path;
+	}
+	
+//	reflex essai when: true{//int(self)=0{
+//		write shape.attributes['index_on_path_segment'];
+//	}
+	
+	
+	action compute_trail_and_offset {
+		loop while:(length(trail) >  (bikeTrajectoryLength)){
+	    	trail >> first(trail);
+       	}
+       	if old_location = location{
+       		trail >> first(trail);
+       	}else{
+       		path p <- copy(shape.attributes['current_path']);
+       		iop <- int(copy(shape.attributes['index_on_path']));
+       		iops <- int(copy(shape.attributes['index_on_path_segment']));
+       	//	offset <- {0,0};
+       	//	if current_edge != nil and current_path != nil{
+       		if current_edge != nil and p != nil{	
+       			
+//       			write "\n"+self;
+//       			write ""+iop+" "+current_edge;
+//       			write "current path: "+current_path;
+       			bikelane bl <- bikelane(p.edges[min([iop,length(p.edges)-1])]);
+				if bl != nil and iops != nil{
+					offset <- bl.vec_ref[iops-1][1]*bl.offsets[currentSimuState];
+				}else{
+					offset <- {0,0};
+				}
+	       		list<point> l;
+	       		l <- [];	
+	       		int ci <- old_indexes[0];
+	       		int cs <- old_indexes[1]-1;
+	       		
+	       		loop while: (ci < iop) or (ci = iop and cs < iops-1){
+					bikelane bl <- bikelane(p.edges[ci]);
+	       			l << bl.shape.points[cs]+bl.vec_ref[cs][1]*bl.offsets[currentSimuState];
+	       			cs <- cs + 1;
+	       			if cs > length(bikelane(p.edges[ci]).shape.points)-2{
+	       				cs <- 0;
+	       				ci <- ci + 1;
+	       			}
+	       		}
+	       		trail << l;			
+	       	}
+	    }
+	}
+
+	action reinit_path{
+		shape.attributes['current_path'] <- nil;
+		current_edge <- nil;
+		shape.attributes["reverse"] <- nil;
+		shape.attributes["index_on_path"] <- nil;
+		shape.attributes["index_on_path_segment"] <- nil;
+	}
+	
+	
 	aspect base{
 		if(showBike){
-		 draw rectangle(bikeSize,bikeSize*2) color:type_colors[type] rotate:heading-90;	
+		 draw rectangle(bikeSize,bikeSize*2) at: location+offset color:type_colors[type] rotate:heading-90;	
 		}	
 		if(showBikeTrajectory and showBike){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,bikeTrajectoryTransparency);	
+			if showNewBikeTrail{
+				draw line(trail accumulate(each)+[location+offset]) color: rgb(type_colors[type],bikeTrajectoryTransparency); 
+			}else{
+				draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,bikeTrajectoryTransparency);
+			}
+	     
 	  }
 	}
 }
@@ -1815,7 +1998,6 @@ species car skills:[advanced_driving] {//schedules:[]{
 	reflex compute_offset_and_trail{
 		if smoothTrajectory{
 			if path_updated or old_indexes[1] != current_index or old_indexes[2] != segment_index_on_road{
-
 				target_offset <- compute_offset(3);
 			}
 			if current_road = nil{
@@ -1825,8 +2007,6 @@ species car skills:[advanced_driving] {//schedules:[]{
 				list<point> vecs <- road(current_road).vec_ref[segment_index_on_road];
 				current_offset  <- current_offset + vecs[0]*(diff_offset.x*vecs[0].x+diff_offset.y*vecs[0].y)* min([1,real_speed/100*step])+ vecs[1]*(diff_offset.x*vecs[1].x+diff_offset.y*vecs[1].y)* min([1,3*real_speed/100*step]);			
 			}
-			
-			
 		}else{
 			float val <- road(current_road).compute_offset(current_lane);
 			val <- on_linked_road ? -val : val;
@@ -1910,21 +2090,20 @@ species car skills:[advanced_driving] {//schedules:[]{
 	       		int ci <- 0;
 	       		int cs <- 0;
 	       		l <- [];
-	       			if not(path_updated){
-	       				ci <- old_indexes[1];
-	       				cs <- old_indexes[2];
+	       		if not(path_updated){
+	       			ci <- old_indexes[1];
+	       			cs <- old_indexes[2];
+	       		}
+	       		loop while: (ci < current_index) or (ci = current_index and cs <segment_index_on_road){
+					road cr <- road(current_path.edges[ci]);
+	       			l << cr.shape.points[cs+1]+compute_offset_simple(ci,cs)+rnd(-1.0,1.0);
+	       			cs <- cs + 1;
+	       			if cs > length(road(current_path.edges[ci]).shape.points)-2{
+	       				cs <- 0;
+	       				ci <- ci + 1;
 	       			}
-	       			loop while: (ci < current_index) or (ci = current_index and cs <segment_index_on_road){
-						road cr <- road(current_path.edges[ci]);
-	       				//l << cr.shape.points[cs+1] + cr.vec_ref[cs][1] * cr.compute_offset(current_lane);
-	       				l << cr.shape.points[cs+1]+compute_offset_simple(ci,cs)+rnd(-1.0,1.0);
-	       				cs <- cs + 1;
-	       				if cs > length(road(current_path.edges[ci]).shape.points)-2{
-	       					cs <- 0;
-	       					ci <- ci + 1;
-	       				}
-	       			}
-	       			trail << l;// + [location + current_offset];				
+	       		}
+	       		trail << l;				
 	       	}
 	    }
 	}
@@ -2373,6 +2552,98 @@ experiment ReChamp type: gui autorun:true{
 		}
 	}
 }
+	
+	
+experiment testTri type: gui autorun:false{
+	float minimum_cycle_duration<-0.025;	
+	output {
+
+		display champ type:java2D background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
+//		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
+//		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
+
+	   	{
+
+	   	    species graphicWorld aspect:base;	    	
+		    species building aspect: base;
+			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
+			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
+			species road aspect: base;
+			species vizuRoad aspect:base transparency:0.5;
+			species bus_line aspect: base;
+			species intersection;
+			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
+			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
+			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
+			species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
+			species coldSpot aspect:base transparency:0.6;
+			species station aspect: base;
+			species bikelane aspect:base;
+			species cell aspect:pollution;
+
+									
+			graphics 'tablebackground'{
+				//draw geometry(shape_file_bounds) color:#white empty:true;
+				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
+			}
+			
+			graphics 'info'{
+				if(drawLegend){
+				  draw string(currentSimuState = 0 ? "EXISTANT" : "VISION") font:font("Helvetica", 20 , #bold) rotate:angle at:{world.shape.width*0.74,world.shape.height*0.74} color:#white empty:true;	
+				}
+			}
+			
+			graphics "legend"{
+				if(drawLegend){
+					point lengendBox<-{350,90};
+					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
+					int legendAngle<-0;
+					float space<-world.shape.width * 0.03;
+					float circleSize<-world.shape.width * 0.0025;
+					int fontSize<-10;
+					point textOffset<-{-20,30};
+				    draw circle(circleSize) color: type_colors["car"] at: posIn;
+					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
+					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2;
+					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
+					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3;
+					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
+				}	
+			}
+
+			
+			event["p"] action: {showPeople<-!showPeople;};
+			//event["c"] action: {showCar<-!showCar;};
+			event["v"] action: {showBike<-!showBike;};
+			event["b"] action: {showSharedMobility<-!showSharedMobility;};
+			event["n"] action: {showNature<-!showNature;};
+			event["u"] action: {showUsage<-!showUsage;};
+			event["l"] action: {showBuilding<-!showBuilding;};
+			event["r"] action: {showRoad<-!showRoad;};
+			event["m"] action: {showHotSpot<-!showHotSpot;};
+			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
+			//old interface		
+			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
+			//new interface	
+			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
+			
+			event["1"] action: {ask world{do updateStoryTelling (1);}};
+			event["2"] action: {ask world{do updateStoryTelling (2);}};
+			event["3"] action: {ask world{do updateStoryTelling (3);}};
+			event["4"] action: {ask world{do updateStoryTelling (4);}};
+			
+			event["w"] action: {ask world{do updateStoryTelling (1);}};
+			event["c"] action: {ask world{do updateStoryTelling (2);}};
+			event[";"] action: {ask world{do updateStoryTelling (3);}};
+			event["="] action: {ask world{do updateStoryTelling (4);}};
+		}
+	}
+}	
+	
 	
 
 experiment ReChamp2Proj  parent: ReChamp autorun:true{	

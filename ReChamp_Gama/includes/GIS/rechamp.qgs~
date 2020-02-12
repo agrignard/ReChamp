@@ -17,19 +17,22 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="PCA_CE_EXP_EXI_USAGE20200209015720463" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_EXI_USAGE.shp" name="PCA_CE_EXP_EXI_USAGE">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="PCA_CE_EXP_PRO_USAGE20200209015720422" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_USAGE.shp" name="PCA_CE_EXP_PRO_USAGE">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="PCA_CE_EXP_PRO_USAGE20200209015720422" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_USAGE.shp" name="PCA_CE_EXP_PRO_USAGE">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="PCA_CE_EXP_PRO_NATURE20200209015535692" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_NATURE.shp" name="PCA_CE_EXP_PRO_NATURE">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="nodes_OSM20200113191108013" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/nodes_OSM.shp" name="nodes_OSM">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="nodes_OSM20200113191108013" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/nodes_OSM.shp" name="nodes_OSM">
       <customproperties>
         <property key="legend/expressionFilter" value=""/>
         <property key="legend/expressionFilterEnabled" value="false"/>
       </customproperties>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="stations_metro_simple20200209002056850" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro_simple.shp" name="stations_metro_simple">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="stations_metro_simple20200209002056850" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro_simple.shp" name="stations_metro_simple">
+      <customproperties/>
+    </layer-tree-layer>
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="reseau_cyclable_clean20200212104932892" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/reseau_cyclable_clean.shp" name="reseau_cyclable_clean">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="roads_OSM20200113191005665" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/roads_OSM.shp" name="roads_OSM">
@@ -82,10 +85,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649943.9002147363498807</xmin>
-      <ymin>6862823.67019117809832096</ymin>
-      <xmax>650412.4179149316623807</xmax>
-      <ymax>6863215.55520094372332096</ymax>
+      <xmin>649949.73644194018561393</xmin>
+      <ymin>6862793.21723535284399986</ymin>
+      <xmax>650417.73644194018561393</xmax>
+      <ymax>6863177.21723535284399986</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -137,6 +140,7 @@
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="PCA_CE_EXP_EXI_NATURE_NEW20200209015401362"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="Géométries_simples20200108174539424"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="Champs_Mobility_Now220200108175607380"/>
+      <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:4326" srcDatumTransform="-1" destDatumTransform="-1" layerid="reseau_cyclable_clean20200212104932892"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="signals_in_use20200113235221805"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:4326" srcDatumTransform="-1" destDatumTransform="-1" layerid="zones20200211125501795"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="memory_20200108173833058"/>
@@ -148,6 +152,7 @@
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="memory_20200108174106143"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="memory_20200108175537326"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="stations_metro20200127182050996"/>
+      <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:4326" srcDatumTransform="-1" destDatumTransform="-1" layerid="plan_de_voirie_pistes_cyclables_et_couloirs_de_bus20200212105615618"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:32631" srcDatumTransform="-1" destDatumTransform="-1" layerid="gksection_new20200108144222665"/>
       <layer_coordinate_transform destAuthId="EPSG:2154" srcAuthId="EPSG:2154" srcDatumTransform="-1" destDatumTransform="-1" layerid="green_space20200108144222681"/>
     </layer_coordinate_transform_info>
@@ -175,6 +180,7 @@
       <item>PCA_CE_EXP_PRO_USAGE20200209015720422</item>
       <item>PCA_CE_EXP_EXI_USAGE20200209015720463</item>
       <item>zones20200211125501795</item>
+      <item>reseau_cyclable_clean20200212104932892</item>
     </custom-order>
   </layer-tree-canvas>
   <legend updateDrawingOrder="true">
@@ -198,9 +204,9 @@
         <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_EXI_USAGE20200209015720463" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="PCA_CE_EXP_PRO_USAGE" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="PCA_CE_EXP_PRO_USAGE" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_USAGE20200209015720422" visible="1"/>
+        <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_USAGE20200209015720422" visible="0"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="PCA_CE_EXP_PRO_NATURE" showFeatureCount="0">
@@ -208,14 +214,19 @@
         <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_NATURE20200209015535692" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="nodes_OSM" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="nodes_OSM" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="0"/>
+        <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="1"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="stations_metro_simple" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="stations_metro_simple" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="stations_metro_simple20200209002056850" visible="1"/>
+        <legendlayerfile isInOverview="0" layerid="stations_metro_simple20200209002056850" visible="0"/>
+      </filegroup>
+    </legendlayer>
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="reseau_cyclable_clean" showFeatureCount="0">
+      <filegroup open="true" hidden="false">
+        <legendlayerfile isInOverview="0" layerid="reseau_cyclable_clean20200212104932892" visible="1"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="roads_OSM" showFeatureCount="0">
@@ -896,6 +907,9 @@
         <edittype widgetv2type="TextEdit" name="interior">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
+        <edittype widgetv2type="TextEdit" name="c_per_min">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
       </edittypes>
       <renderer-v2 forceraster="0" symbollevels="0" type="singleSymbol" enableorderby="0">
         <symbols>
@@ -952,6 +966,7 @@
         <alias field="style" index="2" name=""/>
         <alias field="visible" index="3" name=""/>
         <alias field="interior" index="4" name=""/>
+        <alias field="c_per_min" index="5" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
@@ -983,6 +998,7 @@
         <default field="style" expression=""/>
         <default field="visible" expression=""/>
         <default field="interior" expression=""/>
+        <default field="c_per_min" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "type", '&lt;NULL>' )</previewExpression>
     </maplayer>
@@ -3350,6 +3366,191 @@ def my_form_open(dialog, layer, feature):
       <previewExpression></previewExpression>
     </maplayer>
     <maplayer simplifyAlgorithm="0" minimumScale="0" maximumScale="1e+08" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" readOnly="0" geometry="Line" simplifyMaxScale="1" type="vector" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
+      <id>reseau_cyclable_clean20200212104932892</id>
+      <datasource>./reseau_cyclable_clean.shp</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>reseau_cyclable_clean</layername>
+      <srs>
+        <spatialrefsys>
+          <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
+          <srsid>3452</srsid>
+          <srid>4326</srid>
+          <authid>EPSG:4326</authid>
+          <description>WGS 84</description>
+          <projectionacronym>longlat</projectionacronym>
+          <ellipsoidacronym>WGS84</ellipsoidacronym>
+          <geographicflag>true</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <provider encoding="System">ogr</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="">
+        <map-layer-style name=""/>
+      </map-layer-style-manager>
+      <edittypes>
+        <edittype widgetv2type="TextEdit" name="typologie_">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="bidirectio">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="statut">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="sens_velo">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="voie">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="arrdt">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="bois">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="length">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="longueur_d">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="position">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="circulatio">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="piste">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="couloir_bu">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="type_conti">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="reseau">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="date_de_li">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+      </edittypes>
+      <renderer-v2 forceraster="0" symbollevels="0" type="singleSymbol" enableorderby="0">
+        <symbols>
+          <symbol alpha="1" clip_to_extent="1" type="line" name="0">
+            <layer pass="0" class="SimpleLine" locked="0">
+              <prop k="capstyle" v="square"/>
+              <prop k="customdash" v="5;2"/>
+              <prop k="customdash_map_unit_scale" v="0,0,0,0,0,0"/>
+              <prop k="customdash_unit" v="MM"/>
+              <prop k="draw_inside_polygon" v="0"/>
+              <prop k="joinstyle" v="bevel"/>
+              <prop k="line_color" v="187,4,50,255"/>
+              <prop k="line_style" v="solid"/>
+              <prop k="line_width" v="0.26"/>
+              <prop k="line_width_unit" v="MM"/>
+              <prop k="offset" v="0"/>
+              <prop k="offset_map_unit_scale" v="0,0,0,0,0,0"/>
+              <prop k="offset_unit" v="MM"/>
+              <prop k="use_custom_dash" v="0"/>
+              <prop k="width_map_unit_scale" v="0,0,0,0,0,0"/>
+            </layer>
+          </symbol>
+        </symbols>
+        <rotation/>
+        <sizescale scalemethod="diameter"/>
+      </renderer-v2>
+      <labeling type="simple"/>
+      <customproperties/>
+      <blendMode>0</blendMode>
+      <featureBlendMode>0</featureBlendMode>
+      <layerTransparency>0</layerTransparency>
+      <displayfield>bidirectio</displayfield>
+      <label>0</label>
+      <labelattributes>
+        <label fieldname="" text="Étiquette"/>
+        <family fieldname="" name="MS Shell Dlg 2"/>
+        <size fieldname="" units="pt" value="12"/>
+        <bold fieldname="" on="0"/>
+        <italic fieldname="" on="0"/>
+        <underline fieldname="" on="0"/>
+        <strikeout fieldname="" on="0"/>
+        <color fieldname="" red="0" blue="0" green="0"/>
+        <x fieldname=""/>
+        <y fieldname=""/>
+        <offset x="0" y="0" units="pt" yfieldname="" xfieldname=""/>
+        <angle fieldname="" value="0" auto="0"/>
+        <alignment fieldname="" value="center"/>
+        <buffercolor fieldname="" red="255" blue="255" green="255"/>
+        <buffersize fieldname="" units="pt" value="1"/>
+        <bufferenabled fieldname="" on=""/>
+        <multilineenabled fieldname="" on=""/>
+        <selectedonly on=""/>
+      </labelattributes>
+      <annotationform>.</annotationform>
+      <aliases>
+        <alias field="typologie_" index="0" name=""/>
+        <alias field="bidirectio" index="1" name=""/>
+        <alias field="statut" index="2" name=""/>
+        <alias field="sens_velo" index="3" name=""/>
+        <alias field="voie" index="4" name=""/>
+        <alias field="arrdt" index="5" name=""/>
+        <alias field="bois" index="6" name=""/>
+        <alias field="length" index="7" name=""/>
+        <alias field="longueur_d" index="8" name=""/>
+        <alias field="position" index="9" name=""/>
+        <alias field="circulatio" index="10" name=""/>
+        <alias field="piste" index="11" name=""/>
+        <alias field="couloir_bu" index="12" name=""/>
+        <alias field="type_conti" index="13" name=""/>
+        <alias field="reseau" index="14" name=""/>
+        <alias field="date_de_li" index="15" name=""/>
+      </aliases>
+      <excludeAttributesWMS/>
+      <excludeAttributesWFS/>
+      <attributeactions default="-1"/>
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="" sortOrder="0">
+        <columns/>
+      </attributetableconfig>
+      <editform>.</editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath>.</editforminitfilepath>
+      <editforminitcode><![CDATA[]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <widgets/>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <defaults>
+        <default field="typologie_" expression=""/>
+        <default field="bidirectio" expression=""/>
+        <default field="statut" expression=""/>
+        <default field="sens_velo" expression=""/>
+        <default field="voie" expression=""/>
+        <default field="arrdt" expression=""/>
+        <default field="bois" expression=""/>
+        <default field="length" expression=""/>
+        <default field="longueur_d" expression=""/>
+        <default field="position" expression=""/>
+        <default field="circulatio" expression=""/>
+        <default field="piste" expression=""/>
+        <default field="couloir_bu" expression=""/>
+        <default field="type_conti" expression=""/>
+        <default field="reseau" expression=""/>
+        <default field="date_de_li" expression=""/>
+      </defaults>
+      <previewExpression></previewExpression>
+    </maplayer>
+    <maplayer simplifyAlgorithm="0" minimumScale="0" maximumScale="1e+08" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" readOnly="0" geometry="Line" simplifyMaxScale="1" type="vector" hasScaleBasedVisibilityFlag="0" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
       <extent>
         <xmin>647528.27862338500563055</xmin>
         <ymin>6862045.33891305979341269</ymin>
@@ -3407,6 +3608,12 @@ def my_form_open(dialog, layer, feature):
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
         <edittype widgetv2type="TextEdit" name="maxspeed">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="bus_lane">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
+        <edittype widgetv2type="TextEdit" name="bike_lane">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
       </edittypes>
@@ -3644,11 +3851,13 @@ def my_form_open(dialog, layer, feature):
         <alias field="p_before" index="6" name=""/>
         <alias field="p_after" index="7" name=""/>
         <alias field="maxspeed" index="8" name=""/>
+        <alias field="bus_lane" index="9" name=""/>
+        <alias field="bike_lane" index="10" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;pro_lanes&quot;" sortOrder="0">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;bike_lane&quot;" sortOrder="1">
         <columns>
           <column width="-1" hidden="0" type="field" name="lanes"/>
           <column width="-1" hidden="0" type="field" name="maxspeed"/>
@@ -3693,6 +3902,8 @@ def my_form_open(dialog, layer, feature):
         <default field="p_before" expression=""/>
         <default field="p_after" expression=""/>
         <default field="maxspeed" expression=""/>
+        <default field="bus_lane" expression=""/>
+        <default field="bike_lane" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "lanes", '&lt;NULL>' )</previewExpression>
     </maplayer>
@@ -4593,6 +4804,7 @@ def my_form_open(dialog, layer, feature):
         <value>nodes_OSM20200113191108013</value>
         <value>origin_destination_line20200127203421252</value>
         <value>reseau_cyclable20200108144222649</value>
+        <value>reseau_cyclable_clean20200212104932892</value>
         <value>roads_OSM20200113191005665</value>
         <value>signals_zone20200114000826225</value>
         <value>stations_metro_simple20200209002056850</value>
@@ -4622,10 +4834,13 @@ def my_form_open(dialog, layer, feature):
         <value>disabled</value>
         <value>disabled</value>
         <value>disabled</value>
+        <value>disabled</value>
       </LayerSnappingEnabledList>
       <SnappingMode type="QString">all_layers</SnappingMode>
       <AvoidIntersectionsList type="QStringList"/>
+      <IntersectionSnapping type="bool">false</IntersectionSnapping>
       <LayerSnappingToleranceUnitList type="QStringList">
+        <value>2</value>
         <value>2</value>
         <value>2</value>
         <value>2</value>
@@ -4670,10 +4885,12 @@ def my_form_open(dialog, layer, feature):
         <value>to_vertex_and_segment</value>
         <value>to_vertex_and_segment</value>
         <value>to_vertex_and_segment</value>
+        <value>to_vertex_and_segment</value>
       </LayerSnapToList>
       <DefaultSnapType type="QString">to vertex</DefaultSnapType>
       <DefaultSnapTolerance type="double">10</DefaultSnapTolerance>
       <LayerSnappingToleranceList type="QStringList">
+        <value>0.000000</value>
         <value>0.000000</value>
         <value>0.000000</value>
         <value>0.000000</value>
