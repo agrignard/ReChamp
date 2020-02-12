@@ -2334,7 +2334,7 @@ experiment ReChamp type: gui autorun:false{
 			graphics "legend"{
 				if(drawLegend){
 					point lengendBox<-{350,90};
-					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
+					point posIn<-{world.shape.width*0.425, world.shape.height*0.715};
 					int legendAngle<-0;
 					float space<-world.shape.width * 0.03;
 					float circleSize<-world.shape.width * 0.0025;
