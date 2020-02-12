@@ -504,9 +504,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		}
 		hot_bike_lanes <- bikelane where each.is_hot_spot;
-		create bus_line from: bus_shapefile{
+		/*create bus_line from: bus_shapefile{
 			color<-type_colors["bus"];
-		}
+		}*/
 		
 		//------------------- AGENT ---------------------------------------- //
 		do updateSimuState;
@@ -519,7 +519,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		bike_graph <- directed((as_edge_graph(bikelane))) use_cache false;
 		bike_graph <- directed(bike_graph);
 		
-		bus_graph <- (as_edge_graph(road)) use_cache false;
+		//bus_graph <- (as_edge_graph(road)) use_cache false;
 		
 		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
@@ -541,9 +541,9 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 			all_agents <- [];
 		}
-		ask bus {
+		/*ask bus {
 			do die;
-		}
+		}*/
 		ask bike {
 			do die;
 		}
@@ -1003,7 +1003,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 //		}
 	
 		
-		int nb_bus <- length(bus);
+		/*int nb_bus <- length(bus);
 		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
 		if (nb_bus_target > nb_bus) {
 			 create bus number:nb_bus_target - nb_bus{
@@ -1014,7 +1014,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			ask (nb_bus - nb_bus_target) among bus {
 				do die;
 			}
-		}
+		}*/
 	}
 	
 	
@@ -1815,7 +1815,7 @@ species bike skills:[moving] {//schedules:[]{
 }
 
 
-species bus skills:[moving] {//schedules:[]{
+/*species bus skills:[moving] {//schedules:[]{
 	string type;
 	point my_target;
 	list<point> current_trajectory;
@@ -1840,7 +1840,7 @@ species bus skills:[moving] {//schedules:[]{
 	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,busTrajectoryTransparency);	
 	  }
 	}
-}
+}*/
 
 
 species car skills:[advanced_driving] {//schedules:[]{		
@@ -2463,7 +2463,7 @@ grid cell height: 100 width: 100 neighbors: 4 {
 	}
 }
 
-experiment ReChamp type: gui autorun:true{
+experiment ReChamp type: gui autorun:false{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
@@ -2484,12 +2484,20 @@ experiment ReChamp type: gui autorun:true{
 			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
 			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
 			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
+			//species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
 			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
 			species cell aspect:pollution;
 
+
+			/*graphics 'legend'{
+				//draw geometry(shape_file_bounds) color:#white empty:true;
+				draw string("Car") perspective:true at:{world.shape.width,world.shape.height,cycle/1000} color:#red font:font("Helvetica", 20 , #bold);
+				draw string("Soft Mobility") perspective:true at:{world.shape.width,world.shape.height,2*cycle/1000} color:type_colors["bike"] font:font("Helvetica", 20 , #bold);
+				draw string("Nature") perspective:true at:{world.shape.width,world.shape.height,3*cycle/1000} color:nature_colors["pro"] font:font("Helvetica", 20 , #bold);
+				draw string("Usage") perspective:true at:{world.shape.width,world.shape.height,4*cycle/1000} color:usage_colors["pro"] font:font("Helvetica", 20 , #bold);
+			}*/
 									
 			graphics 'tablebackground'{
 				//draw geometry(shape_file_bounds) color:#white empty:true;
@@ -2505,7 +2513,7 @@ experiment ReChamp type: gui autorun:true{
 			graphics "legend"{
 				if(drawLegend){
 					point lengendBox<-{350,90};
-					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
+					point posIn<-{world.shape.width*0.425, world.shape.height*0.715};
 					int legendAngle<-0;
 					float space<-world.shape.width * 0.03;
 					float circleSize<-world.shape.width * 0.0025;
@@ -2517,8 +2525,6 @@ experiment ReChamp type: gui autorun:true{
 					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
 					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2;
 					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3;
-					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
 				}	
 			}
 
