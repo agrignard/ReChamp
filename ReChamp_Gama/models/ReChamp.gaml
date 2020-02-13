@@ -79,10 +79,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float busTrajectoryTransparency <-0.5;// parameter: 'Bus Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
 	
 	bool drawLegend parameter: 'Legend' category: "Simulation" <-true;
-	
-	bool heatmap parameter: 'Pollution' category: "Simulation" <-false;
-	float pollution_max_level <- 100.0;
-	int spread_factor <- 1;
 	bool applyFuzzyness<-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
@@ -1899,26 +1895,8 @@ species car skills:[advanced_driving] {//schedules:[]{
 		}
 	}
 	
-	action updatePollutionMap{
-		if(current_path != nil)
-		{
-			list<cell> tmp <- cell overlapping(shape);
-		
-			if(tmp != []){
-				ask tmp {
-					pollution_level <- pollution_level + 3;
-					if(pollution_level > pollution_max_level)
-					{
-						pollution_level <- pollution_max_level;
-					}
-				}
-			}	
-		}
-	}
-	
 	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
-        do updatePollutionMap;
 	  	do drive;	
 	}
 	
@@ -2336,60 +2314,6 @@ species coldSpot{
 }
 
 
-
-
-grid cell height: 100 width: 100 neighbors: 4 {
-	
-	float pollution_level <- 0.0 ;
-	list neighbours of: cell <- (self neighbors_at 1) of_species cell;  
-
-	rgb pollution_color <- rgb(255,255,255);
-	float transparency <- 0.75;
-
-	reflex update_color when:heatmap{
-		pollution_color <-  rgb(transparency *30,transparency *109,transparency *255);
-	}
-	
-	reflex update_transparency when:heatmap {
-		if((cycle mod 100)=0){
-			do raz;
-		} else {
-			transparency <- float(pollution_level) / pollution_max_level;
-		}
-	}
-	
-   reflex spread{
-			float tmp_pollution <- pollution_level;
-			float pollution_spread <- pollution_level * spread_factor/100.0;
-			
-			pollution_level <- pollution_level - pollution_spread;
-			pollution_spread <- pollution_spread / 4;
-			
-			loop n over: neighbours {
-				n.pollution_level <- n.pollution_level + pollution_spread;
-			}
-	}
-	
-	
-	action raz {
-		pollution_level <- 0.0;
-	}
-	
-	aspect pollution{
-		if(heatmap)
-		{
-			draw shape color:rgb(pollution_color, transparency) border:rgb(pollution_color, transparency) empty:true;
-		}
-	}
-	
-	aspect pollutionFull{
-		if(heatmap)
-		{
-			draw shape color:rgb(pollution_color, transparency);
-		}
-	}
-}
-
 experiment ReChamp type: gui autorun:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
@@ -2415,7 +2339,6 @@ experiment ReChamp type: gui autorun:true{
 			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species cell aspect:pollution;
 
 
 			/*graphics 'legend'{
