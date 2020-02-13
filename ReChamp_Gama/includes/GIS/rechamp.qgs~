@@ -23,7 +23,7 @@
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="PCA_CE_EXP_PRO_NATURE20200209015535692" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/PCA_CE_EXP_PRO_NATURE.shp" name="PCA_CE_EXP_PRO_NATURE">
       <customproperties/>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="nodes_OSM20200113191108013" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/nodes_OSM.shp" name="nodes_OSM">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="nodes_OSM20200113191108013" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/nodes_OSM.shp" name="nodes_OSM">
       <customproperties>
         <property key="legend/expressionFilter" value=""/>
         <property key="legend/expressionFilterEnabled" value="false"/>
@@ -85,10 +85,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>649563.01616221992298961</xmin>
-      <ymin>6863213.02143115550279617</ymin>
-      <xmax>649797.01616221992298961</xmax>
-      <ymax>6863405.02143115550279617</ymax>
+      <xmin>647686.98119718523230404</xmin>
+      <ymin>6863864.21024234313517809</ymin>
+      <xmax>648622.98119718523230404</xmax>
+      <ymax>6864632.21024234313517809</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -214,9 +214,9 @@
         <legendlayerfile isInOverview="0" layerid="PCA_CE_EXP_PRO_NATURE20200209015535692" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="nodes_OSM" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="nodes_OSM" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="1"/>
+        <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="0"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="stations_metro_simple" showFeatureCount="0">
@@ -3857,7 +3857,7 @@ def my_form_open(dialog, layer, feature):
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
       <attributeactions default="-1"/>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;bike_lane&quot;" sortOrder="1">
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="&quot;pro_lanes&quot;" sortOrder="1">
         <columns>
           <column width="-1" hidden="0" type="field" name="lanes"/>
           <column width="-1" hidden="0" type="field" name="maxspeed"/>

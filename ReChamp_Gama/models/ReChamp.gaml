@@ -503,9 +503,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		create coldSpot from:coldspot_shapefile;
 		
 		//------------------- NETWORK -------------------------------------- //
-//		create bikelane from:bikelane_shapefile{
-//			color<-type_colors["bike"];
-//		}
 		ask signals_zone {
 			ask (bikelane overlapping self) where not each.from_road {
 				if (myself covers self) {
@@ -521,14 +518,12 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		//------------------- AGENT ---------------------------------------- //
 		do updateSimuState;
 				
-			int repere <- 0;
+// no weight is currently calculated for bikes
 //		weights_bikelane <- bikelane as_map(each::each.shape.perimeter);
-//		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));
-//		
-	//	bike_graph <- (as_edge_graph(bikelane) with_weights weights_bikelane_sp) use_cache false;
+//		map<bikelane,float> weights_bikelane_sp <- bikelane as_map(each::(each.shape.perimeter * (each.from_road ? 10.0 : 1.0) * (each.is_hot_spot ? 0.1 : 1.0)));		
 		bike_graph <- list_with(stateNumber, nil);
 		loop j from: 0 to: stateNumber - 1{
-			bike_graph[j] <- directed((as_edge_graph(bikelane where (each.allow_bikes[j])))) use_cache false;
+			bike_graph[j] <- directed((as_edge_graph(bikelane where (each.allow_bikes[j])))) use_cache false;//with_weights weights_bikelane_sp;
 			bike_graph[j] <- directed(bike_graph[j]);
 		}
 		
@@ -569,7 +564,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			do die;
 		}
 		ask experiment {do compact_memory;}
-		//do init_agents;
 		do updateSimuState;
 	}
 	
@@ -761,7 +755,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		
 
 		// init pedestrian crossings
-//		phase_per_group <- list_with(length((remove_duplicates(traffic_signals collect(each.group)) - 0)),0);
 		graph tmp_car_graph;
 		loop j from: 0 to:  stateNumber-1{
 			tmp_car_graph <- as_edge_graph(road where (each.lanes_nb[j] != 0)) use_cache false;
@@ -876,46 +869,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 		} 
 	}
-	
-	
-	
-	
-	//on pourrait le virer, c'est juste a utiliser une fois (je laisse pour le moment pour ref)
-//	action manage_cycle_network {
-//
-//		list<geometry> lines <- copy(bikelane_shapefile.contents);
-//		list<geometry> lines2 <- (roads_shapefile.contents);
-//		graph g <- as_edge_graph(lines);
-//		loop v over: g.vertices {
-//			if (g degree_of v) = 1{
-//				geometry r <- lines2 closest_to v;
-//				if (v distance_to r) < 20.0 {
-//					point pt <- (v closest_points_with r)[1];
-//					if (pt != first(r.points) and pt != last(r.points)) {
-//						lines2 >> r;
-//						list<geometry> sl <- r split_at pt;
-//						lines2 <- lines2 + sl;
-//					}
-//					lines2 << line([v,pt]);
-//				} 
-//			}
-//		}
-//		lines2 <- lines2 where (each != nil  and each.perimeter > 0);
-//		
-//		lines <- lines + lines2;
-//		lines <- clean_network(lines,3.0, true,true);
-//		
-//		list<float> ref <- bikelane_shapefile.contents collect each.perimeter;
-//		create bikelane from:lines{
-//			from_road <- not (shape.perimeter in ref) ;
-//			color<-from_road ? #red : type_colors["bike"];
-//		}
-//		create bikelane from:list(road);
-//		save bikelane type: shp to: "../includes/GIS/reseau-cyclable_reconnected.shp" with: [from_road::"from_road"];
-//		
-//	}
-//	
-
 
 	
 	action manage_waiting_line {
@@ -1003,7 +956,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		if (nb_bikes_target > nb_bikes) {
 			create bike number:nb_bikes_target - nb_bikes{
 	      		type <- "bike";
-		  		//location<-any_location_in(one_of(building));
 		  		location<-any_location_in(one_of(bikelane));
 		  		speed<-2+rnd(maxSpeed);	
 			}
@@ -1015,10 +967,7 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		ask bike{
 			do reinit_path;
 		}
-//		ask bike[0]{
-//			write shape.attributes;
-//		}
-	
+
 		
 		/*int nb_bus <- length(bus);
 		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
@@ -1625,15 +1574,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 		if(showPeople){
 			if not(visiting) or not(culture(target_place).interior){
 				draw square(peopleSize) color: rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
-			//	draw square(peopleSize) color: to_exit?rgb(#blue,fade_count/5):rgb(type_colors[type],fade_count/5) at: location+current_offset  rotate: angle ;	
-			}
-//			if target != nil and to_park{
-//				draw square(peopleSize/2) color:#green at: location+current_offset  rotate: angle;
-//				draw square(2) color:#green at: target  rotate: angle;
-//			}
-//			if state="queueing"{
-//				draw square(peopleSize/2) color:#blue at:walking ? location+current_offset :location rotate: angle;
-//			}	 
+			}	 
 			point p1 <- (destination - location)/norm(destination-location)*10;
 			if showPedBlock{
 				draw square(peopleSize) color:blocked?#cyan:type_colors[type] at:location+current_offset  rotate: angle;	
@@ -1679,9 +1620,6 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 }
 
 species bike skills:[moving] {//schedules:[]{
-	bool error <- false;
-	int last_reinit <- 0;
-	bool reseted <- false;
 	string type;
 	point my_target;
 	point old_location;
@@ -1696,34 +1634,17 @@ species bike skills:[moving] {//schedules:[]{
 	int iop;
 	int iops;
 	
-	reflex choose_target when: my_target = nil{//} and not(reseted) {
-//	write "\n";
-//		write self;
-	
-		last_reinit <- cycle;	
-	//	write "index "+shape.attributes['index_on_path'];
+	reflex choose_target when: my_target = nil{	
 		do reinit_path;
 	
-	//		ask world {do pause;}
-	//	write p;
-	//	write p2;
-	//	write "index2 "+shape.attributes['index_on_path'];
-	//	write "path "+shape.attributes['current_path'];
-		reseted <- true;
-		
-		
-		// A DECOMMENTER
-		
+		// A DECOMMENTER	
 //		if (flip(proba_hot_target)) {
 //			my_target <- any_location_in(one_of(hot_bike_lanes));
 //		} else {
 //			my_target <- any_location_in(one_of(bikelane));
-//		}
-		
-			my_target <- any_location_in(one_of(bikelane));
-		
+//		}	
+		my_target <- any_location_in(one_of(bikelane));
 		old_indexes <-[0, 1];
-		//my_target<-any_location_in(one_of(origin_destination_shapefile.contents));
 	}
 	reflex move{
 		if useNewBikeShp{
@@ -1737,8 +1658,6 @@ species bike skills:[moving] {//schedules:[]{
 		}
 		
 		if location != old_location{
-//	  		new_path <- false;
-			
 	  		old_location <- copy(location);
 			old_indexes <- [int(shape.attributes['index_on_path']),int(shape.attributes['index_on_path_segment'])]; 
 	  	}
@@ -1758,13 +1677,8 @@ species bike skills:[moving] {//schedules:[]{
 		trail <- [];
 		location<-any_location_in(one_of(bikelane));
 		my_target <- nil;
-//		do reinit_path;
 	}
-	
-//	reflex essai when: true{//int(self)=0{
-//		write shape.attributes['index_on_path_segment'];
-//	}
-	
+		
 	
 	action compute_trail_and_offset {
 		loop while:(length(trail) >  (bikeTrajectoryLength)){
@@ -1776,13 +1690,7 @@ species bike skills:[moving] {//schedules:[]{
        		path p <- copy(shape.attributes['current_path']);
        		iop <- int(copy(shape.attributes['index_on_path']));
        		iops <- int(copy(shape.attributes['index_on_path_segment']));
-       	//	offset <- {0,0};
-       	//	if current_edge != nil and current_path != nil{
        		if current_edge != nil and p != nil{	
-       			
-//       			write "\n"+self;
-//       			write ""+iop+" "+current_edge;
-//       			write "current path: "+current_path;
        			bikelane bl <- bikelane(p.edges[min([iop,length(p.edges)-1])]);
 				if bl != nil and iops != nil{
 					offset <- bl.vec_ref[iops-1][1]*bl.offsets[currentSimuState];

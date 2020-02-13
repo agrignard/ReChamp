@@ -29,7 +29,7 @@
         <property key="legend/expressionFilterEnabled" value="false"/>
       </customproperties>
     </layer-tree-layer>
-    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Unchecked" id="stations_metro_simple20200209002056850" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro_simple.shp" name="stations_metro_simple">
+    <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="stations_metro_simple20200209002056850" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/stations_metro_simple.shp" name="stations_metro_simple">
       <customproperties/>
     </layer-tree-layer>
     <layer-tree-layer expanded="1" providerKey="ogr" checked="Qt::Checked" id="reseau_cyclable_clean20200212104932892" source="C:/Users/Tri/Documents/GitHub/ReChamp/ReChamp_Gama/includes/GIS/reseau_cyclable_clean.shp" name="reseau_cyclable_clean">
@@ -85,10 +85,10 @@
   <mapcanvas>
     <units>meters</units>
     <extent>
-      <xmin>647686.98119718523230404</xmin>
-      <ymin>6863864.21024234313517809</ymin>
-      <xmax>648622.98119718523230404</xmax>
-      <ymax>6864632.21024234313517809</ymax>
+      <xmin>649099.93224613554775715</xmin>
+      <ymin>6861941.60884374286979437</ymin>
+      <xmax>650971.93224613554775715</xmax>
+      <ymax>6863477.60884374286979437</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>1</projections>
@@ -219,9 +219,9 @@
         <legendlayerfile isInOverview="0" layerid="nodes_OSM20200113191108013" visible="0"/>
       </filegroup>
     </legendlayer>
-    <legendlayer drawingOrder="-1" open="true" checked="Qt::Unchecked" name="stations_metro_simple" showFeatureCount="0">
+    <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="stations_metro_simple" showFeatureCount="0">
       <filegroup open="true" hidden="false">
-        <legendlayerfile isInOverview="0" layerid="stations_metro_simple20200209002056850" visible="0"/>
+        <legendlayerfile isInOverview="0" layerid="stations_metro_simple20200209002056850" visible="1"/>
       </filegroup>
     </legendlayer>
     <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="reseau_cyclable_clean" showFeatureCount="0">
@@ -3616,6 +3616,9 @@ def my_form_open(dialog, layer, feature):
         <edittype widgetv2type="TextEdit" name="bike_lane">
           <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
         </edittype>
+        <edittype widgetv2type="TextEdit" name="bike_l_aft">
+          <widgetv2config IsMultiline="0" fieldEditable="1" constraint="" UseHtml="0" labelOnTop="0" constraintDescription="" notNull="0"/>
+        </edittype>
       </edittypes>
       <renderer-v2 forceraster="0" symbollevels="0" type="singleSymbol" enableorderby="0">
         <symbols>
@@ -3853,6 +3856,7 @@ def my_form_open(dialog, layer, feature):
         <alias field="maxspeed" index="8" name=""/>
         <alias field="bus_lane" index="9" name=""/>
         <alias field="bike_lane" index="10" name=""/>
+        <alias field="bike_l_aft" index="11" name=""/>
       </aliases>
       <excludeAttributesWMS/>
       <excludeAttributesWFS/>
@@ -3904,6 +3908,7 @@ def my_form_open(dialog, layer, feature):
         <default field="maxspeed" expression=""/>
         <default field="bus_lane" expression=""/>
         <default field="bike_lane" expression=""/>
+        <default field="bike_l_aft" expression=""/>
       </defaults>
       <previewExpression>COALESCE( "lanes", '&lt;NULL>' )</previewExpression>
     </maplayer>
