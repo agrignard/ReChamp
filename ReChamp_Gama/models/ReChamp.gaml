@@ -2537,7 +2537,7 @@ experiment ReChamp type: gui autorun:true{
 					float space<-world.shape.width * 0.03;
 					float circleSize<-world.shape.width * 0.0025;
 					int fontSize<-10;
-					point textOffset<-{-20,30};
+					point textOffset<-{-40,-30};
 				    draw circle(circleSize) color: type_colors["car"] at: posIn;
 					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
 					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
@@ -2579,95 +2579,7 @@ experiment ReChamp type: gui autorun:true{
 }
 	
 	
-experiment testTri type: gui autorun:false{
-	float minimum_cycle_duration<-0.025;	
-	output {
 
-		display champ type:java2D background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-//		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
-//		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
-
-	   	{
-
-	   	    species graphicWorld aspect:base;	    	
-		    species building aspect: base;
-			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
-			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
-			species road aspect: base;
-			species vizuRoad aspect:base transparency:0.5;
-			species bus_line aspect: base;
-			species intersection;
-			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
-			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
-			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-	//		species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			species coldSpot aspect:base transparency:0.6;
-			species station aspect: base;
-			species bikelane aspect:base;
-			species cell aspect:pollution;
-
-									
-			graphics 'tablebackground'{
-				//draw geometry(shape_file_bounds) color:#white empty:true;
-				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
-			}
-			
-			graphics 'info'{
-				if(drawLegend){
-				  draw string(currentSimuState = 0 ? "EXISTANT" : "VISION") font:font("Helvetica", 20 , #bold) rotate:angle at:{world.shape.width*0.74,world.shape.height*0.74} color:#white empty:true;	
-				}
-			}
-			
-			graphics "legend"{
-				if(drawLegend){
-					point lengendBox<-{350,90};
-					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
-					int legendAngle<-0;
-					float space<-world.shape.width * 0.03;
-					float circleSize<-world.shape.width * 0.0025;
-					int fontSize<-10;
-					point textOffset<-{-20,30};
-				    draw circle(circleSize) color: type_colors["car"] at: posIn;
-					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
-					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2;
-					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3;
-					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-				}	
-			}
-
-			
-			event["p"] action: {showPeople<-!showPeople;};
-			//event["c"] action: {showCar<-!showCar;};
-			event["v"] action: {showBike<-!showBike;};
-			event["b"] action: {showSharedMobility<-!showSharedMobility;};
-			event["n"] action: {showNature<-!showNature;};
-			event["u"] action: {showUsage<-!showUsage;};
-			event["l"] action: {showBuilding<-!showBuilding;};
-			event["r"] action: {showRoad<-!showRoad;};
-			event["m"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
-			//old interface		
-			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//new interface	
-			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			
-			event["1"] action: {ask world{do updateStoryTelling (1);}};
-			event["2"] action: {ask world{do updateStoryTelling (2);}};
-			event["3"] action: {ask world{do updateStoryTelling (3);}};
-			event["4"] action: {ask world{do updateStoryTelling (4);}};
-			
-			event["w"] action: {ask world{do updateStoryTelling (1);}};
-			event["c"] action: {ask world{do updateStoryTelling (2);}};
-			event[";"] action: {ask world{do updateStoryTelling (3);}};
-			event["="] action: {ask world{do updateStoryTelling (4);}};
-		}
-	}
-}	
 	
 	
 
