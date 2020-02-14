@@ -13,7 +13,7 @@ global {
 	file roads_shapefile <- file("../includes/GIS/roads_OSM.shp");
 	file nodes_shapefile <- file("../includes/GIS/nodes_OSM.shp");
 	file signals_zone_shapefile <- file("../includes/GIS/signals_zone.shp");
-	;
+	
 	file origin_destination_shapefile <- shape_file("../includes/GIS/origin_destination_line.shp");		
 	geometry shape <- envelope(shape_file_bounds);
 	
