@@ -224,7 +224,7 @@ global {
 	
 				
 		//First Intervention (Paris Now)
-		create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
+		/*create intervention from:intervention_shapefile with: [id::int(read ("id")),type::string(read ("type"))]
 		{   
 			do initialize;
 			interventionNumber<-1;
@@ -236,7 +236,7 @@ global {
 			do initialize;
 			interventionNumber<-2;
 			isActive<-false;
-		}	
+		}	*/
  
 	}
 	
