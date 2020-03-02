@@ -2,7 +2,7 @@
 * Name: ReChamp
 * Author: Arnaud Grignard, Tri Nguyen-Huu, Patrick Taillandier, Nicolas Ayoub 
 * Description: ReChamp - 2020 - CityScope Champs Elysées - Pavillon de l'Arsenal
-* Tags: Tag1, Tag2, TagN
+* Tags: CityScope Champs - Elysées
 ***/
 
 model ReChamp
@@ -79,10 +79,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	float busTrajectoryTransparency <-0.5;// parameter: 'Bus Trajectory transparency Before' category: "Trajectory" min: 0.0 max: 1.0;
 	
 	bool drawLegend parameter: 'Legend' category: "Simulation" <-true;
-	
-	bool heatmap parameter: 'Pollution' category: "Simulation" <-false;
-	float pollution_max_level <- 100.0;
-	int spread_factor <- 1;
 	bool applyFuzzyness<-true;
 
 	float step <-2.5#sec parameter: 'Simulation Step' category: "Simulation" min: 0.1#sec max: 1000#sec;
@@ -113,9 +109,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	bool useNewBikeShp parameter: 'Use new bike shapefile' category: "Debug" <-true;
 	bool showTestCar parameter: 'test Car' category: "Debug" <-false;
 	bool showHotSpot  parameter: 'HotSpot (h)' category: "Debug" <-false;
-	
-	
-	bool oneButtonInterface<-true;// parameter: 'Interface' category: "Interface" <-false;		
 	
 	int currentBackGround <-0;
 	list<file> backGrounds <- [file('../includes/PNG/PCA_REF.png'),file('../includes/PNG/PCA_REF.png')];
@@ -526,11 +519,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			bike_graph[j] <- directed((as_edge_graph(bikelane where (each.allow_bikes[j])))) use_cache false;//with_weights weights_bikelane_sp;
 			bike_graph[j] <- directed(bike_graph[j]);
 		}
-		
-		
-		//bus_graph <- (as_edge_graph(road)) use_cache false;
-		
-		//Graphical Species (gif loader)
 		create graphicWorld from:shape_file_bounds;
 	}
 	
@@ -550,9 +538,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			}
 			all_agents <- [];
 		}
-		/*ask bus {
-			do die;
-		}*/
 		ask bike {
 			do die;
 		}
@@ -626,11 +611,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 	
 	action updateStoryTelling (int n){
 		    if(n=0){currentStoryTellingState<-0;}
-		    //old interface
-			/*if(n=1){currentStoryTellingState<-1;showCar<-true;showPeople<-false;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-false;crossOverCar<-crossOverTime;}
-			if(n=2){currentStoryTellingState<-2;showCar<-false;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-false;showUsage<-false;crossOverSoftMob<-crossOverTime;}
-			if(n=3){currentStoryTellingState<-3;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-true;showUsage<-false;crossOverNature<-crossOverTime;}
-			if(n=4){currentStoryTellingState<-4;showCar<-false;showPeople<-true;showBike<-false;showSharedMobility<-false;showNature<-false;showUsage<-true;crossOverUsage<-crossOverTime;}*/
 			if(n=1){currentStoryTellingState<-1;showCar<-!showCar;crossOverCar<-crossOverTime;}
 			if(n=2){currentStoryTellingState<-2;showPeople<-!showPeople;showBike<-!showBike;showSharedMobility<-!showSharedMobility;crossOverSoftMob<-crossOverTime;}
 			if(n=3){currentStoryTellingState<-3;showNature<-!showNature;crossOverNature<-crossOverTime;}
@@ -676,7 +656,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			ask s{	
 				n_ped <- n_ped + add_people();
 			}
-			//n_ped <- n_ped + s.capac
 		} 		
 	}
 	
@@ -788,7 +767,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 				loop ph over: remove_duplicates(gp accumulate(each.phase)){
 					intersection i1 <- first(gp where(each.phase=ph));
 					i1.master_intersection <- true;
-//					i1.ped_xing_block <- remove_duplicates((gp where(each.phase=ph)) accumulate each.ped_xing_block);
 				}		
 			}
 		}
@@ -909,9 +887,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 			if (target_place in to_remove) {
 				do die;
 			}
-//			if to_culture{
-//				target <- culture(target_place).arrival_position[currentSimuState];
-//			}
 		}
 		proba_choose_park <- activated_parks as_map (each::each.shape.area);
 		proba_choose_culture <- activated_cultures as_map (each::each.capacity);
@@ -967,20 +942,6 @@ global {//schedules:  station + road + intersection + culture + car + bus + bike
 		ask bike{
 			do reinit_path;
 		}
-
-		
-		/*int nb_bus <- length(bus);
-		int nb_bus_target <- round(nbAgent * get_mobility_ratio()["bus"]);
-		if (nb_bus_target > nb_bus) {
-			 create bus number:nb_bus_target - nb_bus{
-	      		type <- "bus";
-		  		location<-any_location_in(one_of(road));	
-			}
-		} else if (nb_bus_target < nb_bus) {
-			ask (nb_bus - nb_bus_target) among bus {
-				do die;
-			}
-		}*/
 	}
 	
 	
@@ -1054,9 +1015,7 @@ species culture {//schedules:[]{
 					waiting_tourists[i].target <- positions[i];
 				}
 			}
-		
-		}
-		
+		}	
 	}
 	
 	aspect base {
@@ -1103,7 +1062,6 @@ species park {
 		  draw shape color: nature_colors[type]-100 border:nature_colors[type];	
 		}	
 	}
-
 }
 
 
@@ -1220,14 +1178,6 @@ species road  skills: [skill_road]{// schedules:[] {
 		if(showRoad and to_display){
 			draw shape color:is_tunnel[currentSimuState]?rgb(50,0,0):type_colors["car"] width:1;
 		}
-	
-	// piece of code used for zone testing. Do not remove	
-//		if int(self)=1{
-//			loop z from:0 to: length(zones)-1{
-//				list<rgb> tmp <- brewer_colors("Set2");
-//				draw 3 around(zones[z]) color: tmp[z];
-//			}
-//		}
 	}
 }
 
@@ -1242,13 +1192,6 @@ species bikelane{
 //	int lanes;
 	aspect base {
 		if(showBikeLane){
-//			if is_bike_lane{
-//				draw shape color: #cyan width:1;	
-//			}else if is_bus_lane{
-//				draw shape color: #green width:1;	
-//			}else{
-//				draw shape color: #blue width:1;	
-//			}
 		  draw shape color: #blue width:1;	
 		}	
 	}
@@ -1636,13 +1579,6 @@ species bike skills:[moving] {//schedules:[]{
 	
 	reflex choose_target when: my_target = nil{	
 		do reinit_path;
-	
-		// A DECOMMENTER	
-//		if (flip(proba_hot_target)) {
-//			my_target <- any_location_in(one_of(hot_bike_lanes));
-//		} else {
-//			my_target <- any_location_in(one_of(bikelane));
-//		}	
 		my_target <- any_location_in(one_of(bikelane));
 		old_indexes <-[0, 1];
 	}
@@ -1673,7 +1609,6 @@ species bike skills:[moving] {//schedules:[]{
 	}
 	
 	reflex unblock when: current_path = nil {// #FIXME A MODIFER PROPREMENT
-	//	write "bloqué:"+self;
 		trail <- [];
 		location<-any_location_in(one_of(bikelane));
 		my_target <- nil;
@@ -1741,35 +1676,6 @@ species bike skills:[moving] {//schedules:[]{
 	}
 }
 
-
-/*species bus skills:[moving] {//schedules:[]{
-	string type;
-	point my_target;
-	list<point> current_trajectory;
-	
-	reflex choose_target when: my_target = nil {
-		my_target <- any_location_in(one_of(road));
-	}
-	reflex move{
-	  do goto on: bus_graph target: my_target speed: 15#km/#h ;
-	  if (my_target = location) {my_target <- nil;}
-	  loop while:(length(current_trajectory) > busTrajectoryLength)
-  	    {
-        current_trajectory >> first(current_trajectory);
-        }
-        current_trajectory << location;
-	}
-	aspect base{
-		if(showSharedMobility){
-		 draw rectangle(busSize,busSize*3) color:type_colors[type] rotate:heading-90;	
-		}	
-		if(showSharedMobilityTrajectory and showSharedMobility){
-	       draw line(current_trajectory) color: rgb(type_colors[type].red,type_colors[type].green,type_colors[type].blue,busTrajectoryTransparency);	
-	  }
-	}
-}*/
-
-
 species car skills:[advanced_driving] {//schedules:[]{		
 	bool to_update <- false;
 	bool test_car <- false;
@@ -1807,24 +1713,7 @@ species car skills:[advanced_driving] {//schedules:[]{
 			cpt_blocked <- 0;
 		}
 	}
-	
-//	float external_factor_impact(agent new_road, float remaining_time) {
-//		if (cpt_blocked > max_cpt_blocked) {
-//			final_target <- nil;
-//			remaining_time <- 0.0;
-//		}
-//		
-//		if flip(proba_avoid_tj) {
-//			bool has_traffic_jam <-road(new_road).has_traffic_jam();
-//			if (has_traffic_jam) {
-//				current_path <- nil;
-//				remaining_time <- 0.0;
-//			}
-//		}
-//		return remaining_time;
-//	}
-	
-	
+		
 	reflex leave when: final_target = nil  {
 		if (target_intersection != nil and target_intersection.exit[currentSimuState]=target_intersection) {// reached an exit
 			if current_road != nil {
@@ -1899,26 +1788,8 @@ species car skills:[advanced_driving] {//schedules:[]{
 		}
 	}
 	
-	action updatePollutionMap{
-		if(current_path != nil)
-		{
-			list<cell> tmp <- cell overlapping(shape);
-		
-			if(tmp != []){
-				ask tmp {
-					pollution_level <- pollution_level + 3;
-					if(pollution_level > pollution_max_level)
-					{
-						pollution_level <- pollution_max_level;
-					}
-				}
-			}	
-		}
-	}
-	
 	
 	reflex move when: final_target != nil{// laisser ce reflexe apres leave et fade pour un meilleur affichage de trajectoire
-        do updatePollutionMap;
 	  	do drive;	
 	}
 	
@@ -2034,8 +1905,6 @@ species car skills:[advanced_driving] {//schedules:[]{
 	       	}
 	    }
 	}
-
-
 
 	action remove_and_die {
 		if (current_road != nil) {
@@ -2244,8 +2113,6 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 
 		}
 	}
-
-
 	action to_green {
 		if active{
 			if not is_free {
@@ -2322,9 +2189,6 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 			}
 		
 	}
-	
-		
-
 }
 
 species coldSpot{
@@ -2336,71 +2200,15 @@ species coldSpot{
 }
 
 
-
-
-grid cell height: 100 width: 100 neighbors: 4 {
-	
-	float pollution_level <- 0.0 ;
-	list neighbours of: cell <- (self neighbors_at 1) of_species cell;  
-
-	rgb pollution_color <- rgb(255,255,255);
-	float transparency <- 0.75;
-
-	reflex update_color when:heatmap{
-		pollution_color <-  rgb(transparency *30,transparency *109,transparency *255);
-	}
-	
-	reflex update_transparency when:heatmap {
-		if((cycle mod 100)=0){
-			do raz;
-		} else {
-			transparency <- float(pollution_level) / pollution_max_level;
-		}
-	}
-	
-   reflex spread{
-			float tmp_pollution <- pollution_level;
-			float pollution_spread <- pollution_level * spread_factor/100.0;
-			
-			pollution_level <- pollution_level - pollution_spread;
-			pollution_spread <- pollution_spread / 4;
-			
-			loop n over: neighbours {
-				n.pollution_level <- n.pollution_level + pollution_spread;
-			}
-	}
-	
-	
-	action raz {
-		pollution_level <- 0.0;
-	}
-	
-	aspect pollution{
-		if(heatmap)
-		{
-			draw shape color:rgb(pollution_color, transparency) border:rgb(pollution_color, transparency) empty:true;
-		}
-	}
-	
-	aspect pollutionFull{
-		if(heatmap)
-		{
-			draw shape color:rgb(pollution_color, transparency);
-		}
-	}
-}
-
-experiment ReChamp type: gui autorun:true{
+experiment ReChamp type: gui autorun:true virtual:true{
 	float minimum_cycle_duration<-0.025;	
 	output {
 
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
-		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
-
-	   	{
-
-	   	    species graphicWorld aspect:base;	    	
+        keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1454962633840384,1.2440344202701115,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
+		
+	   	{    	
 		    species building aspect: base;
 			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
 			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
@@ -2411,20 +2219,9 @@ experiment ReChamp type: gui autorun:true{
 			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
 			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
 			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			//species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			species coldSpot aspect:base transparency:0.6;
 			species station aspect: base;
 			species bikelane aspect:base;
-			species cell aspect:pollution;
 
-
-			/*graphics 'legend'{
-				//draw geometry(shape_file_bounds) color:#white empty:true;
-				draw string("Car") perspective:true at:{world.shape.width,world.shape.height,cycle/1000} color:#red font:font("Helvetica", 20 , #bold);
-				draw string("Soft Mobility") perspective:true at:{world.shape.width,world.shape.height,2*cycle/1000} color:type_colors["bike"] font:font("Helvetica", 20 , #bold);
-				draw string("Nature") perspective:true at:{world.shape.width,world.shape.height,3*cycle/1000} color:nature_colors["pro"] font:font("Helvetica", 20 , #bold);
-				draw string("Usage") perspective:true at:{world.shape.width,world.shape.height,4*cycle/1000} color:usage_colors["pro"] font:font("Helvetica", 20 , #bold);
-			}*/
 									
 			graphics 'tablebackground'{
 				//draw geometry(shape_file_bounds) color:#white empty:true;
@@ -2445,7 +2242,7 @@ experiment ReChamp type: gui autorun:true{
 					float space<-world.shape.width * 0.03;
 					float circleSize<-world.shape.width * 0.0025;
 					int fontSize<-10;
-					point textOffset<-{-20,30};
+					point textOffset<-{-40,-30};
 				    draw circle(circleSize) color: type_colors["car"] at: posIn;
 					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
 					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
@@ -2457,7 +2254,6 @@ experiment ReChamp type: gui autorun:true{
 
 			
 			event["p"] action: {showPeople<-!showPeople;};
-			//event["c"] action: {showCar<-!showCar;};
 			event["v"] action: {showBike<-!showBike;};
 			event["b"] action: {showSharedMobility<-!showSharedMobility;};
 			event["n"] action: {showNature<-!showNature;};
@@ -2466,18 +2262,12 @@ experiment ReChamp type: gui autorun:true{
 			event["r"] action: {showRoad<-!showRoad;};
 			event["m"] action: {showHotSpot<-!showHotSpot;};
 			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
-			//old interface		
-			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//new interface	
 			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			
+			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};			
 			event["1"] action: {ask world{do updateStoryTelling (1);}};
 			event["2"] action: {ask world{do updateStoryTelling (2);}};
 			event["3"] action: {ask world{do updateStoryTelling (3);}};
 			event["4"] action: {ask world{do updateStoryTelling (4);}};
-			
 			event["w"] action: {ask world{do updateStoryTelling (1);}};
 			event["c"] action: {ask world{do updateStoryTelling (2);}};
 			event[";"] action: {ask world{do updateStoryTelling (3);}};
@@ -2487,99 +2277,11 @@ experiment ReChamp type: gui autorun:true{
 }
 	
 	
-experiment testTri type: gui autorun:false{
-	float minimum_cycle_duration<-0.025;	
-	output {
 
-		display champ type:java2D background:#black draw_env:false fullscreen:false  rotate:angle toolbar:false autosave:false synchronized:true
-//		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
-//		keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1707999613638727,1.2535299230043577,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
-
-	   	{
-
-	   	    species graphicWorld aspect:base;	    	
-		    species building aspect: base;
-			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
-			species culture aspect: base transparency:0.5 + 0.5 *(crossOverUsage/crossOverTime);
-			species road aspect: base;
-			species vizuRoad aspect:base transparency:0.5;
-			species bus_line aspect: base;
-			species intersection;
-			species car aspect:base transparency:0.5 + 0.5 *(crossOverCar/crossOverTime);
-			species pedestrian aspect:base transparency:0.2 + 0.8 *(crossOverSoftMob/crossOverTime);
-			species bike aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-	//		species bus aspect:base transparency:0.5 + 0.5 *(crossOverSoftMob/crossOverTime);
-			species coldSpot aspect:base transparency:0.6;
-			species station aspect: base;
-			species bikelane aspect:base;
-			species cell aspect:pollution;
-
-									
-			graphics 'tablebackground'{
-				//draw geometry(shape_file_bounds) color:#white empty:true;
-				//draw string("State: " + currentSimuState) rotate:angle at:{400,400} color:#white empty:true;
-			}
-			
-			graphics 'info'{
-				if(drawLegend){
-				  draw string(currentSimuState = 0 ? "EXISTANT" : "VISION") font:font("Helvetica", 20 , #bold) rotate:angle at:{world.shape.width*0.74,world.shape.height*0.74} color:#white empty:true;	
-				}
-			}
-			
-			graphics "legend"{
-				if(drawLegend){
-					point lengendBox<-{350,90};
-					point posIn<-{world.shape.width*0.4, world.shape.height*0.71};
-					int legendAngle<-0;
-					float space<-world.shape.width * 0.03;
-					float circleSize<-world.shape.width * 0.0025;
-					int fontSize<-10;
-					point textOffset<-{-20,30};
-				    draw circle(circleSize) color: type_colors["car"] at: posIn;
-					draw "voiture" color: type_colors["car"]  at: posIn + textOffset font:font("Helvetica", fontSize , #bold)  rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["people"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)};
-					draw "pieton" color: type_colors["people"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)} + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["bike"] at:  posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2;
-					draw "vélo" color: type_colors["bike"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*2 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-					draw circle(circleSize) color: type_colors["bus"] at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3;
-					draw "bus" color: type_colors["bus"]  at: posIn + {space* cos (legendAngle), space * sin(legendAngle)}*3 + textOffset font:font("Helvetica", fontSize , #bold) rotate:legendAngle;
-				}	
-			}
-
-			
-			event["p"] action: {showPeople<-!showPeople;};
-			//event["c"] action: {showCar<-!showCar;};
-			event["v"] action: {showBike<-!showBike;};
-			event["b"] action: {showSharedMobility<-!showSharedMobility;};
-			event["n"] action: {showNature<-!showNature;};
-			event["u"] action: {showUsage<-!showUsage;};
-			event["l"] action: {showBuilding<-!showBuilding;};
-			event["r"] action: {showRoad<-!showRoad;};
-			event["m"] action: {showHotSpot<-!showHotSpot;};
-			event["f"] action: {showTrafficSignal<-!showTrafficSignal;};	
-			//old interface		
-			//event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;showCar<-true;showPeople<-true;showBike<-true;showSharedMobility<-true;showNature<-true;showUsage<-true;};
-			//new interface	
-			event["z"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			event["h"] action: {ask world{do updateStoryTelling (0);}updateSim<-true;};
-			
-			event["1"] action: {ask world{do updateStoryTelling (1);}};
-			event["2"] action: {ask world{do updateStoryTelling (2);}};
-			event["3"] action: {ask world{do updateStoryTelling (3);}};
-			event["4"] action: {ask world{do updateStoryTelling (4);}};
-			
-			event["w"] action: {ask world{do updateStoryTelling (1);}};
-			event["c"] action: {ask world{do updateStoryTelling (2);}};
-			event[";"] action: {ask world{do updateStoryTelling (3);}};
-			event["="] action: {ask world{do updateStoryTelling (4);}};
-		}
-	}
-}	
 	
 	
 
-experiment ReChamp2Proj  parent: ReChamp autorun:true{	
+experiment ReChampPavillonDemo  parent: ReChamp autorun:true{	
 	
 	output {	
 		display indicator type:opengl background:#black draw_env:false fullscreen:0 toolbar:false
@@ -2587,47 +2289,20 @@ experiment ReChamp2Proj  parent: ReChamp autorun:true{
 		keystone: [{0.0,0.0,0.0},{0.04939455407469323,0.9929027711998522,0.0},{0.9474300817347908,1.0014194457600294,0.0},{1.0,0.0,0.0}]
 		{
 		    graphics 'dashboardbackground'{
-		    	if(oneButtonInterface){
 		    		if(currentSimuState=0){
 		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
 		    		}
 		    		if(currentSimuState=1){
 		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    	}else{
-		    		if(currentSimuState=0 and currentStoryTellingState=0){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_before.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=1 and currentStoryTellingState=0){
-		    			draw rectangle(1920,1080) texture:dashboardbackground_after.path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=0 and currentStoryTellingState=1){
-		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=1 and currentStoryTellingState=1){
-		    			draw rectangle(1920,1080) texture:radarPlots[3].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=0 and currentStoryTellingState=2){
-		    			draw rectangle(1920,1080) texture:radarPlots[0].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=1 and currentStoryTellingState=2){
-		    			draw rectangle(1920,1080) texture:radarPlots[3].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=0 and currentStoryTellingState=3){
-		    			draw rectangle(1920,1080) texture:radarPlots[1].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=1 and currentStoryTellingState=3){
-		    			draw rectangle(1920,1080) texture:radarPlots[4].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=0 and currentStoryTellingState=4){
-		    			draw rectangle(1920,1080) texture:radarPlots[2].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}
-		    		if(currentSimuState=1 and currentStoryTellingState=4){
-		    			draw rectangle(1920,1080) texture:radarPlots[5].path at:{world.shape.width/2,world.shape.height/2}color:#white empty:true;
-		    		}	
-		    	}			
+		    		}			
 			}
 		}
 	}
 }
+
+/*experiment ReChampPavillonDemoCalibrage  parent: ReChamp autorun:true{	
+	
+	output {	
+	}
+}*/
 
