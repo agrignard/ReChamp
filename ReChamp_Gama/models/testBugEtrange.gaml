@@ -1399,7 +1399,7 @@ species pedestrian skills:[moving] control: fsm {//schedules:[]{
 				int r_id <- 0;
 				map<list<list<road>>> m <- ped_blocking_roads[currentSimuState];
 				list<list<road>> l <- m[road(current_edge).tl_group];
-				write ""+phase_per_group[road(current_edge).tl_group]+" "+road(current_edge).tl_group;
+	//			write ""+phase_per_group[road(current_edge).tl_group]+" "+road(current_edge).tl_group;
 				list<road> l2 <- l[phase_per_group[road(current_edge).tl_group]-1];
 				list<road> lr <- ped_blocking_roads[currentSimuState][road(current_edge).tl_group][phase_per_group[road(current_edge).tl_group]-1];  // <- blocked_roads[road(current_edge).tl_group] where (each.ped_block);
 				loop while: !blocked and r_id < length(lr){
@@ -2216,11 +2216,11 @@ species intersection skills: [skill_road_node] {//schedules:[]{
 					draw 3 around(r.shape) color: #cyan;
 				}	
 			}
-//			loop i over: blocked_roads.keys{
-//				loop r over: blocked_roads[i]{
-//					draw 5 around(r.shape) color: #yellow;
-//				}
-//			}
+			loop i over: blocked_roads.keys{
+				loop r over: blocked_roads[i]{
+					draw 5 around(r.shape) color: #yellow;
+				}
+			}
 		}
 		
 		
