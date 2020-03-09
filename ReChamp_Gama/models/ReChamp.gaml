@@ -2207,7 +2207,7 @@ experiment ReChamp type: gui autorun:true virtual:true{
 		display champ type:opengl background:#black draw_env:false fullscreen:1  rotate:angle toolbar:false autosave:false synchronized:true
 		camera_pos: {1377.9646,1230.5875,3126.3113} camera_look_pos: {1377.9646,1230.533,0.0051} camera_up_vector: {0.0,1.0,0.0}
         keystone: [{0.12704565027375098,-0.005697301640547492,0.0},{-0.19504933859455517,1.3124020399566794,0.0},{1.1454962633840384,1.2440344202701115,0.0},{0.8687370667296103,-0.001899100546849053,0.0}]
-		
+        camera_interaction:false
 	   	{    	
 		    species building aspect: base;
 			species park aspect: base transparency:0.5 + 0.5 *(crossOverNature/crossOverTime);
